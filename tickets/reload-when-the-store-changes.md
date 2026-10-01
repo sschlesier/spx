@@ -118,3 +118,6 @@ need writing anything.
   Sync, which re-adds the recreated root, as `TestLiveReload`'s delete-and-recreate step
   shows). The revert check only shows the new tests don't compile without the change;
   mutation is the behavioral evidence.
+- 2026-09-30: Round 1 second pass dismissed: no test of the fsnotify Errors branch in
+  `Watcher.Next` (can't be triggered without a fake; the model's handling of a watcher error
+  is covered by `TestWatcherErrorClosesItAndRestartsAfterPoll`).
