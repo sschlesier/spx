@@ -142,6 +142,27 @@ func TestWatchIgnoresUnlistedChanges(t *testing.T) {
 	expectQuiet(t, events, "hidden swap file")
 }
 
+func TestWatchSkipsUnreadableFolders(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "proj/draft/a.md", spec("A", "1"))
+	write(t, root, "proj/approved/b.md", spec("B", "1"))
+	write(t, root, "locked/draft/c.md", spec("C", "1"))
+	for _, dir := range []string{"proj/approved", "locked"} {
+		path := filepath.Join(root, dir)
+		if err := os.Chmod(path, 0); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { os.Chmod(path, 0o755) })
+	}
+	if _, err := os.ReadDir(filepath.Join(root, "locked")); err == nil {
+		t.Skip("permissions not enforced (running as root?)")
+	}
+	w, events := watching(t, root)
+	settle(t, w, events)
+	write(t, root, "proj/draft/a.md", spec("A2", "1"))
+	expectEvent(t, events, "edit beside an unreadable folder")
+}
+
 func TestWatchCloseEndsNext(t *testing.T) {
 	root := t.TempDir()
 	w, events := watching(t, root)

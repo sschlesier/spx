@@ -33,7 +33,8 @@ func Watch(root string) (*Watcher, error) {
 }
 
 // Sync adds watches for the root, its project folders and their listed status folders.
-// Folders already watched are left as they are; one that vanishes meanwhile is skipped.
+// Folders already watched are left as they are. One that vanishes meanwhile or can't be
+// read is skipped, as Load skips it, so the rest stay watched.
 func (w *Watcher) Sync() error {
 	if err := w.fs.Add(w.root); err != nil {
 		return err
@@ -64,7 +65,7 @@ func (w *Watcher) Sync() error {
 
 func (w *Watcher) add(dir string) error {
 	err := w.fs.Add(dir)
-	if errors.Is(err, fs.ErrNotExist) {
+	if errors.Is(err, fs.ErrNotExist) || errors.Is(err, fs.ErrPermission) {
 		return nil
 	}
 	return err
