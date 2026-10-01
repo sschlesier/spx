@@ -99,3 +99,12 @@ need writing anything.
   per debounced event is fine.
 - 2026-09-30: Approved: Scott Schlesier, 2026-09-30: fsnotify with 100 ms debounce, 1 s fallback polling, selection and scroll kept. Cold read: not run (one area, no flags)
 - 2026-09-30: Started on branch reload-when-the-store-changes
+- 2026-09-30: Assumptions: events that are only a chmod, or on a path with a hidden part
+  (e.g. vim's `.x.md.swp`), are ignored. Each load syncs the watches before reading, so a
+  folder created mid-load is either read or reported. Loads carry a sequence number so a
+  late-finishing older load can't overwrite a newer one. The `switch-between-projects`
+  Design bullet doesn't apply yet; that spec hasn't landed.
+- 2026-09-30: Verification so far: `go vet ./... && go test -race ./...` passes, five runs in
+  a row on macOS (kqueue); mutations of the debounce generation check, the selection lookup
+  and the unreadable notice each fail tests. Not run: the manual tmux check (the agent's
+  smoke run was denied), and inotify, which only CI (ubuntu) covers.
