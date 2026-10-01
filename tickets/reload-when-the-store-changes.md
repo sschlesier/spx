@@ -4,7 +4,7 @@ type: feature
 priority: 3
 depends-on: [browse-specs-in-a-split-view]
 approved: "Scott Schlesier, 2026-09-30: fsnotify with 100 ms debounce, 1 s fallback polling, selection and scroll kept. Cold read: not run (one area, no flags)"
-status: in-review
+status: done
 ---
 
 The list and detail catch up with the store within a second of a spec being added, edited,
@@ -24,24 +24,24 @@ Out of scope:
 
 ## Acceptance criteria
 
-- [ ] Within 1 s of a listed spec file being created, edited (including an editor's
+- [x] Within 1 s of a listed spec file being created, edited (including an editor's
       write-to-temp-then-rename save), deleted, or moved between listed status folders
       (`git mv draft/x.md approved/`), the list and the detail show the new state with no key
       pressed. This includes specs in a project or status folder created after `spx` started.
-- [ ] File events less than 100 ms apart cause one reload, after the last of them (e.g. a
+- [x] File events less than 100 ms apart cause one reload, after the last of them (e.g. a
       `git mv` of several specs, or a commit touching several files).
-- [ ] After a reload, the same spec stays selected, matched by project and slug, even when its
+- [x] After a reload, the same spec stays selected, matched by project and slug, even when its
       status, title or position changed. If it is gone, the row at the same index is selected
       (or the last row if the list got shorter), and its detail shows from the top.
-- [ ] When the selected spec's content didn't change, its detail keeps its scroll offset across
+- [x] When the selected spec's content didn't change, its detail keeps its scroll offset across
       a reload. When it did change, the offset is kept, clamped to the new content.
-- [ ] When a reload finds nothing changed (e.g. an event for a non-`.md` file), nothing
+- [x] When a reload finds nothing changed (e.g. an event for a non-`.md` file), nothing
       visible changes: no flicker, selection and scroll stay put.
-- [ ] If the store root becomes unreadable (deleted or renamed), the last list stays on screen
+- [x] If the store root becomes unreadable (deleted or renamed), the last list stays on screen
       and the footer starts with `store unreadable: <path>`; within 2 s of it being readable
       again at the same path, the notice goes, the list updates, and watching resumes.
-- [ ] Moving a spec to `dropped/` removes it from the list like a delete.
-- [ ] The narrow full-width detail stays open across a reload while its spec still exists; if
+- [x] Moving a spec to `dropped/` removes it from the list like a delete.
+- [x] The narrow full-width detail stays open across a reload while its spec still exists; if
       it's gone, the view returns to the list.
 
 ## Verification
@@ -126,3 +126,5 @@ need writing anything.
   it made the watcher fail to start, so spx polled every second for as long as the folder
   stayed unreadable. Fixed in `store/watch.go` `add`, tested by
   `TestWatchSkipsUnreadableFolders`.
+- 2026-09-30: Accepted: Scott Schlesier, 2026-09-30, round 1
+- 2026-09-30: Done: list and detail reload within about 100 ms of a change via fsnotify, keeping selection and scroll; an unreadable root shows a footer notice and recovers by polling; an unreadable project or status folder is skipped.
