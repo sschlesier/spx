@@ -340,4 +340,116 @@ func TestLiveReload(t *testing.T) {
 	l.until("recovery", 2*time.Second, func(m Model) bool { return !m.unreadable && m.watcher != nil })
 	put("proj/draft/b.md", "Beta again")
 	l.until("watching resumed", time.Second, shows("Beta again"))
+
+	must(os.RemoveAll(root))
+	l.until("notice after delete", time.Second, shows("store unreadable: "+root))
+	put("proj/draft/b.md", "Beta reborn")
+	l.until("recreated root", 2*time.Second, func(m Model) bool {
+		return shows("Beta reborn")(m) && m.watcher != nil
+	})
+	put("proj/draft/b.md", "Beta watched")
+	l.until("watching the new root", time.Second, shows("Beta watched"))
+}
+
+func TestPollingContinuesThroughAnOutage(t *testing.T) {
+	m := start(t, fixture(1), 120, 20)
+	fail := func() tea.Cmd {
+		t.Helper()
+		next, cmd := m.Update(loadedMsg{seq: m.applied + 1, err: errors.New("gone")})
+		m = next.(Model)
+		return cmd
+	}
+	if fail() == nil {
+		t.Fatal("first failure should schedule a poll")
+	}
+	m = send(t, m, pollMsg{})
+	if fail() == nil {
+		t.Fatal("a failure after a poll should schedule the next poll")
+	}
+}
+
+func TestFailedWatchStartPollsThenRetries(t *testing.T) {
+	m := start(t, fixture(1), 120, 20).WithReload()
+	m.starting = true
+	next, cmd := m.Update(watchStartedMsg{err: errors.New("no watcher")})
+	m = next.(Model)
+	if cmd == nil || !m.polling {
+		t.Fatal("a failed watcher start should schedule a poll")
+	}
+	m = send(t, m, pollMsg{})
+	m, cmd = reloaded(t, m, fixture(1))
+	if cmd == nil || !m.starting {
+		t.Fatal("a successful poll should start the watcher again")
+	}
+}
+
+// watched returns a model watching a real, empty temp store.
+func watched(t *testing.T) Model {
+	t.Helper()
+	w, err := store.Watch(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { w.Close() })
+	m := start(t, fixture(1), 120, 20).WithReload()
+	m.watcher = w
+	return m
+}
+
+func TestWatcherErrorClosesItAndRestartsAfterPoll(t *testing.T) {
+	m := watched(t)
+	w := m.watcher
+	next, cmd := m.Update(watchMsg{w: w, err: errors.New("overflow")})
+	m = next.(Model)
+	if cmd == nil || m.watcher != nil {
+		t.Fatal("a watcher error should drop the watcher and poll")
+	}
+	if err := w.Next(); !errors.Is(err, store.ErrClosed) {
+		t.Fatalf("the failed watcher should be closed, Next = %v", err)
+	}
+	m = send(t, m, pollMsg{})
+	if _, cmd := reloaded(t, m, fixture(1)); cmd == nil {
+		t.Fatal("a successful poll should start a new watcher")
+	}
+}
+
+func TestSyncErrorFallsBackToPolling(t *testing.T) {
+	m := watched(t)
+	next, cmd := m.Update(loadedMsg{seq: 1, specs: fixture(1), w: m.watcher, syncErr: errors.New("sync")})
+	m = next.(Model)
+	if cmd == nil || m.watcher != nil || !m.polling {
+		t.Fatal("a sync error should drop the watcher and poll")
+	}
+}
+
+func TestWatcherStartLoads(t *testing.T) {
+	m := watched(t)
+	w := m.watcher
+	m.watcher, m.starting = nil, true
+	m = send(t, m, watchStartedMsg{w: w})
+	if m.watcher != w || m.loads != 1 {
+		t.Fatalf("watcher set %v, loads %d: a load should follow the watcher starting", m.watcher == w, m.loads)
+	}
+}
+
+func TestSelectionMatchesProjectNotOnlySlug(t *testing.T) {
+	a, b := fixture(1)[0], fixture(1)[0]
+	a.Project, b.Project = "alpha", "beta"
+	m := press(t, start(t, []store.Spec{a, b}, 120, 20), "j")
+	c := fixture(2)[1]
+	m = reload(t, m, []store.Spec{a, b, c})
+	if p := m.specs[m.cursor].Project; p != "beta" {
+		t.Fatalf("selection moved to project %s, want beta", p)
+	}
+}
+
+func TestMovedSelectionStaysVisible(t *testing.T) {
+	m := start(t, fixture(30), 120, 11)
+	specs := fixture(30)
+	specs[0].Priority = 4
+	store.Sort(specs)
+	m = reload(t, m, specs)
+	if m.cursor != 29 || m.cursor < m.offset || m.cursor >= m.offset+m.bodyHeight() {
+		t.Fatalf("cursor %d offset %d height %d: selection off screen", m.cursor, m.offset, m.bodyHeight())
+	}
 }
