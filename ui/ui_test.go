@@ -266,6 +266,18 @@ func TestHalfPageScrollIgnoredWhileDetailHidden(t *testing.T) {
 	if s := screen(m); !strings.Contains(s, "proj/draft/spec-00") {
 		t.Fatalf("header should be visible:\n%s", s)
 	}
+	m = press(t, m, "ctrl+d", "ctrl+d")
+	off := m.detail.YOffset()
+	m = press(t, m, "esc", "ctrl+u", "enter")
+	if m.detail.YOffset() != off {
+		t.Fatalf("ctrl+u in the list moved the hidden detail: offset %d, want %d", m.detail.YOffset(), off)
+	}
+}
+
+func TestViewUsesAltScreen(t *testing.T) {
+	if !start(t, fixture(1), 120, 20).View().AltScreen {
+		t.Fatal("the view must use the alternate screen so quitting restores the terminal")
+	}
 }
 
 func TestNarrowDetailJKScroll(t *testing.T) {
