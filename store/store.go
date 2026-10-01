@@ -54,7 +54,10 @@ func Load(root string) ([]Spec, error) {
 	}
 	var specs []Spec
 	for _, p := range projects {
-		if !p.IsDir() || hidden(p.Name()) {
+		if hidden(p.Name()) {
+			continue
+		}
+		if info, err := os.Stat(filepath.Join(root, p.Name())); err != nil || !info.IsDir() {
 			continue
 		}
 		for _, status := range Statuses {

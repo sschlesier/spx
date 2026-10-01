@@ -59,6 +59,21 @@ func TestLoadDiscoveryAndExclusions(t *testing.T) {
 	}
 }
 
+func TestLoadFollowsSymlinkedProject(t *testing.T) {
+	root, elsewhere := t.TempDir(), t.TempDir()
+	write(t, elsewhere, "real/draft/a.md", spec("A", "2"))
+	if err := os.Symlink(filepath.Join(elsewhere, "real"), filepath.Join(root, "linked")); err != nil {
+		t.Fatal(err)
+	}
+	specs, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := slugs(specs); !reflect.DeepEqual(got, []string{"linked/draft/a"}) {
+		t.Fatalf("got %v", got)
+	}
+}
+
 func TestLoadParsesFrontmatter(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, "p/approved/x.md", "---\ntitle: Do X\ntype: bug\npriority: 1\ndepends-on: [a, b]\napproved: \"Scott, today\"\nextra: ignored\n---\n\nThe body.\n")
