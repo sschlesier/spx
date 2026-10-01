@@ -45,6 +45,9 @@ func TestLoadDiscoveryAndExclusions(t *testing.T) {
 	write(t, root, ".proj/draft/i.md", spec("I", "2"))
 	write(t, root, "proj/j.md", spec("J", "2"))
 	write(t, root, "top.md", spec("T", "2"))
+	if err := os.MkdirAll(filepath.Join(root, "proj/draft/dir.md"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 
 	specs, err := Load(root)
 	if err != nil {
@@ -158,6 +161,9 @@ func TestSortOrder(t *testing.T) {
 	}
 	if got := slugs(specs); !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %v\nwant %v", got, want)
+	}
+	if specs[1].Priority != 4 {
+		t.Errorf("P4 parsed as %d", specs[1].Priority)
 	}
 }
 
