@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -94,30 +95,45 @@ func read(project, status, path string) Spec {
 	}
 	front, body := splitFrontmatter(bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n")))
 	s.Body = string(body)
-	var fm map[string]any
+	var fm map[string]yaml.Node
 	if front == nil || yaml.Unmarshal(front, &fm) != nil {
 		return s
 	}
-	if t, ok := fm["title"].(string); ok && strings.TrimSpace(t) != "" {
+	if t, ok := scalar(fm["title"]); ok && strings.TrimSpace(t) != "" {
 		s.Title = strings.Join(strings.Fields(t), " ")
 	}
-	if t, ok := fm["type"].(string); ok {
+	if t, ok := scalar(fm["type"]); ok {
 		s.Type = t
 	}
-	if p, ok := fm["priority"].(int); ok && p >= 0 && p <= 4 {
-		s.Priority = p
+	if n := fm["priority"]; n.Kind == yaml.ScalarNode && n.Tag == "!!int" {
+		if p, err := strconv.Atoi(n.Value); err == nil && p >= 0 && p <= 4 {
+			s.Priority = p
+		}
 	}
-	if deps, ok := fm["depends-on"].([]any); ok {
-		for _, d := range deps {
-			if d, ok := d.(string); ok {
+	switch n := fm["depends-on"]; n.Kind {
+	case yaml.SequenceNode:
+		for _, d := range n.Content {
+			if d, ok := scalar(*d); ok {
 				s.DependsOn = append(s.DependsOn, d)
 			}
 		}
+	case yaml.ScalarNode:
+		if d, ok := scalar(n); ok && d != "" {
+			s.DependsOn = []string{d}
+		}
 	}
-	if a, ok := fm["approved"].(string); ok {
+	if a, ok := scalar(fm["approved"]); ok {
 		s.Approved = a
 	}
 	return s
+}
+
+// scalar returns a non-null scalar's text as written, so `title: 2024` reads as "2024".
+func scalar(n yaml.Node) (string, bool) {
+	if n.Kind != yaml.ScalarNode || n.Tag == "!!null" {
+		return "", false
+	}
+	return n.Value, true
 }
 
 // splitFrontmatter returns the YAML between a leading "---" line and the next "---" line,

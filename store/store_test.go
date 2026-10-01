@@ -159,6 +159,30 @@ func TestLoadNormalizesCRLF(t *testing.T) {
 	}
 }
 
+func TestLoadStringifiesScalars(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "p/draft/nums.md", "---\ntitle: 2024\ntype: 3\ndepends-on: other-slug\n---\n")
+	write(t, root, "p/draft/mixed.md", "---\ntitle: Mixed\ndepends-on: [a, 2, ~]\npriority: \"1\"\n---\n")
+	write(t, root, "p/draft/nulls.md", "---\ntitle:\ntype: ~\ndepends-on:\n---\n")
+	specs, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	by := map[string]Spec{}
+	for _, s := range specs {
+		by[s.Slug] = s
+	}
+	if s := by["nums"]; s.Title != "2024" || s.Type != "3" || !reflect.DeepEqual(s.DependsOn, []string{"other-slug"}) {
+		t.Errorf("nums: %+v", s)
+	}
+	if s := by["mixed"]; !reflect.DeepEqual(s.DependsOn, []string{"a", "2"}) || s.Priority != NoPriority {
+		t.Errorf("mixed: depends-on %v priority %d", s.DependsOn, s.Priority)
+	}
+	if s := by["nulls"]; s.Title != "nulls" || s.Type != "" || s.DependsOn != nil {
+		t.Errorf("nulls: %+v", s)
+	}
+}
+
 func TestTitleIsOneLine(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, "p/draft/folded.md", "---\ntitle: >\n  Folded\n  title\n---\n")
