@@ -133,3 +133,7 @@ Design list seems necessary.
   normalized to LF; blank lines after the closing fence are dropped from the body; multi-line
   titles collapse to one line; symlinked project folders are followed like status folders and
   files.
+- 2026-09-30: Review decisions (Scott, round 1): 1.1 a resize keeps the detail scroll offset
+  (ed2324c); 1.2 in the narrow layout, esc then enter on the same row keeps the scroll
+  position (no change); 1.3 non-string scalars in frontmatter read as their text, and a scalar
+  `depends-on` is a one-item list (see the next commit).
