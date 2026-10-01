@@ -131,6 +131,7 @@ func (m *Model) selectRow(i int) {
 	m.cursor = i
 	m.scrollList()
 	m.renderDetail()
+	m.detail.GotoTop()
 }
 
 func (m Model) split() bool { return m.width >= SplitWidth }
@@ -177,7 +178,7 @@ func (m *Model) renderDetail() {
 	}
 	s := m.specs[m.cursor]
 	m.detail.SetContent(header(s, m.detail.Width()) + "\n" + m.markdown(s.Body))
-	m.detail.GotoTop()
+	m.detail.SetYOffset(m.detail.YOffset())
 }
 
 func header(s store.Spec, width int) string {

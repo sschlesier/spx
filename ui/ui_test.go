@@ -322,6 +322,19 @@ func TestTallerWindowShowsRowsAbove(t *testing.T) {
 	}
 }
 
+func TestResizeKeepsDetailScroll(t *testing.T) {
+	m := press(t, start(t, fixture(3), 80, 20), "enter", "ctrl+d")
+	off := m.detail.YOffset()
+	m = send(t, m, tea.WindowSizeMsg{Width: 81, Height: 20})
+	if m.detail.YOffset() != off {
+		t.Fatalf("resize moved the detail from %d to %d", off, m.detail.YOffset())
+	}
+	m = send(t, m, tea.WindowSizeMsg{Width: 81, Height: 200})
+	if last := m.detail.TotalLineCount() - m.detail.Height(); m.detail.YOffset() > max(0, last) {
+		t.Fatalf("offset %d past the end after growing", m.detail.YOffset())
+	}
+}
+
 func TestQuit(t *testing.T) {
 	for _, k := range []string{"q", "ctrl+c"} {
 		_, cmd := start(t, fixture(1), 120, 20).Update(keys[k])
