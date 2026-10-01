@@ -156,9 +156,35 @@ func TestNarrowLayoutListThenDetail(t *testing.T) {
 }
 
 func TestWideLayoutIgnoresEnterAndEsc(t *testing.T) {
-	m := press(t, start(t, fixture(3), 120, 30), "enter", "esc", "j")
-	if m.detailOpen || m.cursor != 1 {
+	m := press(t, start(t, fixture(3), 120, 30), "enter")
+	if m.detailOpen {
+		t.Fatal("enter opened the detail in the split layout")
+	}
+	m = press(t, m, "j", "esc", "j")
+	if m.detailOpen || m.cursor != 2 {
 		t.Fatalf("detailOpen=%v cursor=%d", m.detailOpen, m.cursor)
+	}
+}
+
+func TestSplitStartsAt100Columns(t *testing.T) {
+	if s := screen(start(t, fixture(2), 99, 20)); strings.Contains(s, "Outcome of spec 0.") {
+		t.Errorf("99 columns should show only the list:\n%s", s)
+	}
+	m := start(t, fixture(2), 100, 20)
+	if s := screen(m); !strings.Contains(s, "Outcome of spec 0.") || !strings.Contains(s, "│") {
+		t.Errorf("100 columns should split:\n%s", s)
+	}
+	if got := m.listWidth(); got != 40 {
+		t.Errorf("list width at 100 columns = %d, want 40 (2/5)", got)
+	}
+}
+
+func TestResizeToWideClosesFullWidthDetail(t *testing.T) {
+	m := press(t, start(t, fixture(3), 80, 20), "enter")
+	m = send(t, m, tea.WindowSizeMsg{Width: 120, Height: 20})
+	m = press(t, m, "j")
+	if m.detailOpen || m.cursor != 1 {
+		t.Fatalf("after resize to wide: detailOpen=%v cursor=%d", m.detailOpen, m.cursor)
 	}
 }
 
