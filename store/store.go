@@ -96,7 +96,7 @@ func read(project, status, path string) Spec {
 		return s
 	}
 	if t, ok := fm["title"].(string); ok && strings.TrimSpace(t) != "" {
-		s.Title = t
+		s.Title = strings.Join(strings.Fields(t), " ")
 	}
 	if t, ok := fm["type"].(string); ok {
 		s.Type = t

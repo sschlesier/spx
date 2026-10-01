@@ -116,6 +116,23 @@ func TestLoadFallbacks(t *testing.T) {
 	}
 }
 
+func TestTitleIsOneLine(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "p/draft/folded.md", "---\ntitle: >\n  Folded\n  title\n---\n")
+	write(t, root, "p/draft/literal.md", "---\ntitle: |\n  Two\n  lines\n---\n")
+	write(t, root, "p/draft/blank.md", "---\ntitle: \"   \"\n---\n")
+	specs, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{"folded": "Folded title", "literal": "Two lines", "blank": "blank"}
+	for _, s := range specs {
+		if s.Title != want[s.Slug] {
+			t.Errorf("%s: title = %q, want %q", s.Slug, s.Title, want[s.Slug])
+		}
+	}
+}
+
 func TestSortOrder(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, "b/draft/z.md", spec("Z", "1"))
