@@ -134,6 +134,19 @@ func TestLoadFallbacks(t *testing.T) {
 	}
 }
 
+func TestLoadNormalizesCRLF(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "p/draft/crlf.md", "---\r\ntitle: Windows\r\npriority: 1\r\n---\r\n\r\nLine one\r\nLine two\r\n")
+	specs, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := specs[0]
+	if s.Title != "Windows" || s.Priority != 1 || s.Body != "Line one\nLine two\n" {
+		t.Fatalf("got title %q priority %d body %q", s.Title, s.Priority, s.Body)
+	}
+}
+
 func TestTitleIsOneLine(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, "p/draft/folded.md", "---\ntitle: >\n  Folded\n  title\n---\n")

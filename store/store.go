@@ -92,7 +92,7 @@ func read(project, status, path string) Spec {
 	if err != nil {
 		return s
 	}
-	front, body := splitFrontmatter(data)
+	front, body := splitFrontmatter(bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n")))
 	s.Body = string(body)
 	var fm map[string]any
 	if front == nil || yaml.Unmarshal(front, &fm) != nil {
@@ -131,7 +131,7 @@ func splitFrontmatter(data []byte) (front, body []byte) {
 	for pos := start; pos < len(data); {
 		line, next, _ := cutLine(data[pos:])
 		if isFence(line) {
-			return data[start:pos], bytes.TrimLeft(next, "\r\n")
+			return data[start:pos], bytes.TrimLeft(next, "\n")
 		}
 		pos = len(data) - len(next)
 	}
@@ -139,8 +139,7 @@ func splitFrontmatter(data []byte) (front, body []byte) {
 }
 
 func cutLine(b []byte) (line, rest []byte, found bool) {
-	line, rest, found = bytes.Cut(b, []byte("\n"))
-	return bytes.TrimSuffix(line, []byte("\r")), rest, found
+	return bytes.Cut(b, []byte("\n"))
 }
 
 func isFence(line []byte) bool { return string(bytes.TrimRight(line, " \t")) == "---" }
