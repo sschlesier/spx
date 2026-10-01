@@ -4,7 +4,7 @@ type: feature
 priority: 2
 depends-on: []
 approved: "Scott Schlesier, 2026-09-30: list/detail split MVP, dropped hidden, local repo plus CI file. Cold read: not run (one area, no flags)"
-status: in-review
+status: done
 ---
 
 Running `spx` in a terminal shows every spec in the spec store as a list, with the selected
@@ -27,33 +27,33 @@ Out of scope (each has its own draft spec in `spx/draft/`):
 
 ## Acceptance criteria
 
-- [ ] `spx` reads the store from `$AGENT_SPECS_DIR` when set and non-empty, otherwise
+- [x] `spx` reads the store from `$AGENT_SPECS_DIR` when set and non-empty, otherwise
       `~/src/specs`.
-- [ ] Every `*.md` file at `<root>/<project>/<status>/<slug>.md`, where `<status>` is
+- [x] Every `*.md` file at `<root>/<project>/<status>/<slug>.md`, where `<status>` is
       `draft`, `approved` or `started`, appears exactly once in the list. Files elsewhere
       (`dropped/` and other folders, other depths, non-`.md`, anything under a directory
       whose name starts with `.`) do not appear.
-- [ ] Each list row shows project, status, priority (`P<n>`, or `-` when missing), type
+- [x] Each list row shows project, status, priority (`P<n>`, or `-` when missing), type
       (or `-`) and title. A spec with no `title` or unparseable frontmatter shows its slug as
       the title and still appears.
-- [ ] The list is sorted by status (`started`, `approved`, `draft`), then
+- [x] The list is sorted by status (`started`, `approved`, `draft`), then
       priority ascending with missing priority last, then project, then slug.
-- [ ] `j`/`down` and `k`/`up` move the selection one row; `g` and `G` jump to the first and
+- [x] `j`/`down` and `k`/`up` move the selection one row; `g` and `G` jump to the first and
       last row; movement stops at either end without wrapping. The list scrolls to keep
       the selection visible.
-- [ ] At 100 columns or wider, the list and detail panes are side by side and the detail
+- [x] At 100 columns or wider, the list and detail panes are side by side and the detail
       pane shows the selected spec. Below 100 columns only the list shows; `enter` opens the
       selected spec full-width and `esc` returns to the list with the same row selected.
-- [ ] The detail pane starts with a header: title, `<project>/<status>/<slug>`, type,
+- [x] The detail pane starts with a header: title, `<project>/<status>/<slug>`, type,
       priority, `depends-on` (when non-empty) and `approved` (when set). Below it is the
       spec body (frontmatter removed) rendered as styled markdown.
-- [ ] `ctrl+d` and `ctrl+u` scroll the detail pane by half its height; selecting another
+- [x] `ctrl+d` and `ctrl+u` scroll the detail pane by half its height; selecting another
       spec resets the scroll to the top.
-- [ ] `q` and `ctrl+c` quit with exit status 0 and restore the terminal.
-- [ ] A missing or unreadable root prints `spx: spec store not found: <path>` to stderr and
+- [x] `q` and `ctrl+c` quit with exit status 0 and restore the terminal.
+- [x] A missing or unreadable root prints `spx: spec store not found: <path>` to stderr and
       exits 1 without starting the UI. A root with no specs starts the UI and shows
       `No specs in <path>`.
-- [ ] Running `spx` changes no file under the root (checked by `git status` in the store
+- [x] Running `spx` changes no file under the root (checked by `git status` in the store
       being unchanged).
 
 ## Verification
@@ -137,3 +137,8 @@ Design list seems necessary.
   (ed2324c); 1.2 in the narrow layout, esc then enter on the same row keeps the scroll
   position (no change); 1.3 non-string scalars in frontmatter read as their text, and a scalar
   `depends-on` is a one-item list (see the next commit).
+- 2026-09-30: Accepted: Scott Schlesier, 2026-09-30, round 1
+- 2026-09-30: Done: spx MVP shipped in PR #1 with review fixes on main through b4c51de: list
+  beside rendered detail, narrow enter/esc, j/k/g/G, ctrl+d/u, read-only. 11/11 criteria
+  verified; review added 7 fixes and 3 decisions (resize keeps scroll, reopen keeps position,
+  scalar frontmatter as text).
