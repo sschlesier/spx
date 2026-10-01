@@ -112,3 +112,15 @@ Design list seems necessary.
 - 2026-09-30: Started on branch browse-specs-in-a-split-view
 - 2026-09-30: Worked directly on main, not the branch named above: first work in a new repo
   (Scott's call).
+- 2026-09-30: Assumption: with the detail open full-width (narrow layout), `j`/`k` scroll it
+  by a line rather than changing the selection; `enter`/`esc` do nothing in the split layout.
+- 2026-09-30: Assumption: a one-line key-hint footer sits under the panes; the list pane is
+  2/5 of the width in the split layout, so long titles are truncated there.
+- 2026-09-30: Assumption: Charm v2 modules (`charm.land/...`), the current releases, plus
+  `github.com/charmbracelet/x/ansi` (already a Lip Gloss dependency) for width-aware
+  truncation.
+- 2026-09-30: Known: Glamour keeps the source's hard line breaks inside list items, so
+  bullets wrapped in the source wrap raggedly in a narrower pane. Paragraphs reflow fine.
+- 2026-09-30: Verified manually in tmux against the real store at 120 and 80 columns: order,
+  movement, ctrl+d, G, enter/esc, q; `git status` in the store unchanged;
+  `AGENT_SPECS_DIR=/nonexistent ./spx` prints the error and exits 1.
