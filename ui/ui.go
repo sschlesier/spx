@@ -126,17 +126,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case watchStartedMsg:
 		m.starting = false
 		if msg.err != nil {
-			return m, m.poll()
+			cmd := m.poll()
+			return m, cmd
 		}
 		m.watcher = msg.w
-		return m, tea.Batch(wait(msg.w), m.load())
+		cmd := tea.Batch(wait(msg.w), m.load())
+		return m, cmd
 	case watchMsg:
 		if msg.w != m.watcher || errors.Is(msg.err, store.ErrClosed) {
 			return m, nil
 		}
 		if msg.err != nil {
 			m.stopWatch()
-			return m, m.poll()
+			cmd := m.poll()
+			return m, cmd
 		}
 		m.gen++
 		gen := m.gen
@@ -145,10 +148,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.gen != m.gen {
 			return m, nil
 		}
-		return m, m.load()
+		cmd := m.load()
+		return m, cmd
 	case pollMsg:
 		m.polling = false
-		return m, m.load()
+		cmd := m.load()
+		return m, cmd
 	case loadedMsg:
 		return m.loaded(msg)
 	}
@@ -208,13 +213,15 @@ func (m Model) loaded(msg loadedMsg) (tea.Model, tea.Cmd) {
 	if msg.err != nil {
 		m.unreadable = true
 		m.stopWatch()
-		return m, m.poll()
+		cmd := m.poll()
+		return m, cmd
 	}
 	m.unreadable = false
 	m.apply(msg.specs)
 	if msg.syncErr != nil && msg.w == m.watcher {
 		m.stopWatch()
-		return m, m.poll()
+		cmd := m.poll()
+		return m, cmd
 	}
 	if m.reload && m.watcher == nil && !m.starting {
 		m.starting = true
