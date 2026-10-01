@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"image/color"
 	"strings"
 	"testing"
 
@@ -267,6 +268,48 @@ func TestHalfPageScrollIgnoredWhileDetailHidden(t *testing.T) {
 	}
 }
 
+func TestNarrowDetailJKScroll(t *testing.T) {
+	m := press(t, start(t, fixture(3), 80, 20), "enter", "j", "j")
+	if m.detail.YOffset() != 2 || m.cursor != 0 {
+		t.Fatalf("after j j: offset %d cursor %d, want 2 and 0", m.detail.YOffset(), m.cursor)
+	}
+	m = press(t, m, "k")
+	if m.detail.YOffset() != 1 {
+		t.Fatalf("after k: offset %d, want 1", m.detail.YOffset())
+	}
+}
+
+func TestMovingPastAnEndKeepsDetailScroll(t *testing.T) {
+	m := press(t, start(t, fixture(3), 120, 20), "ctrl+d")
+	off := m.detail.YOffset()
+	for _, k := range []string{"k", "g", "up"} {
+		if m = press(t, m, k); m.detail.YOffset() != off {
+			t.Errorf("%s on the first row reset the detail scroll", k)
+		}
+	}
+}
+
+func TestSelectedRowIsHighlighted(t *testing.T) {
+	m := press(t, start(t, fixture(3), 120, 20), "j")
+	for _, line := range strings.Split(m.View().Content, "\n") {
+		marked := strings.Contains(line, "\x1b[7m")
+		switch {
+		case strings.Contains(line, "Spec number 01") && !marked:
+			t.Errorf("selected row not highlighted: %q", line)
+		case strings.Contains(line, "Spec number 00") && marked:
+			t.Errorf("unselected row highlighted: %q", line)
+		}
+	}
+}
+
+func TestTallerWindowShowsRowsAbove(t *testing.T) {
+	m := press(t, start(t, fixture(30), 120, 11), "G")
+	m = send(t, m, tea.WindowSizeMsg{Width: 120, Height: 41})
+	if s := screen(m); !strings.Contains(s, "Spec number 00") || !strings.Contains(s, "Spec number 29") {
+		t.Fatalf("all 30 rows should fit after growing to 40 rows:\n%s", s)
+	}
+}
+
 func TestQuit(t *testing.T) {
 	for _, k := range []string{"q", "ctrl+c"} {
 		_, cmd := start(t, fixture(1), 120, 20).Update(keys[k])
@@ -297,5 +340,13 @@ func TestBackgroundPicksStyle(t *testing.T) {
 	}
 	if New("/store", nil, styles.AsciiStyle).Init() != nil {
 		t.Fatal("fixed style should not request the background color")
+	}
+	m = send(t, m, tea.BackgroundColorMsg{Color: color.White})
+	if m.style != styles.LightStyle {
+		t.Errorf("light background: style %q", m.style)
+	}
+	m = send(t, m, tea.BackgroundColorMsg{Color: color.Black})
+	if m.style != styles.DarkStyle {
+		t.Errorf("dark background: style %q", m.style)
 	}
 }
