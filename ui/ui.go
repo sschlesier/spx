@@ -84,10 +84,14 @@ func (m Model) key(k string) (tea.Model, tea.Cmd) {
 	case "q", "ctrl+c":
 		return m, tea.Quit
 	case "ctrl+d":
-		m.detail.HalfPageDown()
+		if m.detailVisible() {
+			m.detail.HalfPageDown()
+		}
 		return m, nil
 	case "ctrl+u":
-		m.detail.HalfPageUp()
+		if m.detailVisible() {
+			m.detail.HalfPageUp()
+		}
 		return m, nil
 	}
 	if m.detailOpen {
@@ -130,6 +134,8 @@ func (m *Model) selectRow(i int) {
 }
 
 func (m Model) split() bool { return m.width >= SplitWidth }
+
+func (m Model) detailVisible() bool { return m.split() || m.detailOpen }
 
 // listWidth is the list pane's width; in the split layout the detail gets the rest,
 // less one column for the separator.

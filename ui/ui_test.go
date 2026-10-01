@@ -218,6 +218,16 @@ func TestHalfPageScrollAndResetOnSelect(t *testing.T) {
 	}
 }
 
+func TestHalfPageScrollIgnoredWhileDetailHidden(t *testing.T) {
+	m := press(t, start(t, fixture(3), 80, 20), "ctrl+d", "ctrl+d", "enter")
+	if m.detail.YOffset() != 0 {
+		t.Fatalf("detail opened at offset %d, want 0", m.detail.YOffset())
+	}
+	if s := screen(m); !strings.Contains(s, "proj/draft/spec-00") {
+		t.Fatalf("header should be visible:\n%s", s)
+	}
+}
+
 func TestQuit(t *testing.T) {
 	for _, k := range []string{"q", "ctrl+c"} {
 		_, cmd := start(t, fixture(1), 120, 20).Update(keys[k])
