@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -33,5 +34,14 @@ func TestStartsUIForExistingRoot(t *testing.T) {
 	started := false
 	if code := run(&stderr, func(tea.Model) error { started = true; return nil }); code != 0 || !started {
 		t.Fatalf("code=%d started=%v stderr=%q", code, started, stderr.String())
+	}
+}
+
+func TestStartErrorExitsOne(t *testing.T) {
+	t.Setenv("AGENT_SPECS_DIR", t.TempDir())
+	var stderr bytes.Buffer
+	code := run(&stderr, func(tea.Model) error { return errors.New("could not open TTY") })
+	if code != 1 || stderr.String() != "spx: could not open TTY\n" {
+		t.Fatalf("code=%d stderr=%q", code, stderr.String())
 	}
 }
