@@ -109,3 +109,12 @@ need writing anything.
   and the unreadable notice each fail tests. Not run: the manual tmux check (the agent's
   smoke run was denied), and inotify, which only CI (ubuntu) covers.
 - 2026-09-30: Review started
+- 2026-09-30: Round 1 dismissed findings (equivalent mutants): `<=`→`<` on the load sequence
+  (sequence numbers are unique); dropping the stale-watcher check (a closed watcher's Next
+  returns ErrClosed, which is filtered anyway); dropping the DeepEqual early return or always
+  re-rendering (nothing visible changes, and renderDetail keeps the offset); watching hidden
+  root entries (Next filters hidden paths); not skipping chmod-only events (only extra
+  no-change reloads); not closing the watcher on an unreadable root (each poll's load calls
+  Sync, which re-adds the recreated root, as `TestLiveReload`'s delete-and-recreate step
+  shows). The revert check only shows the new tests don't compile without the change;
+  mutation is the behavioral evidence.
