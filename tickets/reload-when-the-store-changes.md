@@ -121,3 +121,8 @@ need writing anything.
 - 2026-09-30: Round 1 second pass dismissed: no test of the fsnotify Errors branch in
   `Watcher.Next` (can't be triggered without a fake; the model's handling of a watcher error
   is covered by `TestWatcherErrorClosesItAndRestartsAfterPoll`).
+- 2026-09-30: Review decision (Scott): a project or status folder that exists but can't be
+  read is skipped by the watcher, as `Load` skips it, and the rest stay on fsnotify. Before,
+  it made the watcher fail to start, so spx polled every second for as long as the folder
+  stayed unreadable. Fixed in `store/watch.go` `add`, tested by
+  `TestWatchSkipsUnreadableFolders`.
