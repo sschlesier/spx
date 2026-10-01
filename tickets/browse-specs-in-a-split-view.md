@@ -4,7 +4,7 @@ type: feature
 priority: 2
 depends-on: []
 approved: "Scott Schlesier, 2026-09-30: list/detail split MVP, dropped hidden, local repo plus CI file. Cold read: not run (one area, no flags)"
-status: in-progress
+status: in-review
 ---
 
 Running `spx` in a terminal shows every spec in the spec store as a list, with the selected
@@ -124,3 +124,4 @@ Design list seems necessary.
 - 2026-09-30: Verified manually in tmux against the real store at 120 and 80 columns: order,
   movement, ctrl+d, G, enter/esc, q; `git status` in the store unchanged;
   `AGENT_SPECS_DIR=/nonexistent ./spx` prints the error and exits 1.
+- 2026-09-30: Review started (retro: PR #1 already merged; review commits go on main).
