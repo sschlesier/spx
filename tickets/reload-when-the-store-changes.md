@@ -4,7 +4,7 @@ type: feature
 priority: 3
 depends-on: [browse-specs-in-a-split-view]
 approved: "Scott Schlesier, 2026-09-30: fsnotify with 100 ms debounce, 1 s fallback polling, selection and scroll kept. Cold read: not run (one area, no flags)"
-status: in-progress
+status: in-review
 ---
 
 The list and detail catch up with the store within a second of a spec being added, edited,
@@ -108,3 +108,4 @@ need writing anything.
   a row on macOS (kqueue); mutations of the debounce generation check, the selection lookup
   and the unreadable notice each fail tests. Not run: the manual tmux check (the agent's
   smoke run was denied), and inotify, which only CI (ubuntu) covers.
+- 2026-09-30: Review started
