@@ -127,3 +127,9 @@ Design list seems necessary.
 - 2026-09-30: Review started (retro: PR #1 already merged; review commits go on main).
 - 2026-09-30: Dismissed review finding: the mutant removing the `!m.split()` guard on enter
   (ui/ui.go) is equivalent; `layout()` resets `detailOpen` in the split layout.
+- 2026-09-30: Deviation: Design says no remote is created; Scott asked for a private GitHub
+  repo (github.com/sschlesier/spx) and PR #1 after implementation.
+- 2026-09-30: Assumption (review): fences tolerate trailing whitespace; CRLF files are
+  normalized to LF; blank lines after the closing fence are dropped from the body; multi-line
+  titles collapse to one line; symlinked project folders are followed like status folders and
+  files.
