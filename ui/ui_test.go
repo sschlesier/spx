@@ -198,6 +198,19 @@ func TestListRowColumns(t *testing.T) {
 	}
 }
 
+func TestLongTypeKeepsTitlesAligned(t *testing.T) {
+	specs := []store.Spec{
+		{Project: "p", Status: "draft", Slug: "a", Title: "Alpha", Type: "refactor", Priority: 1},
+		{Project: "p", Status: "draft", Slug: "b", Title: "Beta", Type: "bug", Priority: 1},
+	}
+	s := screen(start(t, specs, 80, 10))
+	for _, want := range []string{"refactor  Alpha", "bug       Beta"} {
+		if !strings.Contains(s, want) {
+			t.Errorf("missing %q:\n%s", want, s)
+		}
+	}
+}
+
 func TestHalfPageScrollAndResetOnSelect(t *testing.T) {
 	m := start(t, fixture(3), 120, 20)
 	m = press(t, m, "ctrl+d")

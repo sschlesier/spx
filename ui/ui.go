@@ -247,17 +247,18 @@ func (m Model) listView() string {
 	if len(m.specs) == 0 {
 		return "No specs in " + m.root
 	}
-	projectW := 0
+	projectW, typeW := 0, len("feature")
 	for _, s := range m.specs {
 		projectW = max(projectW, len(s.Project))
+		typeW = max(typeW, len(s.Type))
 	}
 	w := m.listWidth()
 	end := min(len(m.specs), m.offset+m.bodyHeight())
 	rows := make([]string, 0, end-m.offset)
 	for i := m.offset; i < end; i++ {
 		s := m.specs[i]
-		row := fmt.Sprintf("%-*s  %-8s %-2s  %-7s  %s",
-			projectW, s.Project, s.Status, priority(s.Priority), orDash(s.Type), s.Title)
+		row := fmt.Sprintf("%-*s  %-8s %-2s  %-*s  %s",
+			projectW, s.Project, s.Status, priority(s.Priority), typeW, orDash(s.Type), s.Title)
 		row = ansi.Truncate(row, w, "…")
 		if i == m.cursor {
 			row = selectedStyle.Render(row + strings.Repeat(" ", max(0, w-ansi.StringWidth(row))))
