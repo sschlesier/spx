@@ -413,6 +413,17 @@ func TestWatcherErrorClosesItAndRestartsAfterPoll(t *testing.T) {
 	}
 }
 
+func TestOneWatcherStartAtATime(t *testing.T) {
+	m := start(t, fixture(1), 120, 20).WithReload()
+	m, first := reloaded(t, m, fixture(1))
+	if first == nil || !m.starting {
+		t.Fatal("a successful load without a watcher should start one")
+	}
+	if _, second := reloaded(t, m, fixture(1)); second != nil {
+		t.Fatal("a second load while a start is pending started another watcher")
+	}
+}
+
 func TestSyncErrorFallsBackToPolling(t *testing.T) {
 	m := watched(t)
 	next, cmd := m.Update(loadedMsg{seq: 1, specs: fixture(1), w: m.watcher, syncErr: errors.New("sync")})
