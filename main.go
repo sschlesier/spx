@@ -31,7 +31,7 @@ func run(stderr io.Writer, start func(tea.Model) error) int {
 		fmt.Fprintf(stderr, "spx: %v\n", err)
 		return 1
 	}
-	if err := start(ui.New(root, specs, "")); err != nil {
+	if err := start(ui.New(root, specs, "").WithReload()); err != nil {
 		fmt.Fprintf(stderr, "spx: %v\n", err)
 		return 1
 	}
