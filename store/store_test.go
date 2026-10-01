@@ -103,19 +103,25 @@ func TestLoadFallbacks(t *testing.T) {
 	write(t, root, "p/draft/unterminated.md", "---\ntitle: X\n")
 	write(t, root, "p/draft/no-title.md", "---\ntype: task\npriority: high\n---\nbody\n")
 	write(t, root, "p/draft/out-of-range.md", "---\ntitle: R\npriority: 7\n---\n")
+	write(t, root, "p/draft/partial.md", "---\ntitle: T\npriority: 1\n? [a]\n: x\n---\nbody\n")
+	write(t, root, "p/draft/spaced-fence.md", "---  \ntitle: Spaced\n--- \t\nbody\n")
+	write(t, root, "p/draft/unreadable.md", spec("U", "1"))
+	if err := os.Chmod(filepath.Join(root, "p/draft/unreadable.md"), 0); err != nil {
+		t.Fatal(err)
+	}
 
 	specs, err := Load(root)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(specs) != 5 {
-		t.Fatalf("got %d specs, want 5", len(specs))
+	if len(specs) != 8 {
+		t.Fatalf("got %d specs, want 8", len(specs))
 	}
 	by := map[string]Spec{}
 	for _, s := range specs {
 		by[s.Slug] = s
 	}
-	for _, slug := range []string{"no-front", "bad-yaml", "unterminated", "no-title"} {
+	for _, slug := range []string{"no-front", "bad-yaml", "unterminated", "no-title", "partial", "unreadable"} {
 		if by[slug].Title != slug {
 			t.Errorf("%s: title = %q, want slug", slug, by[slug].Title)
 		}
@@ -128,6 +134,12 @@ func TestLoadFallbacks(t *testing.T) {
 	}
 	if by["no-title"].Type != "task" || by["no-title"].Priority != NoPriority {
 		t.Errorf("no-title: %+v", by["no-title"])
+	}
+	if by["partial"].Priority != NoPriority {
+		t.Errorf("partial: fields from a failed decode were kept: %+v", by["partial"])
+	}
+	if by["spaced-fence"].Title != "Spaced" || by["spaced-fence"].Body != "body\n" {
+		t.Errorf("spaced-fence: %+v", by["spaced-fence"])
 	}
 	if by["out-of-range"].Priority != NoPriority {
 		t.Errorf("out-of-range priority = %d", by["out-of-range"].Priority)
