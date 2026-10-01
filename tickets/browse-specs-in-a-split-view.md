@@ -125,3 +125,5 @@ Design list seems necessary.
   movement, ctrl+d, G, enter/esc, q; `git status` in the store unchanged;
   `AGENT_SPECS_DIR=/nonexistent ./spx` prints the error and exits 1.
 - 2026-09-30: Review started (retro: PR #1 already merged; review commits go on main).
+- 2026-09-30: Dismissed review finding: the mutant removing the `!m.split()` guard on enter
+  (ui/ui.go) is equivalent; `layout()` resets `detailOpen` in the split layout.
