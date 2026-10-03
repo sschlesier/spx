@@ -117,3 +117,6 @@ any key here clashes with a key added by `switch-between-projects` or
   so the `/tmp/s` setup wasn't needed. No file under the store changed while spx ran (checked
   with `find -newer`; `git status` in the store can't run from the worktree session).
 - 2026-10-03: Review started
+- 2026-10-03: Dismissed review findings (equivalent mutants): `apply`'s `DeepEqual(specs,
+  m.all)` → `false` (`show` returns early on equal rows anyway); `show`'s `DeepEqual(rows,
+  m.specs)` → `false` (only re-renders an already empty detail).
