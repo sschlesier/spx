@@ -4,7 +4,7 @@ type: feature
 priority: 2
 depends-on: [browse-specs-in-a-split-view]
 approved: "Scott Schlesier, 2026-09-30: d/a/s/x status keys, dropped shown only under x, no sequencing deps. Cold read: not run (one area, no flags)"
-status: in-progress
+status: in-review
 ---
 
 Single keys narrow the list to one status, including dropped specs that are otherwise hidden,
@@ -116,3 +116,4 @@ any key here clashes with a key added by `switch-between-projects` or
   dropped mdserver specs; footer `draft · 20 shown · …`. The store already has dropped specs,
   so the `/tmp/s` setup wasn't needed. No file under the store changed while spx ran (checked
   with `find -newer`; `git status` in the store can't run from the worktree session).
+- 2026-10-03: Review started
