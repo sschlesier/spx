@@ -37,7 +37,8 @@ var (
 // Model is the spx UI state.
 type Model struct {
 	root   string
-	specs  []store.Spec
+	all    []store.Spec // everything loaded, dropped included
+	specs  []store.Spec // the listed rows
 	cursor int
 	offset int // first list row shown
 
@@ -82,7 +83,8 @@ type (
 // New returns a model for specs loaded from root. An empty style detects light or dark
 // from the terminal background; tests pass a fixed style.
 func New(root string, specs []store.Spec, style string) Model {
-	m := Model{root: root, specs: specs, style: style, detail: viewport.New()}
+	m := Model{root: root, all: specs, style: style, detail: viewport.New()}
+	m.specs = m.visible()
 	if style == "" {
 		m.style = styles.DarkStyle
 		m.detectBG = true
@@ -230,10 +232,30 @@ func (m Model) loaded(msg loadedMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// apply replaces the specs, keeping the selected spec (by project and slug) and its
-// detail scroll. A gone spec selects the row at the same index, from the top.
+// apply replaces the loaded specs. A gone spec selects the row at the same index.
 func (m *Model) apply(specs []store.Spec) {
-	if reflect.DeepEqual(specs, m.specs) {
+	if reflect.DeepEqual(specs, m.all) {
+		return
+	}
+	m.all = specs
+	m.show(m.visible(), m.cursor)
+}
+
+// visible is the listed rows: the live specs.
+func (m Model) visible() []store.Spec {
+	var out []store.Spec
+	for _, s := range m.all {
+		if s.Status != store.Dropped {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// show lists rows, keeping the selected spec (by project and slug) and its detail scroll.
+// When it's gone, row fallback is selected and its detail shows from the top.
+func (m *Model) show(rows []store.Spec, fallback int) {
+	if reflect.DeepEqual(rows, m.specs) {
 		return
 	}
 	var old store.Spec
@@ -241,16 +263,16 @@ func (m *Model) apply(specs []store.Spec) {
 	if had {
 		old = m.specs[m.cursor]
 	}
-	m.specs = specs
-	if i := find(specs, old); had && i >= 0 {
+	m.specs = rows
+	if i := find(rows, old); had && i >= 0 {
 		m.cursor = i
 		m.scrollList()
-		if !reflect.DeepEqual(specs[i], old) {
+		if !reflect.DeepEqual(rows[i], old) {
 			m.renderDetail()
 		}
 		return
 	}
-	m.cursor = max(0, min(m.cursor, len(specs)-1))
+	m.cursor = max(0, min(fallback, len(rows)-1))
 	m.detailOpen = false
 	m.scrollList()
 	m.renderDetail()

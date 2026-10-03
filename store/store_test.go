@@ -35,8 +35,8 @@ func TestLoadDiscoveryAndExclusions(t *testing.T) {
 	write(t, root, "proj/draft/a.md", spec("A", "2"))
 	write(t, root, "proj/approved/b.md", spec("B", "2"))
 	write(t, root, "proj/started/c.md", spec("C", "2"))
+	write(t, root, "proj/dropped/d.md", spec("D", "1"))
 	// Excluded:
-	write(t, root, "proj/dropped/d.md", spec("D", "2"))
 	write(t, root, "proj/other/e.md", spec("E", "2"))
 	write(t, root, "proj/draft/nested/f.md", spec("F", "2"))
 	write(t, root, "proj/draft/notes.txt", "x")
@@ -53,7 +53,7 @@ func TestLoadDiscoveryAndExclusions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"proj/started/c", "proj/approved/b", "proj/draft/a"}
+	want := []string{"proj/started/c", "proj/approved/b", "proj/draft/a", "proj/dropped/d"}
 	if got := slugs(specs); !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %v, want %v", got, want)
 	}
