@@ -152,6 +152,13 @@ func TestStatusKeysIgnoredInTheFullWidthDetail(t *testing.T) {
 	}
 }
 
+func TestEscFromTheFullWidthDetailKeepsTheFilter(t *testing.T) {
+	m := press(t, start(t, mixed(), 80, 30), "d", "enter", "esc")
+	if m.detailOpen || m.filter != "draft" {
+		t.Fatalf("open %v filter %q, want the list with the draft filter", m.detailOpen, m.filter)
+	}
+}
+
 func TestFilterSurvivesReload(t *testing.T) {
 	m := press(t, start(t, mixed(), 120, 20), "a", "j")
 	specs := mixed()
