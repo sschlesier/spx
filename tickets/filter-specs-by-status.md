@@ -102,6 +102,8 @@ any key here clashes with a key added by `switch-between-projects` or
   filter within a scope, surviving `p`, scope first in the footer, `No <status> specs in
   <project>`, keys ignored with the popup open. `reload-when-the-store-changes` is on `main`;
   its part (filter survives a reload) is met.
+- 2026-10-03: The skipped scope parts move to `switch-between-projects` (Scott), sent back to
+  draft to carry them, with its popup counting live specs only.
 - 2026-10-03: Assumption: when the store is unreadable the footer starts with
   `store unreadable: <path>` and the filter part follows it, since both specs say "starts
   with" and the error is the more urgent.
