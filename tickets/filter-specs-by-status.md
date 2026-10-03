@@ -123,3 +123,7 @@ any key here clashes with a key added by `switch-between-projects` or
 - 2026-10-03: Dismissed review finding (equivalent mutant, round 1 second pass): `show`'s
   `!DeepEqual(rows[i], old)` → `true` (`renderDetail` re-applies the current offset, so the
   scroll is kept; it only costs a render).
+- 2026-10-03: Review decision (Scott): the narrow filtered footer overflowed 80 columns and
+  lost `q quit`; drop `g/G top/bottom` from the narrow list hints while a filter is on.
+- 2026-10-03: Review answer (Scott): the cleared same-slug-in-live-and-dropped item stays as
+  is; a short unique id is planned, and selection identity should move to it then.
