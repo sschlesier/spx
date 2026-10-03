@@ -31,7 +31,7 @@ Staleness: Changes under the store show within about a second (fsnotify, 100 ms 
 
 Invariants:
 - spx never writes, moves or deletes anything under the store root.
-- Only <root>/<project>/{draft,approved,started}/*.md are listed; nothing under a dot
-  entry is ever listed.
+- Only <root>/<project>/{draft,approved,started}/*.md are listed, and dropped/*.md only
+  under the `x` filter; nothing under a dot entry is ever listed.
 - An unreadable root exits 1 with `spx: spec store not found: <path>` before the UI starts;
   quitting exits 0 and restores the terminal.
