@@ -76,6 +76,17 @@ func TestFilterTogglesOffAndSwitches(t *testing.T) {
 	}
 }
 
+func TestNarrowFilteredFooterFits80Columns(t *testing.T) {
+	specs := fixture(20)
+	for i := range specs {
+		specs[i].Status = "approved"
+	}
+	m := press(t, start(t, specs, 80, 30), "a")
+	if f := footer(m); !strings.HasPrefix(f, "approved · 20 shown · ") || !strings.HasSuffix(strings.TrimRight(f, " "), "q quit") {
+		t.Fatalf("footer %q should keep the filter and end with q quit", f)
+	}
+}
+
 func TestFooterWithAndWithoutFilter(t *testing.T) {
 	m := start(t, mixed(), 140, 20)
 	if f := footer(m); f != footerHelp || !strings.Contains(f, "d/a/s/x status") {
