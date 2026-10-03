@@ -26,7 +26,10 @@ const (
 	pollInterval = time.Second            // reload interval while the watcher is down
 )
 
-const footerHelp = "j/k move · g/G top/bottom · ctrl+d/u scroll · q quit"
+const footerHelp = "j/k move · g/G top/bottom · ctrl+d/u scroll · d/a/s/x status · q quit"
+
+// filterKeys maps each status filter key to the status it lists.
+var filterKeys = map[string]string{"d": "draft", "a": "approved", "s": "started", "x": store.Dropped}
 
 var (
 	selectedStyle = lipgloss.NewStyle().Reverse(true)
@@ -37,9 +40,11 @@ var (
 // Model is the spx UI state.
 type Model struct {
 	root   string
-	specs  []store.Spec
+	all    []store.Spec // everything loaded, dropped included
+	specs  []store.Spec // the listed rows
 	cursor int
-	offset int // first list row shown
+	offset int    // first list row shown
+	filter string // the only status listed; empty lists the live statuses
 
 	width, height int
 	detailOpen    bool // narrow layout only: detail shown full-width
@@ -82,7 +87,8 @@ type (
 // New returns a model for specs loaded from root. An empty style detects light or dark
 // from the terminal background; tests pass a fixed style.
 func New(root string, specs []store.Spec, style string) Model {
-	m := Model{root: root, specs: specs, style: style, detail: viewport.New()}
+	m := Model{root: root, all: specs, style: style, detail: viewport.New()}
+	m.specs = m.visible()
 	if style == "" {
 		m.style = styles.DarkStyle
 		m.detectBG = true
@@ -230,10 +236,37 @@ func (m Model) loaded(msg loadedMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// apply replaces the specs, keeping the selected spec (by project and slug) and its
-// detail scroll. A gone spec selects the row at the same index, from the top.
+// apply replaces the loaded specs. A gone spec selects the row at the same index.
 func (m *Model) apply(specs []store.Spec) {
-	if reflect.DeepEqual(specs, m.specs) {
+	if reflect.DeepEqual(specs, m.all) {
+		return
+	}
+	m.all = specs
+	m.show(m.visible(), m.cursor)
+}
+
+// visible is the listed rows: the filter's status, or every live status without one.
+func (m Model) visible() []store.Spec {
+	var out []store.Spec
+	for _, s := range m.all {
+		if s.Status == m.filter || m.filter == "" && s.Status != store.Dropped {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// setFilter lists only status, or the live statuses when status is empty. A spec that's
+// no longer listed gives way to the first row.
+func (m *Model) setFilter(status string) {
+	m.filter = status
+	m.show(m.visible(), 0)
+}
+
+// show lists rows, keeping the selected spec (by project and slug) and its detail scroll.
+// When it's gone, row fallback is selected and its detail shows from the top.
+func (m *Model) show(rows []store.Spec, fallback int) {
+	if reflect.DeepEqual(rows, m.specs) {
 		return
 	}
 	var old store.Spec
@@ -241,16 +274,16 @@ func (m *Model) apply(specs []store.Spec) {
 	if had {
 		old = m.specs[m.cursor]
 	}
-	m.specs = specs
-	if i := find(specs, old); had && i >= 0 {
+	m.specs = rows
+	if i := find(rows, old); had && i >= 0 {
 		m.cursor = i
 		m.scrollList()
-		if !reflect.DeepEqual(specs[i], old) {
+		if !reflect.DeepEqual(rows[i], old) {
 			m.renderDetail()
 		}
 		return
 	}
-	m.cursor = max(0, min(m.cursor, len(specs)-1))
+	m.cursor = max(0, min(fallback, len(rows)-1))
 	m.detailOpen = false
 	m.scrollList()
 	m.renderDetail()
@@ -305,6 +338,16 @@ func (m Model) key(k string) (tea.Model, tea.Cmd) {
 		if !m.split() && len(m.specs) > 0 {
 			m.detailOpen = true
 			m.layout()
+		}
+	case "esc":
+		if m.filter != "" {
+			m.setFilter("")
+		}
+	case "d", "a", "s", "x":
+		if status := filterKeys[k]; status != m.filter {
+			m.setFilter(status)
+		} else {
+			m.setFilter("")
 		}
 	}
 	return m, nil
@@ -425,8 +468,13 @@ func (m Model) render() string {
 	help := footerHelp
 	if m.detailOpen {
 		help = "esc back · j/k scroll · ctrl+d/u scroll · q quit"
+	} else if !m.split() && m.filter != "" {
+		help = "enter open · j/k move · d/a/s/x status · q quit" // fits 80 columns after the filter
 	} else if !m.split() {
-		help = "enter open · j/k move · g/G top/bottom · q quit"
+		help = "enter open · j/k move · g/G top/bottom · d/a/s/x status · q quit"
+	}
+	if m.filter != "" {
+		help = fmt.Sprintf("%s · %d shown · %s", m.filter, len(m.specs), help)
 	}
 	if m.unreadable {
 		help = "store unreadable: " + m.root + " · " + help
@@ -436,6 +484,9 @@ func (m Model) render() string {
 
 func (m Model) listView() string {
 	if len(m.specs) == 0 {
+		if m.filter != "" {
+			return "No " + m.filter + " specs"
+		}
 		return "No specs in " + m.root
 	}
 	projectW, typeW := 0, len("feature")

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -13,9 +14,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Statuses are the store folders that are listed, in display order. Other folders,
-// including dropped/, are ignored.
+// Statuses are the live store folders, in display order.
 var Statuses = []string{"started", "approved", "draft"}
+
+// Dropped is the folder of abandoned specs. Load reads it too and sorts it after the live
+// statuses; other folders are ignored.
+const Dropped = "dropped"
 
 // NoPriority marks a spec whose priority is missing or not an int 0-4.
 const NoPriority = -1
@@ -46,7 +50,7 @@ func Root() (string, error) {
 	return filepath.Join(home, "src", "specs"), nil
 }
 
-// Load reads every listed spec under root, sorted. It fails only when root itself can't
+// Load reads every spec in a live or dropped folder under root, sorted. It fails only when root itself can't
 // be read; a spec file that can't be read is listed with its slug as title.
 func Load(root string) ([]Spec, error) {
 	projects, err := os.ReadDir(root)
@@ -61,7 +65,7 @@ func Load(root string) ([]Spec, error) {
 		if info, err := os.Stat(filepath.Join(root, p.Name())); err != nil || !info.IsDir() {
 			continue
 		}
-		for _, status := range Statuses {
+		for _, status := range slices.Concat(Statuses, []string{Dropped}) {
 			dir := filepath.Join(root, p.Name(), status)
 			files, err := os.ReadDir(dir)
 			if err != nil {
@@ -160,7 +164,7 @@ func cutLine(b []byte) (line, rest []byte, found bool) {
 
 func isFence(line []byte) bool { return string(bytes.TrimRight(line, " \t")) == "---" }
 
-// Sort orders specs by status (Statuses order), priority ascending with missing last,
+// Sort orders specs by status (Statuses order, then Dropped), priority ascending with missing last,
 // then project, then slug.
 func Sort(specs []Spec) {
 	sort.SliceStable(specs, func(i, j int) bool {
