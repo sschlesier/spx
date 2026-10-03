@@ -27,7 +27,8 @@ Purpose:   Terminal browser for the spec store ($AGENT_SPECS_DIR or ~/src/specs)
 Deploy:    The user's own machine, run in a terminal. No network.
 Load:      One user; a store of tens to low hundreds of specs.
 Data:      Reads markdown files under the store root; writes nothing. Nothing sensitive.
-Staleness: Changes under the store show within about a second (fsnotify, 100 ms debounce).
+Staleness: Changes under the store show within about a second (fsnotify, 100 ms debounce);
+           dropped/ isn't watched, so its changes show on the next reload from another change.
 
 Invariants:
 - spx never writes, moves or deletes anything under the store root.
