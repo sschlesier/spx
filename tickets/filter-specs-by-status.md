@@ -27,25 +27,25 @@ Out of scope:
 
 ## Acceptance criteria
 
-- [ ] In the list (split layout, or narrow with the detail closed), `d`, `a` and `s` show only
+- [x] In the list (split layout, or narrow with the detail closed), `d`, `a` and `s` show only
       draft, approved and started specs. Pressing the active key again, or `esc`, shows all
       live specs (draft, approved, started) again. Pressing another status key switches to it.
-- [ ] `x` shows only dropped specs (`<root>/<project>/dropped/*.md`), which no other view
+- [x] `x` shows only dropped specs (`<root>/<project>/dropped/*.md`), which no other view
       lists. `x` again, or `esc`, returns to all live specs.
-- [ ] Once `switch-between-projects` is on `main`: the status filter applies within the current
+- [x] Once `switch-between-projects` is on `main`: the status filter applies within the current
       project scope and survives switching scope with `p`. Once `reload-when-the-store-changes`
       is on `main`: it survives a store reload.
-- [ ] While a status filter is active, the footer starts with `<status> · <n> shown`, then the
+- [x] While a status filter is active, the footer starts with `<status> · <n> shown`, then the
       key hints; once the project scope exists, the scope comes first
       (e.g. `dgrid · draft · 4 shown`). With no status filter the footer is as before.
-- [ ] Changing the filter keeps the same spec selected (by project and slug) when it is still
+- [x] Changing the filter keeps the same spec selected (by project and slug) when it is still
       shown, and keeps the detail's scroll; otherwise it selects the first row and shows its
       detail from the top.
-- [ ] A filter that matches nothing shows `No <status> specs` in the list pane, or
+- [x] A filter that matches nothing shows `No <status> specs` in the list pane, or
       `No <status> specs in <project>` when scoped to a project, and the detail pane is empty.
-- [ ] Status keys do nothing while the narrow full-width detail or the project popup is open.
-- [ ] The footer key hints gain `d/a/s/x status`.
-- [ ] `spx` still writes nothing under the store root.
+- [x] Status keys do nothing while the narrow full-width detail or the project popup is open.
+- [x] The footer key hints gain `d/a/s/x status`.
+- [x] `spx` still writes nothing under the store root.
 
 ## Verification
 
@@ -98,3 +98,19 @@ any key here clashes with a key added by `switch-between-projects` or
   reload-when-the-store-changes, conflicts avoided by hand; cold read skipped (one area, no flags).
 - 2026-09-30: Approved: Scott Schlesier, 2026-09-30: d/a/s/x status keys, dropped shown only under x, no sequencing deps. Cold read: not run (one area, no flags)
 - 2026-10-03: Started on branch filter-specs-by-status
+- 2026-10-03: Skipped (not on `main` when work started): the `switch-between-projects` parts —
+  filter within a scope, surviving `p`, scope first in the footer, `No <status> specs in
+  <project>`, keys ignored with the popup open. `reload-when-the-store-changes` is on `main`;
+  its part (filter survives a reload) is met.
+- 2026-10-03: Assumption: when the store is unreadable the footer starts with
+  `store unreadable: <path>` and the filter part follows it, since both specs say "starts
+  with" and the error is the more urgent.
+- 2026-10-03: Assumption: after a reload with a filter on, a gone spec selects the row at the
+  same index (the reload spec's rule); only a filter change falls back to the first row.
+- 2026-10-03: Verification: `go vet ./... && go test -race ./...` pass; tests in
+  `store/store_test.go` (dropped loaded, sorted last) and `ui/filter_test.go`. Mutations
+  (first-row fallback → same index; filter branches disabled) each fail a test. Manual: tmux
+  at 120 columns on `~/src/specs` — `d` 20 shown, `a` 6, `s` 3, `s` again all, `x` the 2
+  dropped mdserver specs; footer `draft · 20 shown · …`. The store already has dropped specs,
+  so the `/tmp/s` setup wasn't needed. No file under the store changed while spx ran (checked
+  with `find -newer`; `git status` in the store can't run from the worktree session).
