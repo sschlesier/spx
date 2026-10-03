@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
@@ -149,6 +150,14 @@ func TestStatusKeysIgnoredInTheFullWidthDetail(t *testing.T) {
 	m = press(t, m, "esc")
 	if m.detailOpen || m.filter != "" {
 		t.Fatal("esc should return to the list")
+	}
+}
+
+func TestUnreadableNoticeComesBeforeTheFilter(t *testing.T) {
+	m := press(t, start(t, mixed(), 140, 20), "d")
+	next, _ := m.Update(loadedMsg{seq: m.applied + 1, err: errors.New("spec store not found: /store")})
+	if f, want := footer(next.(Model)), "store unreadable: /store · draft · 2 shown · "; !strings.HasPrefix(f, want) {
+		t.Fatalf("footer %q, want prefix %q", f, want)
 	}
 }
 
