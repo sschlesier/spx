@@ -4,7 +4,7 @@ type: feature
 priority: 2
 depends-on: [browse-specs-in-a-split-view]
 approved: "Scott Schlesier, 2026-09-30: d/a/s/x status keys, dropped shown only under x, no sequencing deps. Cold read: not run (one area, no flags)"
-status: in-review
+status: done
 ---
 
 Single keys narrow the list to one status, including dropped specs that are otherwise hidden,
@@ -127,3 +127,6 @@ any key here clashes with a key added by `switch-between-projects` or
   lost `q quit`; drop `g/G top/bottom` from the narrow list hints while a filter is on.
 - 2026-10-03: Review answer (Scott): the cleared same-slug-in-live-and-dropped item stays as
   is; a short unique id is planned, and selection identity should move to it then.
+- 2026-10-03: Accepted: Scott Schlesier, 2026-10-03, round 1
+- 2026-10-03: Done: `d`/`a`/`s`/`x` filter the list by status, dropped specs listed only
+  under `x`; scope-related criteria moved to `switch-between-projects`. Merged in spx#3.
