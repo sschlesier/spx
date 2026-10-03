@@ -98,10 +98,16 @@ func TestFilterKeepsASurvivingSelectionAndScroll(t *testing.T) {
 		t.Fatalf("setup: selected %s offset %d", selected(m), off)
 	}
 	m = press(t, m, "d")
+	if got := listed(m); !reflect.DeepEqual(got, []string{"spec-04", "spec-05"}) {
+		t.Fatalf("d listed %v", got)
+	}
 	if selected(m) != "spec-05" || m.detail.YOffset() != off {
 		t.Fatalf("d: selected %s offset %d, want spec-05 at %d", selected(m), m.detail.YOffset(), off)
 	}
 	m = press(t, m, "esc")
+	if got := len(m.specs); got != 6 {
+		t.Fatalf("esc listed %v, want the 6 live specs", listed(m))
+	}
 	if selected(m) != "spec-05" || m.detail.YOffset() != off {
 		t.Fatalf("esc: selected %s offset %d, want spec-05 at %d", selected(m), m.detail.YOffset(), off)
 	}
