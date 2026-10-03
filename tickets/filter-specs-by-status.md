@@ -120,3 +120,6 @@ any key here clashes with a key added by `switch-between-projects` or
 - 2026-10-03: Dismissed review findings (equivalent mutants): `apply`'s `DeepEqual(specs,
   m.all)` → `false` (`show` returns early on equal rows anyway); `show`'s `DeepEqual(rows,
   m.specs)` → `false` (only re-renders an already empty detail).
+- 2026-10-03: Dismissed review finding (equivalent mutant, round 1 second pass): `show`'s
+  `!DeepEqual(rows[i], old)` → `true` (`renderDetail` re-applies the current offset, so the
+  scroll is kept; it only costs a render).
