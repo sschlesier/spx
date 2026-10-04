@@ -241,12 +241,13 @@ func TestLoadMissingRoot(t *testing.T) {
 
 func TestLoadReadsID(t *testing.T) {
 	cases := map[string]struct{ content, want string }{
-		"present":    {"---\nid: red-fox\n---\nbody\n", "red-fox"},
-		"missing":    {"---\ntitle: A\n---\nbody\n", ""},
-		"null":       {"---\nid:\n---\nbody\n", ""},
-		"list":       {"---\nid: [a, b]\n---\nbody\n", ""},
-		"as written": {"---\nid: lid-ins\n---\nbody\n", "lid-ins"},
-		"bad":        {"---\nid: [unclosed\n---\nbody\n", ""},
+		"present":         {"---\nid: red-fox\n---\nbody\n", "red-fox"},
+		"missing":         {"---\ntitle: A\n---\nbody\n", ""},
+		"null":            {"---\nid:\n---\nbody\n", ""},
+		"list":            {"---\nid: [a, b]\n---\nbody\n", ""},
+		"as written":      {"---\nid: lid-ins\n---\nbody\n", "lid-ins"},
+		"whitespace kept": {"---\nid: \" lid-ins \"\n---\nbody\n", " lid-ins "},
+		"bad":             {"---\nid: [unclosed\n---\nbody\n", ""},
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {

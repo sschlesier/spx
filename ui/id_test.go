@@ -64,8 +64,8 @@ func TestDuplicateIDIsMarked(t *testing.T) {
 	if row := rowOf(m, "One"); !strings.HasPrefix(row, "red-fox!  p ") {
 		t.Errorf("duplicate row %q, want red-fox!", row)
 	}
-	if row := rowOf(m, "Three"); !strings.HasPrefix(row, "ox  ") || strings.Contains(strings.SplitN(row, "p", 2)[0], "!") {
-		t.Errorf("unique row %q marked as a duplicate", row)
+	if row := rowOf(m, "Three"); !strings.HasPrefix(row, "ox        p ") {
+		t.Errorf("unique row %q, want it unmarked and padded to the width of red-fox!", row)
 	}
 	if s := screen(m); !strings.Contains(s, "id: red-fox   (duplicate id)") {
 		t.Errorf("detail missing the duplicate note:\n%s", s)
@@ -97,6 +97,50 @@ func TestIDPrefixIsCaseInsensitive(t *testing.T) {
 	m := typed(t, press(t, start(t, idSpecs(), 120, 20), "/"), "RED-F")
 	if got := listed(m); len(got) < 2 || got[0] != "b-fox" || got[1] != "c-fig" {
 		t.Fatalf("listed %v", got)
+	}
+}
+
+func TestSpecsWithoutAnIDAreNeverDuplicates(t *testing.T) {
+	m := start(t, withIDs()[1:2], 120, 20)
+	m = send(t, m, loadedMsg{seq: 1, specs: []store.Spec{
+		{Project: "p", Status: "draft", Slug: "x", Title: "X", Priority: 2},
+		{Project: "p", Status: "draft", Slug: "y", Title: "Y", Priority: 2},
+	}})
+	if s := screen(m); strings.Contains(s, "!") || strings.Contains(s, "(duplicate id)") {
+		t.Errorf("id-less specs marked as duplicates:\n%s", s)
+	}
+}
+
+func TestIDPrefixMatchesKeepStoreOrderNotScoreOrder(t *testing.T) {
+	specs := []store.Spec{
+		{Project: "p", Status: "started", Slug: "first", Title: "Unrelated", ID: "red-zzzzzzzz", Priority: 0},
+		{Project: "p", Status: "draft", Slug: "second", Title: "red", ID: "red-a", Priority: 3},
+	}
+	m := typed(t, press(t, start(t, specs, 120, 20), "/"), "red")
+	if got := listed(m); len(got) != 2 || got[0] != "first" {
+		t.Fatalf("listed %v, want store order among the id-prefix matches", got)
+	}
+}
+
+func TestIDPrefixIgnoresCaseOfTheQuery(t *testing.T) {
+	specs := []store.Spec{
+		{Project: "p", Status: "started", Slug: "title", Title: "RED-F", ID: "blue-owl", Priority: 0},
+		{Project: "p", Status: "draft", Slug: "id", Title: "Other", ID: "red-fox-and-a-long-tail", Priority: 3},
+	}
+	m := typed(t, press(t, start(t, specs, 120, 20), "/"), "RED-F")
+	if got := listed(m); len(got) == 0 || got[0] != "id" {
+		t.Fatalf("listed %v, want the id match first", got)
+	}
+}
+
+func TestAnIDContainingTheQueryIsNotAPrefixMatch(t *testing.T) {
+	specs := []store.Spec{
+		{Project: "p", Status: "started", Slug: "inside", Title: "Inside", ID: "blue-red", Priority: 0},
+		{Project: "p", Status: "draft", Slug: "prefix", Title: "Prefix", ID: "red-fig", Priority: 3},
+	}
+	m := typed(t, press(t, start(t, specs, 120, 20), "/"), "red")
+	if got := listed(m); len(got) == 0 || got[0] != "prefix" {
+		t.Fatalf("listed %v, want the prefix match first", got)
 	}
 }
 
