@@ -8,6 +8,22 @@ import (
 	"spx/store"
 )
 
+func TestListRowsStartWithTheSharedRows(t *testing.T) {
+	specs := withIDs()
+	rows := Rows(specs, specs)
+	m := start(t, specs, 200, 20)
+	lines := strings.Split(screen(m), "\n")
+	for _, row := range rows {
+		found := false
+		for _, l := range lines {
+			found = found || strings.HasPrefix(l, row)
+		}
+		if !found {
+			t.Errorf("no list line starts with %q in\n%s", row, strings.Join(lines, "\n"))
+		}
+	}
+}
+
 func TestRowsFormatsUntruncatedAlignedRows(t *testing.T) {
 	long := strings.Repeat("long title ", 30)
 	all := []store.Spec{

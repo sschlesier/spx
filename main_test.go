@@ -338,7 +338,23 @@ func TestStatusFlagsWithAnUnknownProjectOrMissingStorePrintNothing(t *testing.T)
 func TestStatusFlagsNeverListDropped(t *testing.T) {
 	printStore(t)
 	r := runCLI(t, t.TempDir(), "-d", "-a", "-s")
-	if strings.Contains(r.stdout, "Dropped") {
+	if got := len(titles(r.stdout)); got != 5 || strings.Contains(r.stdout, "Dropped") {
+		t.Fatalf("%d rows, stdout %q", got, r.stdout)
+	}
+}
+
+func TestStatusFlagRowsAreOneLineWhateverTheTitleHolds(t *testing.T) {
+	root := makeStore(t)
+	dir := filepath.Join(root, "alpha", "draft")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	front := "---\ntitle: \"a\\e[31mb\\u2028c\\nd\"\nid: \"x\\ny\"\n---\n\nBody.\n"
+	if err := os.WriteFile(filepath.Join(dir, "t.md"), []byte(front), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	r := runCLI(t, t.TempDir(), "-d")
+	if r.stdout != "xy  alpha  draft    -   -        a[31mb c d\n" {
 		t.Fatalf("stdout %q", r.stdout)
 	}
 }

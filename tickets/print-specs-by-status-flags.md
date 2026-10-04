@@ -86,3 +86,8 @@ Stop and ask if: matching the TUI row would change how the TUI list looks.
   not "draft then approved" as the criterion's example reads; "in the list's order" wins.
 - 2026-10-03: Assumption: the help text grows to three lines (usage, description, flag line).
 - 2026-10-03: Review started
+- 2026-10-04: Review round 1 triage: added tests (run-level one-line row, row equals the list's
+  row, positive assertion in the dropped test). Dismissed: surviving mutant dropping the
+  duplicate-status check in `parseArgs` (equivalent: the filter uses `slices.Contains`);
+  U+2028/U+2029 in titles (`store.go` runs titles through `strings.Fields`, which splits on them,
+  and the run-level test covers it). Escalated: `type` and `project` are not sanitised in rows.
