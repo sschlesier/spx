@@ -366,6 +366,25 @@ func TestEditorExecCarriesTheEditorArgumentsAndPath(t *testing.T) {
 	}
 }
 
+func TestASecondNoticeSurvivesTheFirstOnesTick(t *testing.T) {
+	m := start(t, draftSpecs(1), 120, 20)
+	m.setNotice("editor failed: exit status 1")
+	first := m.noticeGen
+	m.setNotice("spx: permission denied")
+	if got := send(t, m, noticeMsg{first}); got.notice != "spx: permission denied" {
+		t.Errorf("the first notice's tick cleared %q", got.notice)
+	}
+}
+
+func TestCopiedNoticeDropsControlCharacters(t *testing.T) {
+	specs := draftSpecs(1)
+	specs[0].Slug = "a\x1b[31mb"
+	m := press(t, start(t, specs, 120, 20), "y")
+	if strings.ContainsRune(m.notice, '\x1b') || m.notice != "copied a[31mb" {
+		t.Errorf("notice %q, want the control character dropped", m.notice)
+	}
+}
+
 func TestEditorFinishedWrapsTheExitError(t *testing.T) {
 	boom := errors.New("exit status 1")
 	if got := editorFinished(boom); got != (editorDoneMsg{boom}) {
