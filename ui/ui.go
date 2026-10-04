@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	"charm.land/bubbles/v2/textinput"
 	"charm.land/bubbles/v2/viewport"
@@ -269,16 +270,26 @@ func (m Model) visible() []store.Spec {
 		return out
 	}
 	type scored struct {
-		spec  store.Spec
-		score int
+		spec   store.Spec
+		score  int
+		prefix bool // the id starts with the query
 	}
 	var hits []scored
 	for _, s := range out {
-		if score, ok := matchScore(m.query, s); ok {
-			hits = append(hits, scored{s, score})
+		score, ok := matchScore(m.query, s)
+		prefix := idPrefix(m.query, s)
+		if ok || prefix {
+			hits = append(hits, scored{s, score, prefix})
 		}
 	}
-	sort.SliceStable(hits, func(i, j int) bool { return hits[i].score > hits[j].score })
+	// Id-prefix matches come first in the store's order; the rest follow best score first.
+	sort.SliceStable(hits, func(i, j int) bool {
+		a, b := hits[i], hits[j]
+		if a.prefix != b.prefix {
+			return a.prefix
+		}
+		return !a.prefix && a.score > b.score
+	})
 	out = nil
 	for _, h := range hits {
 		out = append(out, h.spec)
@@ -286,10 +297,15 @@ func (m Model) visible() []store.Spec {
 	return out
 }
 
-// matchScore is the best fuzzy score of query over the spec's title, slug, project and type.
+// idPrefix reports whether the spec's id starts with query, ignoring case.
+func idPrefix(query string, s store.Spec) bool {
+	return s.ID != "" && strings.HasPrefix(strings.ToLower(s.ID), strings.ToLower(query))
+}
+
+// matchScore is the best fuzzy score of query over the spec's id, title, slug, project and type.
 func matchScore(query string, s store.Spec) (int, bool) {
 	best, ok := 0, false
-	for _, field := range []string{s.Title, s.Slug, s.Project, s.Type} {
+	for _, field := range []string{s.ID, s.Title, s.Slug, s.Project, s.Type} {
 		if ms := fuzzy.Find(query, []string{field}); len(ms) > 0 && (!ok || ms[0].Score > best) {
 			best, ok = ms[0].Score, true
 		}
@@ -516,15 +532,19 @@ func (m *Model) renderDetail() {
 		return
 	}
 	s := m.specs[m.cursor]
-	m.detail.SetContent(header(s, m.detail.Width()) + "\n" + m.markdown(s.Body))
+	m.detail.SetContent(header(s, isDuplicate(s, duplicateIDs(m.all)), m.detail.Width()) + "\n" + m.markdown(s.Body))
 	m.detail.SetYOffset(m.detail.YOffset())
 }
 
-func header(s store.Spec, width int) string {
+func header(s store.Spec, duplicate bool, width int) string {
+	idPart := "id: " + orDash(printable(s.ID))
+	if duplicate {
+		idPart += "   (duplicate id)"
+	}
 	lines := []string{
 		titleStyle.Render(s.Title),
 		s.Project + "/" + s.Status + "/" + s.Slug,
-		"type: " + orDash(s.Type) + "   priority: " + priority(s.Priority),
+		idPart + "   type: " + orDash(s.Type) + "   priority: " + priority(s.Priority),
 	}
 	if len(s.DependsOn) > 0 {
 		lines = append(lines, "depends-on: "+strings.Join(s.DependsOn, ", "))
@@ -623,8 +643,10 @@ func (m Model) listView() string {
 		}
 		return "No specs in " + m.root
 	}
-	projectW, typeW := 0, len("feature")
+	dupes := duplicateIDs(m.all)
+	idW, projectW, typeW := 0, 0, len("feature")
 	for _, s := range m.specs {
+		idW = max(idW, ansi.StringWidth(idCell(s, dupes)))
 		projectW = max(projectW, len(s.Project))
 		typeW = max(typeW, len(s.Type))
 	}
@@ -633,8 +655,9 @@ func (m Model) listView() string {
 	rows := make([]string, 0, end-m.offset)
 	for i := m.offset; i < end; i++ {
 		s := m.specs[i]
-		row := fmt.Sprintf("%-*s  %-8s %-2s  %-*s  %s",
-			projectW, s.Project, s.Status, priority(s.Priority), typeW, orDash(s.Type), s.Title)
+		cell := idCell(s, dupes)
+		row := fmt.Sprintf("%s%s  %-*s  %-8s %-2s  %-*s  %s",
+			cell, strings.Repeat(" ", idW-ansi.StringWidth(cell)), projectW, s.Project, s.Status, priority(s.Priority), typeW, orDash(s.Type), s.Title)
 		row = ansi.Truncate(row, w, "…")
 		if i == m.cursor {
 			row = selectedStyle.Render(row + strings.Repeat(" ", max(0, w-ansi.StringWidth(row))))
@@ -658,6 +681,52 @@ func fit(s string, width, height int) string {
 		lines[i] = l + strings.Repeat(" ", max(0, width-ansi.StringWidth(l)))
 	}
 	return strings.Join(lines, "\n")
+}
+
+// maxIDWidth caps the id column, in cells, so a long id can't squeeze the rest of the row.
+const maxIDWidth = 16
+
+// duplicateIDs is the set of ids, lowercased, carried by more than one of specs.
+func duplicateIDs(specs []store.Spec) map[string]bool {
+	seen, dupes := map[string]bool{}, map[string]bool{}
+	for _, s := range specs {
+		id := strings.ToLower(s.ID)
+		if id == "" {
+			continue
+		}
+		if seen[id] {
+			dupes[id] = true
+		}
+		seen[id] = true
+	}
+	return dupes
+}
+
+func isDuplicate(s store.Spec, dupes map[string]bool) bool {
+	return dupes[strings.ToLower(s.ID)]
+}
+
+// printable drops control characters, so an id can't split a row or send terminal escapes.
+func printable(id string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return -1
+		}
+		return r
+	}, id)
+}
+
+// idCell is the id as the list shows it: printable, cut to maxIDWidth, "-" without one, and a
+// trailing "!" on a duplicate.
+func idCell(s store.Spec, dupes map[string]bool) string {
+	id := ansi.Truncate(printable(s.ID), maxIDWidth, "…")
+	if id == "" {
+		return "-"
+	}
+	if isDuplicate(s, dupes) {
+		return id + "!"
+	}
+	return id
 }
 
 func priority(p int) string {

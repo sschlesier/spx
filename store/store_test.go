@@ -239,6 +239,31 @@ func TestLoadMissingRoot(t *testing.T) {
 	}
 }
 
+func TestLoadReadsID(t *testing.T) {
+	cases := map[string]struct{ content, want string }{
+		"present":         {"---\nid: red-fox\n---\nbody\n", "red-fox"},
+		"missing":         {"---\ntitle: A\n---\nbody\n", ""},
+		"null":            {"---\nid:\n---\nbody\n", ""},
+		"list":            {"---\nid: [a, b]\n---\nbody\n", ""},
+		"as written":      {"---\nid: lid-ins\n---\nbody\n", "lid-ins"},
+		"whitespace kept": {"---\nid: \" lid-ins \"\n---\nbody\n", " lid-ins "},
+		"bad":             {"---\nid: [unclosed\n---\nbody\n", ""},
+	}
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			root := t.TempDir()
+			write(t, root, "proj/draft/a.md", c.content)
+			specs, err := Load(root)
+			if err != nil || len(specs) != 1 {
+				t.Fatalf("Load: %v, %d specs", err, len(specs))
+			}
+			if specs[0].ID != c.want {
+				t.Fatalf("ID = %q, want %q", specs[0].ID, c.want)
+			}
+		})
+	}
+}
+
 func TestLoadEmptyRoot(t *testing.T) {
 	specs, err := Load(t.TempDir())
 	if err != nil || len(specs) != 0 {
