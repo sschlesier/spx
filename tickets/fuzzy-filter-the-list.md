@@ -5,7 +5,7 @@ type: feature
 priority: 2
 depends-on: []
 approved: "Scott Schlesier, 2026-09-30: / fuzzy filter with sahilm/fuzzy on title/slug/project/type, best first. Cold read: not run (one area, no flags)"
-status: in-review
+status: done
 ---
 
 Pressing `/` and typing narrows the list to specs whose title, slug, project or type
@@ -25,26 +25,29 @@ Out of scope:
 
 ## Acceptance criteria
 
-- [ ] In the list (split layout, or narrow with the detail closed), `/` replaces the footer
+- [x] In the list (split layout, or narrow with the detail closed), `/` replaces the footer
       with a `/` prompt and a text input. Typing narrows the list live on each keystroke.
-- [ ] While typing: `enter` keeps the filter and returns keys to the list; `esc` clears the
+- [x] While typing: `enter` keeps the filter and returns keys to the list; `esc` clears the
       text and closes the input; `up`/`down` (and `ctrl+p`/`ctrl+n`) move the selection;
       `ctrl+c` quits; every other printable key, including `q`, `j`, `k` and status keys,
       goes into the input. Backspace on an empty input closes it.
-- [ ] A spec is shown when the query fuzzy-matches (characters in order, case-insensitive) its
+- [x] A spec is shown when the query fuzzy-matches (characters in order, case-insensitive) its
       title, slug, project or type. Shown specs are ordered by their best field score, highest
       first; ties keep the normal sort order. An empty query shows the normal list.
-- [ ] Each change to the query selects the first (best) row and shows its detail from the top.
-- [ ] After `enter`, the footer starts with `/<query>` in the filter part, e.g.
+- [x] Each change to the query selects the first (best) row and shows its detail from the top.
+- [x] After `enter`, the footer starts with `/<query>` in the filter part, e.g.
       `dgrid · draft · /fuzz · 2 shown`, then the key hints. `/` again reopens the input with
-      the query to edit it.
-- [ ] With the input closed, `esc` clears the text filter first; a second `esc` clears the
+      the query to edit it. (Project scope part deferred to `switch-between-projects`;
+      accepted by Scott Schlesier, 2026-10-03.)
+- [x] With the input closed, `esc` clears the text filter first; a second `esc` clears the
       status filter.
-- [ ] The text filter applies after the project scope and status filter, and survives scope
-      changes, status changes and store reloads.
-- [ ] No match shows `No specs match "<query>"`, extended with the status and project as the
-      status filter's message does (e.g. `No draft specs in dgrid match "zzz"`).
-- [ ] The footer key hints gain `/ filter`.
+- [x] The text filter applies after the project scope and status filter, and survives scope
+      changes, status changes and store reloads. (Scope part deferred to
+      `switch-between-projects`; accepted by Scott Schlesier, 2026-10-03.)
+- [x] No match shows `No specs match "<query>"`, extended with the status and project as the
+      status filter's message does (e.g. `No draft specs in dgrid match "zzz"`). (The project
+      part deferred to `switch-between-projects`; accepted by Scott Schlesier, 2026-10-03.)
+- [x] The footer key hints gain `/ filter`.
 
 ## Verification
 
@@ -91,3 +94,5 @@ seems to need more than the footer line.
 - 2026-10-03: Review round 1 triage. Fixed: a paste while typing now applies to the query. Tests added for the best-field score, the reopened input and the narrow footer with a query. Dismissed: the input width mutant (`m.width-2`; the width only sets the text scroll window, nothing a test can observe) and the removed `m.input.Blur()` (only affects the cursor display).
 - 2026-10-03: Review round 1, second cold verify. Tests added for the project field alone, the list scroll reset, the detail refresh on a query change, and a reload while typing. Dismissed: the backspace-on-empty fall-through mutant (equivalent: backspace on an empty input does nothing).
 - 2026-10-03: Review round 1, third cold verify (the last rerun). Tests added for tie order in a list longer than the insertion-sort cutoff and for a non-key message while typing. No findings left to fix.
+- 2026-10-03: Review answers (Scott Schlesier, round 1): (1) the narrow-footer truncation is fixed by dropping the hints next to `q quit` first, so `q quit` stays visible (commit "Fix review item 1.1"); this replaces the earlier narrow-footer assumption. The change was checked by tests and a hand mutation, not by a fourth cold verify. (2) Deferring the project-scope parts of criteria 5, 7 and 8 to `switch-between-projects` is accepted. (3) The footer being replaced by the input while typing was cleared by the spec's wording, and the clearing was right.
+- 2026-10-03: Done: `/` opens a footer prompt and narrows the list live to specs whose title, slug, project or type fuzzy-match (`sahilm/fuzzy`), best field score first, first row selected on each change. `enter` keeps the filter in the footer (`<status> · /<query> · <n> shown`), `esc` clears the query before the status filter, and `/ filter` joins the hints. Reviewed round 1. Project scope parts deferred to `switch-between-projects`.
