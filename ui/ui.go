@@ -715,7 +715,7 @@ func (m Model) render() string {
 	if m.detailOpen {
 		help = "esc back · j/k scroll · ctrl+d/u scroll · q quit"
 	} else if !m.split() {
-		help = "enter open · d/a/s/x status · / filter · p project · q quit"
+		help = "enter open · d/a/s/x · / filter · p project · q quit"
 	}
 	if m.picking {
 		help = "j/k move · g/G top/bottom · enter apply · esc cancel · q quit"

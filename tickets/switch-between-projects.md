@@ -5,7 +5,7 @@ type: feature
 priority: 3
 depends-on: []
 approved: "Scott Schlesier, 2026-10-03: spx [project], scope from the current repo, picker popup on p, scope joins status and query. Cold read: pass"
-status: in-review
+status: done
 ---
 
 I can limit the list to one project, from the command line, from the repo I'm in, or by
@@ -38,47 +38,47 @@ Out of scope:
 
 ## Acceptance criteria
 
-- [ ] `spx <project>` starts with only that project's specs listed, where `<project>` is the
+- [x] `spx <project>` starts with only that project's specs listed, where `<project>` is the
       name of a non-hidden folder directly under the store root.
-- [ ] `spx <name>` with no such folder prints
+- [x] `spx <name>` with no such folder prints
       `spx: unknown project: <name> (known: <a>, <b>, …)` to stderr, listing the folders
       alphabetically, and exits 1 without starting the UI.
-- [ ] `spx -h` and `spx --help` print `usage: spx [project]` and a one-line description to
+- [x] `spx -h` and `spx --help` print `usage: spx [project]` and a one-line description to
       stdout and exit 0, without reading the store. Two or more arguments, or any other
       argument starting with `-`, print `usage: spx [project]` to stderr and exit 2, also
       without reading the store.
-- [ ] With no argument, run from inside a git checkout or worktree whose main checkout's
+- [x] With no argument, run from inside a git checkout or worktree whose main checkout's
       folder name (the command in Context) is a project folder in the store, `spx` starts
       limited to that project. Outside a git repo, with `git` not on `PATH`, or when the name
       matches no project, it starts with all projects.
-- [ ] `p` opens a bordered popup titled `Project`, centered over the current view, listing
+- [x] `p` opens a bordered popup titled `Project`, centered over the current view, listing
       `all projects` first and then every project folder alphabetically, each with its count
       of live specs (draft, approved, started), e.g. `dgrid (17)`. Dropped specs are never
       counted, and the counts don't change with the status filter or the `/` query. The
       current scope is selected when it opens. `p` does nothing while the detail is open
       full-width, and goes into the input while a `/` query is being typed.
-- [ ] In the popup, `j`/`down`, `k`/`up`, `g` and `G` move the selection without wrapping;
+- [x] In the popup, `j`/`down`, `k`/`up`, `g` and `G` move the selection without wrapping;
       `enter` applies the selected scope and closes it; `esc` or `p` closes it with the scope
       unchanged; `q` and `ctrl+c` still quit. No other key reaches the list while it's open,
       including `d`/`a`/`s`/`x`, `/`, `enter` on the list and `ctrl+d`/`ctrl+u`.
-- [ ] Applying a different scope selects the first row and shows its detail from the top;
+- [x] Applying a different scope selects the first row and shows its detail from the top;
       applying the current scope changes nothing.
-- [ ] The status filter and the `/` query apply within the scope (only the scoped project's
+- [x] The status filter and the `/` query apply within the scope (only the scoped project's
       specs are searched and shown) and stay on when the scope changes with `p`. `esc` never
       changes the scope.
-- [ ] The footer starts with the scope: the project name, or `all projects`. With a status
+- [x] The footer starts with the scope: the project name, or `all projects`. With a status
       filter or query on, the scope is followed by the active parts and `<n> shown`
       (e.g. `dgrid · draft · /sync · 3 shown`), then the key hints. `store unreadable: <path>`
       stays first when it applies.
-- [ ] The key hints include `p project` and still show `q quit` at 80 columns, with and
+- [x] The key hints include `p project` and still show `q quit` at 80 columns, with and
       without a filter or query on.
-- [ ] A scope with no listed specs (e.g. `spx <project>` whose specs are all dropped, or a
+- [x] A scope with no listed specs (e.g. `spx <project>` whose specs are all dropped, or a
       project folder removed while spx runs) shows `No specs in <project>` and keeps the
       scope. With a status filter or query on and no match in a project scope, it shows the
       existing message with ` in <project>` added (`No <status> specs in <project>`,
       `No specs match "<q>" in <project>`, `No <status> specs match "<q>" in <project>`);
       under `all projects` the messages are unchanged.
-- [ ] A reload keeps the scope, and a project folder that appears later shows up in the popup.
+- [x] A reload keeps the scope, and a project folder that appears later shows up in the popup.
 
 ## Verification
 
@@ -184,3 +184,8 @@ Stop and ask if: matching the repo to a project seems to need anything beyond th
   Dismissed: `repoProject` for a bare repo like `spx.git` yields its parent; this is what the
   spec's command computes. Recorded deviation: with a filter or query on at 80 columns the
   narrow hints also lose `d/a/s/x status` and `/ filter`; footer tests were loosened to match.
+- 2026-10-03: Review answers (Scott): narrow hints use shorter labels (`d/a/s/x`, no `status`),
+  so a status-only filter keeps it at 80 columns while a query still drops `d/a/s/x` and
+  `/ filter`; `all projects` carries no count; `(known: none)` stays for an empty store.
+- 2026-10-03: Done: Reviewed round 1: all 12 criteria verified by two cold passes; popup
+  selection fix and three added tests; three decisions answered.

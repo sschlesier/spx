@@ -317,6 +317,14 @@ func TestPopupFitsANarrowTerminal(t *testing.T) {
 	}
 }
 
+func TestNarrowFooterKeepsTheStatusHintAfterAStatusFilter(t *testing.T) {
+	m := press(t, scoped(t, "", 80), "d")
+	f := footer(m)
+	if !strings.Contains(f, "d/a/s/x") || !strings.Contains(f, "p project") || !strings.HasSuffix(f, "q quit") || ansi.StringWidth(f) > 80 {
+		t.Fatalf("footer %q", f)
+	}
+}
+
 func TestReloadAddsAProjectToThePopup(t *testing.T) {
 	m := scoped(t, "", 100)
 	next, _ := m.Update(loadedMsg{seq: m.applied + 1, specs: projectsFixture(), projects: []string{"alpha", "beta", "idle", "zeta"}})
