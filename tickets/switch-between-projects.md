@@ -175,3 +175,12 @@ Stop and ask if: matching the repo to a project seems to need anything beyond th
   before the last two, so `p project` and `q quit` stay at 80 columns. Existing footer tests
   were updated for the scope prefix and these hints.
 - 2026-10-03: Review started.
+- 2026-10-03: Review round 1 triage. Fixed: popup selection held an index that a reload could
+  shift (`enter` applying a different project); it now holds the project name (a443ad6, with
+  tests for the shift, a vanished folder, kept scroll, narrow terminal). Dismissed, equivalent
+  mutants: `sort.Strings` in `Projects` (`ReadDir` sorts), the `m.all` loop in `pickerEntries`
+  (`m.projects` has every folder), the two `pickOff` updates (recomputed at render and on each
+  key). Dismissed, unreachable: `Projects` failing after `Load` succeeded; `pickIndex` fallthrough.
+  Dismissed: `repoProject` for a bare repo like `spx.git` yields its parent; this is what the
+  spec's command computes. Recorded deviation: with a filter or query on at 80 columns the
+  narrow hints also lose `d/a/s/x status` and `/ filter`; footer tests were loosened to match.
