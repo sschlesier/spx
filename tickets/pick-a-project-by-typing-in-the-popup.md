@@ -6,7 +6,7 @@ priority: 3
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-10-04: type-to-filter popup, always typing, ctrl-j/ctrl-k move. Cold read: not run (one area, no flags)"
-status: done
+status: in-review
 ---
 
 In the project popup I can type to fuzzy-match a project name and move the selection with ctrl-j / ctrl-k, so I reach a project without scrolling the list.
@@ -23,7 +23,8 @@ Out of scope:
 
 - [x] With the popup open, typing printable characters shows them in a query line in the popup and lists only projects whose name fuzzy-matches, best match first (ties alphabetical).
 - [x] The best match is selected after every edit to the query; enter applies it as the scope.
-- [x] While the query is non-empty the "all projects" entry is not listed; with an empty query the popup lists it first, as today.
+- [ ] With an empty query the popup lists "all projects" first, as today; with a query, "all projects" is listed and ranked like any project when its label fuzzy-matches, so typing e.g. `all` can select it and enter applies the all-projects scope. (Changed in review round 1.)
+- [ ] Only printable text and backspace edit the query; cursor and other editing keys (left/right, ctrl-a/e/u/w, delete) do nothing. (Added in review round 1.)
 - [x] ctrl-j moves the selection down and ctrl-k up, without wrapping, in the filtered or unfiltered list; up/down arrows do the same.
 - [x] Backspace deletes the last query character; on an empty query it does nothing.
 - [x] esc clears a non-empty query (popup stays open, all entries back); on an empty query it closes the popup without changing the scope.
@@ -44,7 +45,7 @@ Out of scope:
 - Decision: the popup is always in typing mode, like a command palette; there is no separate "start typing" key. Hence j/k/g/G/p/q become text, and arrows and ctrl-j/ctrl-k move. This removes the old j/k/g/G/p/q popup keys.
 - Decision: `q` no longer quits from the popup (it is text); ctrl-c quits, esc closes.
 - Decision: match on the project name only (not the count), with `fuzzy.Find` as in `matchScore`; reuse the `textinput` bubble for the query line.
-- Decision: "all projects" is hidden while a query is non-empty; esc clears the query to get back to it.
+- Decision (changed in review round 1): "all projects" is a candidate for the fuzzy match under its label, so it can be reached by typing as well as by esc; it is ranked with the project names.
 - Decision: ctrl-j / ctrl-k are the only added movement keys.
 - Risk: in terminals without enhanced keyboard reporting, ctrl-j is the same byte as enter (0x0A) and may arrive as enter or ctrl-j depending on Bubble Tea's decoding. Check how `KeyPressMsg.String()` reports it and match what it yields; if ctrl-j can only arrive as enter, stop and ask.
 - No flags: no data, API or config change. Read-only invariant untouched.
@@ -69,4 +70,5 @@ Stop and ask if: ctrl-j cannot be distinguished from enter in Bubble Tea's key r
 - 2026-10-04: Assumption: the popup is at least 20 columns wide (capped by the terminal) so the query line fits; the popup footer help now names the new keys (`ui/ui.go` footer).
 - 2026-10-04: Review started
 - 2026-10-04: Review decisions: a gone current scope stays listed under a query; paste into the popup stays ignored (as in `/`); minimum popup width 20 kept; ctrl-j-as-enter in other terminals accepted as a risk.
+- 2026-10-04: Needs fixes (round 1): 1. Fuzzy match must cover "all projects" too, so typing can select it (changes the criterion that hid it; the person asked for it, which is the yes). 2. Restrict the query input to printable text and backspace (person's answer to the cleared-item question).
 - 2026-10-04: Done: Reviewed round 1: 11/11 criteria verified by tests (17/17 fail on revert); two review fixes (reload selection name, narrow query test) and a height-margin test; ctrl-j checked in tmux only.
