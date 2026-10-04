@@ -59,7 +59,7 @@ func depEntries(s store.Spec, all, done []store.Spec) (depends, blocks []depEntr
 		return depends, nil
 	}
 	for _, t := range all {
-		if t.Project != s.Project || t.Slug == s.Slug || !slices.Contains(t.DependsOn, s.ID) {
+		if t.Project != s.Project || t.Slug == s.Slug || t.Status == store.Dropped || !slices.Contains(t.DependsOn, s.ID) {
 			continue
 		}
 		t := t

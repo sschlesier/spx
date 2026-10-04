@@ -58,6 +58,16 @@ func TestJumpKeepsAStatusFilterThatShowsTheTargetWhenOnlyTheQueryHidesIt(t *test
 	}
 }
 
+func TestBlocksLeavesOutDroppedDependents(t *testing.T) {
+	all := []store.Spec{dspec("p", "draft", "base", "b1"), dspec("p", "draft", "live", "l1", "b1"),
+		dspec("p", store.Dropped, "dead", "d1", "b1")}
+	m := send(t, New("/store", all, styles.AsciiStyle), tea.WindowSizeMsg{Width: 140, Height: 20})
+	c := m.detail.GetContent()
+	if !strings.Contains(c, "Title live") || strings.Contains(c, "Title dead") {
+		t.Errorf("blocks:\n%s", c)
+	}
+}
+
 func TestSplitFooterHintsTheDependencyKeys(t *testing.T) {
 	if f := footer(depsModel(t, 190)); !strings.Contains(f, "]/[ deps") {
 		t.Errorf("split footer %q", f)
