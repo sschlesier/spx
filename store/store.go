@@ -21,6 +21,10 @@ var Statuses = []string{"started", "approved", "draft"}
 // statuses; other folders are ignored.
 const Dropped = "dropped"
 
+// Done is the folder of finished specs, kept as receipts. LoadDone reads it for dependency
+// lookup; Load never lists it.
+const Done = "done"
+
 // NoPriority marks a spec whose priority is missing or not an int 0-4.
 const NoPriority = -1
 
@@ -61,26 +65,49 @@ func Load(root string) ([]Spec, error) {
 	var specs []Spec
 	for _, project := range projects {
 		for _, status := range slices.Concat(Statuses, []string{Dropped}) {
-			dir := filepath.Join(root, project, status)
-			files, err := os.ReadDir(dir)
-			if err != nil {
-				continue
-			}
-			for _, f := range files {
-				name := f.Name()
-				if hidden(name) || filepath.Ext(name) != ".md" {
-					continue
-				}
-				path := filepath.Join(dir, name)
-				if info, err := os.Stat(path); err != nil || !info.Mode().IsRegular() {
-					continue
-				}
-				specs = append(specs, read(project, status, path))
-			}
+			specs = append(specs, readDir(root, project, status)...)
 		}
 	}
 	Sort(specs)
 	return specs, nil
+}
+
+// LoadDone reads the done receipts, <root>/<project>/done/*.md, in project then slug order.
+// They are for resolving dependencies only: Load never lists them. It fails only when root
+// itself can't be read.
+func LoadDone(root string) ([]Spec, error) {
+	projects, err := Projects(root)
+	if err != nil {
+		return nil, err
+	}
+	var specs []Spec
+	for _, project := range projects {
+		specs = append(specs, readDir(root, project, Done)...)
+	}
+	return specs, nil
+}
+
+// readDir reads the .md files of <root>/<project>/<status>, skipping hidden and non-regular
+// files and an unreadable folder.
+func readDir(root, project, status string) []Spec {
+	dir := filepath.Join(root, project, status)
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	var specs []Spec
+	for _, f := range files {
+		name := f.Name()
+		if hidden(name) || filepath.Ext(name) != ".md" {
+			continue
+		}
+		path := filepath.Join(dir, name)
+		if info, err := os.Stat(path); err != nil || !info.Mode().IsRegular() {
+			continue
+		}
+		specs = append(specs, read(project, status, path))
+	}
+	return specs
 }
 
 // Projects lists the project folders under root, alphabetically: the non-hidden directories,

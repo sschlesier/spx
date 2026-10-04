@@ -182,3 +182,12 @@ func TestWatchMissingRoot(t *testing.T) {
 		t.Fatal("Watch on a missing root succeeded")
 	}
 }
+
+func TestWatchReportsDoneChanges(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "proj/done/a.md", spec("A", "1"))
+	w, events := watching(t, root)
+	settle(t, w, events)
+	write(t, root, "proj/done/b.md", spec("B", "1"))
+	expectEvent(t, events, "create in done")
+}
