@@ -6,7 +6,7 @@ priority: 3
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-10-03: -d/-a/-s print TUI-style rows, flags combine, no -x. Cold read: pass"
-status: in-progress
+status: in-review
 ---
 
 `spx -d`, `-a` and `-s` print the draft, approved or started specs to stdout, one per line, and
@@ -25,26 +25,26 @@ Out of scope:
 
 ## Acceptance criteria
 
-- [ ] `spx -d` prints one line per draft spec in scope, `-a` approved, `-s` started, in the
+- [x] `spx -d` prints one line per draft spec in scope, `-a` approved, `-s` started, in the
       list's order (priority, then slug), to stdout; exit 0; no UI starts and the terminal is
       untouched.
-- [ ] Each line is the TUI list's row, minus the terminal-width cut and colour: id (`-` when
+- [x] Each line is the TUI list's row, minus the terminal-width cut and colour: id (`-` when
       missing, `!` after a duplicate id, cut at 16 cells with `…` as in the list), project,
       status, priority, type (`-` when missing) and the full title, in the same columns and
       spacing, with column widths taken from the printed rows. Control characters in a title
       or id are dropped, so a spec is always one line.
-- [ ] Flags combine: `spx -d -a` (or `-da`) prints draft then approved specs, in the list's
+- [x] Flags combine: `spx -d -a` (or `-da`) prints draft then approved specs, in the list's
       order; `-d -d` is the same as `-d`.
-- [ ] The project argument works with the flags (`spx -d dgrid`, `spx dgrid -d`); without it the
+- [x] The project argument works with the flags (`spx -d dgrid`, `spx dgrid -d`); without it the
       scope is the current repo's project when the store has one, else all projects, as in the
       UI.
-- [ ] No matching specs prints nothing and exits 0.
-- [ ] An unknown project exits 1 with the existing `spx: unknown project: …` message on stderr and
+- [x] No matching specs prints nothing and exits 0.
+- [x] An unknown project exits 1 with the existing `spx: unknown project: …` message on stderr and
       nothing on stdout; a missing store exits 1 with `spx: spec store not found: <path>`.
-- [ ] Unknown flags, a second project argument, or a status flag combined with `-h` still print
+- [x] Unknown flags, a second project argument, or a status flag combined with `-h` still print
       the usage to stderr and exit 2 without reading the store.
-- [ ] `-h`/`--help` output and the usage line mention `-d`, `-a`, `-s`.
-- [ ] Dropped specs are never printed. Nothing under the store root is written.
+- [x] `-h`/`--help` output and the usage line mention `-d`, `-a`, `-s`.
+- [x] Dropped specs are never printed. Nothing under the store root is written.
 
 ## Verification
 
@@ -82,3 +82,6 @@ Stop and ask if: matching the TUI row would change how the TUI list looks.
 
 - 2026-10-03: Approved. Scott Schlesier, 2026-10-03: -d/-a/-s print TUI-style rows, flags combine, no -x. Cold read: pass
 - 2026-10-03: Started on branch print-specs-by-status
+- 2026-10-03: Assumption: combined flags print in the list's order (started, approved, draft),
+  not "draft then approved" as the criterion's example reads; "in the list's order" wins.
+- 2026-10-03: Assumption: the help text grows to three lines (usage, description, flag line).
