@@ -90,7 +90,7 @@ func TestHelpPrintsUsageWithoutReadingTheStore(t *testing.T) {
 			t.Errorf("%s: code=%d started=%v stderr=%q", flag, r.code, r.model != nil, r.stderr)
 		}
 		lines := strings.Split(strings.TrimRight(r.stdout, "\n"), "\n")
-		if len(lines) != 3 || lines[0] != "usage: spx [-d] [-a] [-s] [project]" || lines[1] == "" {
+		if len(lines) != 4 || lines[0] != "usage: spx [-d] [-a] [-s] [project]" || lines[1] == "" {
 			t.Errorf("%s: stdout = %q", flag, r.stdout)
 		}
 	}
@@ -98,7 +98,7 @@ func TestHelpPrintsUsageWithoutReadingTheStore(t *testing.T) {
 
 func TestBadArgumentsPrintUsageAndExitTwoWithoutReadingTheStore(t *testing.T) {
 	t.Setenv("AGENT_SPECS_DIR", filepath.Join(t.TempDir(), "nope"))
-	for _, args := range [][]string{{"a", "b"}, {"-d", "-h"}, {"-dh"}, {"-d", "a", "b"}, {"-x"}, {"--nope"}, {"-"}, {"-h", "p"}, {"p", "-h"}, {"--help", "--help"}} {
+	for _, args := range [][]string{{"a", "b"}, {"-d", "-h"}, {"-dh"}, {"-d", "a", "b"}, {"-x"}, {"--nope"}, {"-"}, {"-h", "p"}, {"p", "-h"}, {"--help", "--help"}, {"--version", "-h"}, {"--version", "p"}, {"-d", "--version"}, {"--version", "--version"}} {
 		r := runCLI(t, t.TempDir(), args...)
 		if r.code != 2 || r.model != nil || r.stdout != "" || r.stderr != "usage: spx [-d] [-a] [-s] [project]\n" {
 			t.Errorf("%q: code=%d started=%v stdout=%q stderr=%q", args, r.code, r.model != nil, r.stdout, r.stderr)
@@ -365,5 +365,26 @@ func TestHelpMentionsTheStatusFlags(t *testing.T) {
 		if !strings.Contains(r.stdout, f) {
 			t.Errorf("help lacks %s: %q", f, r.stdout)
 		}
+	}
+}
+
+func TestVersionPrintsTheVersionWithoutReadingTheStore(t *testing.T) {
+	t.Setenv("AGENT_SPECS_DIR", filepath.Join(t.TempDir(), "nope"))
+	r := runCLI(t, t.TempDir(), "--version")
+	if r.code != 0 || r.model != nil || r.stderr != "" || r.stdout != "spx dev\n" {
+		t.Errorf("code=%d started=%v stdout=%q stderr=%q", r.code, r.model != nil, r.stdout, r.stderr)
+	}
+
+	old := version
+	t.Cleanup(func() { version = old })
+	version = "v9.9.9"
+	if r := runCLI(t, t.TempDir(), "--version"); r.stdout != "spx v9.9.9\n" {
+		t.Errorf("injected version: stdout = %q", r.stdout)
+	}
+}
+
+func TestHelpMentionsVersion(t *testing.T) {
+	if r := runCLI(t, t.TempDir(), "-h"); !strings.Contains(r.stdout, "--version") {
+		t.Errorf("help lacks --version: %q", r.stdout)
 	}
 }
