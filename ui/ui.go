@@ -579,10 +579,10 @@ func (m Model) render() string {
 	help := footerHelp
 	if m.detailOpen {
 		help = "esc back · j/k scroll · ctrl+d/u scroll · q quit"
-	} else if !m.split() && m.filter != "" {
-		help = "enter open · j/k move · d/a/s/x status · q quit" // fits 80 columns after the filter
+	} else if !m.split() && (m.filter != "" || m.query != "") {
+		help = "enter open · j/k move · d/a/s/x status · / filter · q quit" // fits 80 columns after a status filter
 	} else if !m.split() {
-		help = "enter open · j/k move · g/G top/bottom · d/a/s/x status · q quit"
+		help = "enter open · j/k move · g/G top/bottom · d/a/s/x status · / filter · q quit"
 	}
 	var active []string
 	if m.filter != "" {
