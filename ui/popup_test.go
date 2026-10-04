@@ -8,6 +8,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/glamour/v2/styles"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
 	"spx/store"
@@ -458,6 +459,15 @@ func TestSelectionStaysOnTheFallbackWhenTheFilteredProjectReturns(t *testing.T) 
 	m = next.(Model)
 	if got := m.pickerEntries()[m.pick]; got != "alpha" {
 		t.Fatalf("after beta returned the popup selects %q, want alpha", got)
+	}
+}
+
+func TestPopupStaysAboveTheFooterAtEveryHeight(t *testing.T) {
+	for _, h := range []int{8, 10, 24} {
+		m := press(t, send(t, manyProjects(30), tea.WindowSizeMsg{Width: 100, Height: h}), "p")
+		if got := lipgloss.Height(m.popup()); got > h-3 {
+			t.Errorf("height %d: popup is %d rows, want at most %d", h, got, h-3)
+		}
 	}
 }
 
