@@ -4,44 +4,231 @@ import (
 	"bytes"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 )
+
+// result is what one run of the CLI did.
+type result struct {
+	code           int
+	stdout, stderr string
+	model          tea.Model // nil when the UI never started
+}
+
+func runCLI(t *testing.T, dir string, args ...string) result {
+	t.Helper()
+	var stdout, stderr bytes.Buffer
+	var r result
+	r.code = run(args, &stdout, &stderr, dir, func(m tea.Model) error { r.model = m; return nil })
+	r.stdout, r.stderr = stdout.String(), stderr.String()
+	return r
+}
+
+// footer is the last line of the started model's screen.
+func footer(t *testing.T, m tea.Model) string {
+	t.Helper()
+	if m == nil {
+		t.Fatal("the UI did not start")
+	}
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 140, Height: 20})
+	lines := strings.Split(ansi.Strip(next.View().Content), "\n")
+	return strings.TrimRight(lines[len(lines)-1], " ")
+}
+
+// store makes a spec store holding one empty folder per project and points spx at it.
+func makeStore(t *testing.T, projects ...string) string {
+	t.Helper()
+	root := t.TempDir()
+	for _, p := range projects {
+		if err := os.MkdirAll(filepath.Join(root, p, "draft"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Setenv("AGENT_SPECS_DIR", root)
+	return root
+}
 
 func TestMissingRootExitsWithoutUI(t *testing.T) {
 	missing := filepath.Join(t.TempDir(), "nope")
 	t.Setenv("AGENT_SPECS_DIR", missing)
-	var stderr bytes.Buffer
-	started := false
-	code := run(&stderr, func(tea.Model) error { started = true; return nil })
-	if code != 1 || started {
-		t.Fatalf("code=%d started=%v", code, started)
+	r := runCLI(t, t.TempDir())
+	if r.code != 1 || r.model != nil {
+		t.Fatalf("code=%d started=%v", r.code, r.model != nil)
 	}
-	if want := "spx: spec store not found: " + missing + "\n"; stderr.String() != want {
-		t.Fatalf("stderr = %q, want %q", stderr.String(), want)
+	if want := "spx: spec store not found: " + missing + "\n"; r.stderr != want {
+		t.Fatalf("stderr = %q, want %q", r.stderr, want)
 	}
 }
 
 func TestStartsUIForExistingRoot(t *testing.T) {
-	root := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(root, "p", "draft"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("AGENT_SPECS_DIR", root)
-	var stderr bytes.Buffer
-	started := false
-	if code := run(&stderr, func(tea.Model) error { started = true; return nil }); code != 0 || !started {
-		t.Fatalf("code=%d started=%v stderr=%q", code, started, stderr.String())
+	makeStore(t, "p")
+	if r := runCLI(t, t.TempDir()); r.code != 0 || r.model == nil {
+		t.Fatalf("code=%d started=%v stderr=%q", r.code, r.model != nil, r.stderr)
 	}
 }
 
 func TestStartErrorExitsOne(t *testing.T) {
 	t.Setenv("AGENT_SPECS_DIR", t.TempDir())
 	var stderr bytes.Buffer
-	code := run(&stderr, func(tea.Model) error { return errors.New("could not open TTY") })
+	code := run(nil, new(bytes.Buffer), &stderr, t.TempDir(), func(tea.Model) error { return errors.New("could not open TTY") })
 	if code != 1 || stderr.String() != "spx: could not open TTY\n" {
 		t.Fatalf("code=%d stderr=%q", code, stderr.String())
+	}
+}
+
+func TestHelpPrintsUsageWithoutReadingTheStore(t *testing.T) {
+	t.Setenv("AGENT_SPECS_DIR", filepath.Join(t.TempDir(), "nope"))
+	for _, flag := range []string{"-h", "--help"} {
+		r := runCLI(t, t.TempDir(), flag)
+		if r.code != 0 || r.model != nil || r.stderr != "" {
+			t.Errorf("%s: code=%d started=%v stderr=%q", flag, r.code, r.model != nil, r.stderr)
+		}
+		lines := strings.Split(strings.TrimRight(r.stdout, "\n"), "\n")
+		if len(lines) != 2 || lines[0] != "usage: spx [project]" || lines[1] == "" {
+			t.Errorf("%s: stdout = %q", flag, r.stdout)
+		}
+	}
+}
+
+func TestBadArgumentsPrintUsageAndExitTwoWithoutReadingTheStore(t *testing.T) {
+	t.Setenv("AGENT_SPECS_DIR", filepath.Join(t.TempDir(), "nope"))
+	for _, args := range [][]string{{"a", "b"}, {"-x"}, {"--nope"}, {"-"}, {"-h", "p"}, {"p", "-h"}, {"--help", "--help"}} {
+		r := runCLI(t, t.TempDir(), args...)
+		if r.code != 2 || r.model != nil || r.stdout != "" || r.stderr != "usage: spx [project]\n" {
+			t.Errorf("%q: code=%d started=%v stdout=%q stderr=%q", args, r.code, r.model != nil, r.stdout, r.stderr)
+		}
+	}
+}
+
+func TestUnreadableStoreWinsOverAnUnknownProject(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "nope")
+	t.Setenv("AGENT_SPECS_DIR", missing)
+	r := runCLI(t, t.TempDir(), "p")
+	if r.code != 1 || r.stderr != "spx: spec store not found: "+missing+"\n" {
+		t.Fatalf("code=%d stderr=%q", r.code, r.stderr)
+	}
+}
+
+func TestUnknownProjectListsTheKnownOnes(t *testing.T) {
+	root := makeStore(t, "zed", "alpha", "beta")
+	if err := os.MkdirAll(filepath.Join(root, ".hidden", "draft"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"nope", "Alpha", " alpha", ""} {
+		r := runCLI(t, t.TempDir(), name)
+		want := "spx: unknown project: " + name + " (known: alpha, beta, zed)\n"
+		if r.code != 1 || r.model != nil || r.stderr != want {
+			t.Errorf("%q: code=%d started=%v stderr=%q, want %q", name, r.code, r.model != nil, r.stderr, want)
+		}
+	}
+}
+
+func TestProjectArgumentScopesTheList(t *testing.T) {
+	makeStore(t, "alpha", "beta")
+	r := runCLI(t, t.TempDir(), "beta")
+	if r.code != 0 {
+		t.Fatalf("code=%d stderr=%q", r.code, r.stderr)
+	}
+	if f := footer(t, r.model); !strings.HasPrefix(f, "beta · ") {
+		t.Fatalf("footer %q", f)
+	}
+}
+
+func TestEmptyProjectIsKnown(t *testing.T) {
+	root := makeStore(t, "alpha")
+	if err := os.MkdirAll(filepath.Join(root, "bare"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if r := runCLI(t, t.TempDir(), "bare"); r.code != 0 || r.model == nil {
+		t.Fatalf("code=%d stderr=%q", r.code, r.stderr)
+	}
+}
+
+// repo makes a git repo in a folder named name with one commit, and a worktree of it, and
+// returns both paths.
+func repo(t *testing.T, name string) (main, worktree string) {
+	t.Helper()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not installed")
+	}
+	parent := t.TempDir()
+	t.Setenv("GIT_CEILING_DIRECTORIES", parent)
+	main = filepath.Join(parent, name)
+	if err := os.Mkdir(main, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	git := func(dir string, args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", append([]string{"-c", "user.name=spx test", "-c", "user.email=spx@example.com"}, args...)...)
+		cmd.Dir = dir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	git(main, "init", "-q")
+	git(main, "commit", "-q", "--allow-empty", "-m", "first")
+	worktree = filepath.Join(parent, "elsewhere")
+	git(main, "worktree", "add", "-q", "-b", "side", worktree)
+	return main, worktree
+}
+
+func TestRepoScopesTheListFromACheckoutAndAWorktree(t *testing.T) {
+	main, worktree := repo(t, "alpha")
+	makeStore(t, "alpha", "beta")
+	sub := filepath.Join(main, "sub")
+	if err := os.Mkdir(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, dir := range []string{main, sub, worktree} {
+		r := runCLI(t, dir)
+		if f := footer(t, r.model); !strings.HasPrefix(f, "alpha · ") {
+			t.Errorf("from %s: footer %q", dir, f)
+		}
+	}
+}
+
+func TestRepoWithoutAProjectListsEverything(t *testing.T) {
+	main, _ := repo(t, "unrelated")
+	makeStore(t, "alpha", "beta")
+	r := runCLI(t, main)
+	if f := footer(t, r.model); !strings.HasPrefix(f, "all projects · ") {
+		t.Fatalf("footer %q", f)
+	}
+}
+
+func TestOutsideAnyRepoListsEverything(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("GIT_CEILING_DIRECTORIES", filepath.Dir(dir))
+	makeStore(t, "alpha")
+	r := runCLI(t, dir)
+	if f := footer(t, r.model); !strings.HasPrefix(f, "all projects · ") {
+		t.Fatalf("footer %q", f)
+	}
+}
+
+func TestWithoutGitOnThePathListsEverything(t *testing.T) {
+	main, _ := repo(t, "alpha")
+	makeStore(t, "alpha")
+	t.Setenv("PATH", "")
+	r := runCLI(t, main)
+	if r.code != 0 {
+		t.Fatalf("code=%d stderr=%q", r.code, r.stderr)
+	}
+	if f := footer(t, r.model); !strings.HasPrefix(f, "all projects · ") {
+		t.Fatalf("footer %q", f)
+	}
+}
+
+func TestExplicitArgumentBeatsTheRepo(t *testing.T) {
+	main, _ := repo(t, "alpha")
+	makeStore(t, "alpha", "beta")
+	r := runCLI(t, main, "beta")
+	if f := footer(t, r.model); !strings.HasPrefix(f, "beta · ") {
+		t.Fatalf("footer %q", f)
 	}
 }
