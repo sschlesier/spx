@@ -214,13 +214,13 @@ func TestDetailHeader(t *testing.T) {
 	m := start(t, specs, 120, 30)
 	s := screen(m)
 	for _, want := range []string{"Do X", "dgrid/approved/do-x", "type: bug", "priority: P1",
-		"depends-on: a, b", "approved: Scott, 2026-09-30: ok", "Body text."} {
+		"Depends on", "a (not in store)", "approved: Scott, 2026-09-30: ok", "Body text."} {
 		if !strings.Contains(s, want) {
 			t.Errorf("header missing %q:\n%s", want, s)
 		}
 	}
 	s = screen(press(t, m, "j"))
-	if !strings.Contains(s, "type: -   priority: -") || strings.Contains(s, "depends-on:") ||
+	if !strings.Contains(s, "type: -   priority: -") || strings.Contains(s, "Depends on") ||
 		strings.Contains(s, "approved:") {
 		t.Errorf("bare header wrong:\n%s", s)
 	}
