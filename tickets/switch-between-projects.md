@@ -5,7 +5,7 @@ type: feature
 priority: 3
 depends-on: []
 approved: "Scott Schlesier, 2026-10-03: spx [project], scope from the current repo, picker popup on p, scope joins status and query. Cold read: pass"
-status: in-progress
+status: in-review
 ---
 
 I can limit the list to one project, from the command line, from the repo I'm in, or by
@@ -163,3 +163,15 @@ Stop and ask if: matching the repo to a project seems to need anything beyond th
 - 2026-10-03: Cold read: pass, no blocking questions. Folded in: `-h` with other arguments,
   `-` and empty-string arguments, the vanished scope in the popup, the explicit cursor reset.
 - 2026-10-03: Approved: Scott Schlesier, 2026-10-03: spx [project], scope from the current repo, picker popup on p, scope joins status and query. Cold read: pass
+- 2026-10-03: Started on branch switch-between-projects. The store step (move to `started/`) is
+  pending: the session was in a worktree, which refuses git commands aimed at the store. This
+  repo copy was added after the implementation commits, not first.
+- 2026-10-03: Assumption: with no project folders in the store, the unknown-project message ends
+  `(known: none)`; the spec doesn't say. Shows in `main.go` (`run`).
+- 2026-10-03: Assumption: the popup's `all projects` row carries no count; only project folders
+  do ("each with its count"). Shows in `ui/ui.go` (`popup`).
+- 2026-10-03: Deviation: the narrow footer hint line is now `enter open · d/a/s/x status · /
+  filter · p project · q quit` (no `j/k move`, `g/G`), and `footerLine` drops hints from the one
+  before the last two, so `p project` and `q quit` stay at 80 columns. Existing footer tests
+  were updated for the scope prefix and these hints.
+- 2026-10-03: Review started.
