@@ -249,6 +249,17 @@ func TestFooterHintsKeepProjectAndQuitAt80Columns(t *testing.T) {
 	}
 }
 
+func TestPOpensThePopupInTheNarrowListView(t *testing.T) {
+	m := press(t, scoped(t, "", 80), "p")
+	if !m.picking || !strings.Contains(screen(m), "Project") {
+		t.Fatalf("picking %v:\n%s", m.picking, screen(m))
+	}
+	m = press(t, m, "esc", "enter", "esc", "p") // list, then full-width detail and back
+	if !m.picking {
+		t.Fatal("p should open the popup from the list after leaving the detail")
+	}
+}
+
 func TestSelectionFollowsItsProjectWhenAReloadShiftsTheEntries(t *testing.T) {
 	m := press(t, scoped(t, "", 100), "p", "j", "j") // beta
 	if got := m.pickerEntries()[m.pick]; got != "beta" {
