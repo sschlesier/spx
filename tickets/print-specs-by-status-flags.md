@@ -6,7 +6,7 @@ priority: 3
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-10-03: -d/-a/-s print TUI-style rows, flags combine, no -x. Cold read: pass"
-status: in-review
+status: done
 ---
 
 `spx -d`, `-a` and `-s` print the draft, approved or started specs to stdout, one per line, and
@@ -97,3 +97,5 @@ Stop and ask if: matching the TUI row would change how the TUI list looks.
 - 2026-10-04: Decision (Scott Schlesier, review round 1): sanitise `type` and `project` in
   `ui.Rows` too. Criterion 2 and Design now say control characters are dropped from every field,
   not only title and id; the TUI row changes only for specs holding such characters.
+- 2026-10-04: Done: Reviewed round 1: all 9 criteria verified; `spx -d/-a/-s` prints the list's
+  rows to stdout; control characters dropped from every field; no open decision or risk left.
