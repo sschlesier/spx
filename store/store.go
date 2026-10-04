@@ -108,7 +108,7 @@ func read(project, status, path string) Spec {
 		s.Title = strings.Join(strings.Fields(t), " ")
 	}
 	if id, ok := scalar(fm["id"]); ok {
-		s.ID = strings.TrimSpace(id)
+		s.ID = id
 	}
 	if t, ok := scalar(fm["type"]); ok {
 		s.Type = t
