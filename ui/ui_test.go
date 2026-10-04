@@ -35,6 +35,8 @@ var keys = map[string]tea.KeyPressMsg{
 	"backspace": {Code: tea.KeyBackspace},
 	"ctrl+n":    {Code: 'n', Mod: tea.ModCtrl},
 	"ctrl+p":    {Code: 'p', Mod: tea.ModCtrl},
+	"ctrl+j":    {Code: 'j', Mod: tea.ModCtrl},
+	"ctrl+k":    {Code: 'k', Mod: tea.ModCtrl},
 	"ctrl+c":    {Code: 'c', Mod: tea.ModCtrl},
 	"ctrl+d":    {Code: 'd', Mod: tea.ModCtrl},
 	"ctrl+u":    {Code: 'u', Mod: tea.ModCtrl},

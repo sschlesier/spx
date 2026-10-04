@@ -54,11 +54,12 @@ type Model struct {
 	typing bool   // the query input has the keys
 	input  textinput.Model
 
-	projects []string // project folders in the store, alphabetical
-	picking  bool     // the project popup has the keys
-	pick     int      // the popup's selected entry; 0 is all projects
-	pickOff  int      // the popup's first entry shown
-	pickName string   // the project the popup has selected; follows it when the entries shift
+	projects []string        // project folders in the store, alphabetical
+	picking  bool            // the project popup has the keys
+	pick     int             // the popup's selected entry; 0 is all projects
+	pickOff  int             // the popup's first entry shown
+	pickName string          // the project the popup has selected; follows it when the entries shift
+	pickIn   textinput.Model // the popup's query; its text narrows the entries
 
 	width, height int
 	detailOpen    bool // narrow layout only: detail shown full-width
@@ -108,6 +109,8 @@ type (
 func New(root string, specs []store.Spec, style string) Model {
 	m := Model{root: root, all: specs, style: style, detail: viewport.New(), input: textinput.New()}
 	m.input.Prompt = "/"
+	m.pickIn = textinput.New()
+	m.pickIn.Prompt = "> "
 	m.specs = m.visible()
 	if style == "" {
 		m.style = styles.DarkStyle
@@ -271,7 +274,11 @@ func (m Model) loaded(msg loadedMsg) (tea.Model, tea.Cmd) {
 	m.apply(msg.specs)
 	if m.picking {
 		m.pick = m.entryIndex(m.pickName)
-		m.pickOff = m.pickScroll(len(m.pickerEntries()))
+		entries := m.pickerEntries()
+		if len(entries) > 0 {
+			m.pickName = entries[m.pick]
+		}
+		m.pickOff = m.pickScroll(len(entries))
 	}
 	if msg.syncErr != nil && msg.w == m.watcher {
 		m.stopWatch()
@@ -413,10 +420,10 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.typing {
 		return m.typingKey(msg)
 	}
-	k := msg.String()
 	if m.picking {
-		return m.pickerKey(k)
+		return m.pickerKey(msg)
 	}
+	k := msg.String()
 	switch k {
 	case "q", "ctrl+c":
 		return m, tea.Quit
@@ -463,8 +470,11 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "p":
 		m.picking = true
 		m.pickName = m.scope
+		m.pickIn.Reset()
 		m.pick, m.pickOff = m.entryIndex(m.scope), 0
 		m.pickOff = m.pickScroll(len(m.pickerEntries()))
+		cmd := m.pickIn.Focus()
+		return m, cmd
 	case "/":
 		m.typing = true
 		m.input.SetValue(m.query)
@@ -486,34 +496,61 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// pickerKey handles a key while the project popup is open. No key reaches the list.
-func (m Model) pickerKey(k string) (tea.Model, tea.Cmd) {
-	entries := m.pickerEntries()
-	m.pick = min(m.pick, len(entries)-1)
-	switch k {
-	case "q", "ctrl+c":
+// pickerKey handles a key while the project popup is open. The popup is always typing: every
+// key not named here edits its query, and none reaches the list.
+func (m Model) pickerKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	query := m.pickIn.Value()
+	switch msg.String() {
+	case "ctrl+c":
 		return m, tea.Quit
-	case "j", "down":
-		m.pick = min(m.pick+1, len(entries)-1)
-	case "k", "up":
+	case "down", "ctrl+j":
+		m.pick = min(m.pick+1, len(m.pickerEntries())-1)
+	case "up", "ctrl+k":
 		m.pick = max(m.pick-1, 0)
-	case "g":
-		m.pick = 0
-	case "G":
-		m.pick = len(entries) - 1
-	case "esc", "p":
-		m.picking = false
+	case "esc":
+		if query == "" {
+			m.closePicker()
+			return m, nil
+		}
+		m.pickIn.Reset()
 	case "enter":
-		m.picking = false
-		m.setScope(entries[m.pick])
+		if entries := m.pickerEntries(); len(entries) > 0 {
+			m.closePicker()
+			m.setScope(entries[m.pick])
+			return m, nil
+		}
+	case "backspace":
+		m.pickIn, cmd = m.pickIn.Update(msg)
+	default:
+		if msg.Text != "" && msg.Mod&(tea.ModCtrl|tea.ModAlt) == 0 {
+			m.pickIn, cmd = m.pickIn.Update(msg)
+		}
 	}
-	m.pickName = entries[m.pick]
+	if m.pickIn.Value() != query {
+		m.pick, m.pickOff = 0, 0
+	}
+	entries := m.pickerEntries()
+	m.pick = max(0, min(m.pick, len(entries)-1))
+	if len(entries) > 0 {
+		m.pickName = entries[m.pick]
+	}
 	m.pickOff = m.pickScroll(len(entries))
-	return m, nil
+	return m, cmd
 }
 
-// pickerEntries are the scopes the popup offers: "" for all projects, then every project
-// folder, alphabetically. The current scope is offered even when its folder is gone.
+func (m *Model) closePicker() {
+	m.picking = false
+	m.pickIn.Blur()
+}
+
+// allProjects is the label of the scope that lists every project.
+const allProjects = "all projects"
+
+// pickerEntries are the scopes the popup lists. With an empty query: "" for all projects,
+// then every project folder, alphabetically. Otherwise only the entries whose name (for "",
+// its label) fuzzy-matches the query, best match first. The current scope is offered even
+// when its folder is gone.
 func (m Model) pickerEntries() []string {
 	set := map[string]bool{}
 	for _, p := range m.projects {
@@ -530,7 +567,16 @@ func (m Model) pickerEntries() []string {
 		names = append(names, p)
 	}
 	sort.Strings(names)
-	return append([]string{""}, names...)
+	entries := append([]string{""}, names...)
+	if q := m.pickIn.Value(); q != "" {
+		labels := append([]string{allProjects}, names...)
+		matched := make([]string, 0, len(entries))
+		for _, hit := range fuzzy.Find(q, labels) {
+			matched = append(matched, entries[hit.Index])
+		}
+		return matched
+	}
+	return entries
 }
 
 // entryIndex is the popup entry for project, or 0 (all projects) when it is gone.
@@ -737,7 +783,7 @@ func (m Model) render() string {
 		help = "enter open · d/a/s/x · / filter · e edit · y/Y copy · p project · q quit"
 	}
 	if m.picking {
-		help = "j/k move · g/G top/bottom · enter apply · esc cancel · q quit"
+		help = "type to filter · ctrl+j/k move · enter apply · esc clear/cancel · ctrl+c quit"
 	}
 	var lead, active []string
 	if m.unreadable {
@@ -780,7 +826,7 @@ func footerLine(lead, hints []string, width int) string {
 }
 
 // popupRows is how many entries the project popup shows at once.
-func (m Model) popupRows() int { return max(1, m.height-6) }
+func (m Model) popupRows() int { return max(1, m.height-7) }
 
 // pickScroll is the first popup entry shown: the offset kept while moving, moved just far
 // enough to include the selection.
@@ -797,9 +843,9 @@ func (m Model) pickScroll(n int) int {
 func (m Model) popup() string {
 	entries := m.pickerEntries()
 	labels := make([]string, len(entries))
-	width := len("Project")
+	width := 20
 	for i, e := range entries {
-		labels[i] = "all projects"
+		labels[i] = allProjects
 		if e != "" {
 			labels[i] = fmt.Sprintf("%s (%d)", printable(e), m.liveCount(e))
 		}
@@ -808,7 +854,10 @@ func (m Model) popup() string {
 	width = min(width, max(1, m.width-6))
 	rows := min(len(entries), m.popupRows())
 	first := m.pickScroll(len(entries))
-	lines := []string{titleStyle.Render("Project")}
+	lines := []string{titleStyle.Render("Project"), ansi.Truncate(m.pickIn.View(), width, "")}
+	if len(entries) == 0 {
+		lines = append(lines, dimStyle.Render(ansi.Truncate("no matching project", width, "…")))
+	}
 	for i := first; i < first+rows; i++ {
 		l := ansi.Truncate(labels[i], width, "…")
 		l += strings.Repeat(" ", width-ansi.StringWidth(l))
