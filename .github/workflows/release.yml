@@ -10,6 +10,13 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
+      - name: Check the tag is a release version
+        run: |
+          if [[ ! "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::${GITHUB_REF_NAME} is not vMAJOR.MINOR.PATCH"
+            exit 1
+          fi
+
       - name: Checkout code
         uses: actions/checkout@v7
 
