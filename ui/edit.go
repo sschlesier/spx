@@ -14,10 +14,10 @@ import (
 	"spx/store"
 )
 
-const (
-	noticeTime    = 3 * time.Second // how long a footer notice lasts without a key press
-	clipboardWait = 2 * time.Second // longest a clipboard tool may run
-)
+const clipboardWait = 2 * time.Second // longest a clipboard tool may run
+
+// noticeTime is how long a footer notice lasts without a key press. Tests shorten it.
+var noticeTime = 3 * time.Second
 
 type (
 	editorDoneMsg struct{ err error }

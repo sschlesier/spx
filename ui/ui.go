@@ -732,9 +732,9 @@ func (m Model) render() string {
 	}
 	help := footerHelp
 	if m.detailOpen {
-		help = "esc back · j/k scroll · ctrl+d/u scroll · e edit · y/Y copy slug/path · q quit"
+		help = "esc back · j/k scroll · ctrl+d/u scroll · e edit · y/Y copy · q quit"
 	} else if !m.split() {
-		help = "enter open · d/a/s/x · / filter · e edit · y/Y copy slug/path · p project · q quit"
+		help = "enter open · d/a/s/x · / filter · e edit · y/Y copy · p project · q quit"
 	}
 	if m.picking {
 		help = "j/k move · g/G top/bottom · enter apply · esc cancel · q quit"
