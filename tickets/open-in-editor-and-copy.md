@@ -5,7 +5,7 @@ type: feature
 priority: 3
 depends-on: []
 approved: "Scott Schlesier, 2026-09-30: e opens drafts only, y/Y copy slug/path via OSC 52 plus pbcopy/wl-copy/xclip. Cold read: pass"
-status: in-review
+status: done
 ---
 
 From the list or the detail I can open the selected spec in my editor and copy its slug or
@@ -26,31 +26,31 @@ Out of scope:
 
 ## Acceptance criteria
 
-- [ ] `e` on a draft spec suspends `spx` and opens its file in `$VISUAL`, else `$EDITOR`, else
+- [x] `e` on a draft spec suspends `spx` and opens its file in `$VISUAL`, else `$EDITOR`, else
       `vi`; an empty or blank variable counts as unset. A value with arguments (e.g. `code -w`) is split on whitespace and the path is
       appended as the last argument.
-- [ ] `e` on an approved or started spec (or dropped, once `filter-specs-by-status` lists
+- [x] `e` on an approved or started spec (or dropped, once `filter-specs-by-status` lists
       them) doesn't open the editor; the footer shows
       `only drafts can be edited (<status>)`.
-- [ ] When the editor exits, `spx` resumes, reloads the store, and shows the edited spec
+- [x] When the editor exits, `spx` resumes, reloads the store, and shows the edited spec
       selected (by project and slug) with its new content; the detail keeps its scroll offset,
       clamped to the new content. If the spec is gone, the selection follows the reload spec's
       rule, or the first row if that hasn't landed.
-- [ ] If the reload after the editor fails (store root unreadable), the previous list stays
+- [x] If the reload after the editor fails (store root unreadable), the previous list stays
       and the footer shows `spx: <load error>`.
-- [ ] If the editor can't start or exits non-zero, `spx` resumes and the footer shows
+- [x] If the editor can't start or exits non-zero, `spx` resumes and the footer shows
       `editor failed: <error>`; the store is still reloaded.
-- [ ] `y` copies the selected spec's slug and `Y` its absolute path to the clipboard, and the
+- [x] `y` copies the selected spec's slug and `Y` its absolute path to the clipboard, and the
       footer shows `copied <text>` (truncated to fit). The text is sent with OSC 52 and also
       piped to one clipboard tool chosen by OS and environment: `pbcopy` on macOS; on other
       systems `wl-copy` when `WAYLAND_DISPLAY` is set, else `xclip -selection clipboard`. If
       the chosen tool is missing from `PATH` or fails, it is ignored (no fallback to another).
-- [ ] Footer notices (`copied …`, `editor failed: …`) last until the next key press or 3 s,
+- [x] Footer notices (`copied …`, `editor failed: …`) last until the next key press or 3 s,
       whichever comes first; then the normal footer returns.
-- [ ] `e`, `y` and `Y` work in the list (split or narrow) and in the narrow full-width detail.
+- [x] `e`, `y` and `Y` work in the list (split or narrow) and in the narrow full-width detail.
       They do nothing with an empty list, and, once those features exist, while the project popup
       or a filter input is open.
-- [ ] The footer key hints gain `e edit · y/Y copy slug/path`, dropping hints from the end as
+- [x] The footer key hints gain `e edit · y/Y copy slug/path`, dropping hints from the end as
       needed to fit.
 
 ## Verification
@@ -124,3 +124,12 @@ Stop and ask if: resuming after the editor leaves the terminal in a broken state
 - 2026-10-04: Added: CLAUDE.md's "only process spx starts is git rev-parse" invariant now lists the
   editor and the clipboard tool, beyond the wording the spec's Design names.
 - 2026-10-04: Review started
+- 2026-10-04: Review round 1, pass 1: criteria 2-9 verified; criterion 1's editor wiring was untested.
+  Fixed: extracted `editorExec` and `editorFinished` and added tests for the exec args and the
+  exit-error wrapping, for a second notice surviving the first one's tick, and for control
+  characters in the copied notice. Dismissed: the `absPath` fallback to `s.Path` is uncovered, low
+  value. The shorter narrow hints, the hint order and the 170-column footer test stay as logged.
+  Merged `main` into the branch (CLAUDE.md conflict resolved to keep the new CLI flags and the
+  editor and clipboard processes).
+- 2026-10-04: Done: Reviewed round 1: manual checks done by Scott (kitty/nvim, clipboard). A second
+  cold pass 1 was still running when Scott asked to merge, so its result is not recorded.
