@@ -174,6 +174,28 @@ func TestQueryAloneShowsInTheFooter(t *testing.T) {
 	}
 }
 
+func TestNarrowFooterDropsHintsToKeepQuit(t *testing.T) {
+	m := press(t, start(t, findable(), 80, 20), "d", "/")
+	m = press(t, typed(t, m, "zebra"), "enter")
+	got := footer(m)
+	want := "draft · /zebra · 1 shown · enter open · j/k move · d/a/s/x status · q quit"
+	if got != want {
+		t.Fatalf("footer %q, want %q", got, want)
+	}
+}
+
+func TestFooterWithALongQueryStaysWithinTheWidth(t *testing.T) {
+	long := strings.Repeat("z", 70)
+	m := press(t, typed(t, press(t, start(t, findable(), 80, 20), "d", "/"), long), "enter")
+	got := footer(m)
+	if w := ansi.StringWidth(got); w > 80 {
+		t.Fatalf("footer is %d columns wide: %q", w, got)
+	}
+	if !strings.HasPrefix(got, "draft · /zzzz") {
+		t.Fatalf("footer %q lost the active filter", got)
+	}
+}
+
 func TestSlashReopensWithTheQuery(t *testing.T) {
 	m := press(t, typed(t, press(t, start(t, findable(), 120, 20), "/"), "zeb"), "enter", "/")
 	if !m.typing || m.input.Value() != "zeb" {

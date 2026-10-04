@@ -582,7 +582,10 @@ func (m Model) render() string {
 	} else if !m.split() {
 		help = "enter open · j/k move · g/G top/bottom · d/a/s/x status · / filter · q quit"
 	}
-	var active []string
+	var lead, active []string
+	if m.unreadable {
+		lead = append(lead, "store unreadable: "+m.root)
+	}
 	if m.filter != "" {
 		active = append(active, m.filter)
 	}
@@ -590,15 +593,22 @@ func (m Model) render() string {
 		active = append(active, "/"+m.query)
 	}
 	if len(active) > 0 {
-		help = fmt.Sprintf("%s · %d shown · %s", strings.Join(active, " · "), len(m.specs), help)
-	}
-	if m.unreadable {
-		help = "store unreadable: " + m.root + " · " + help
+		lead = append(lead, fmt.Sprintf("%s · %d shown", strings.Join(active, " · "), len(m.specs)))
 	}
 	if m.typing {
 		return body + "\n" + ansi.Truncate(m.input.View(), m.width, "")
 	}
-	return body + "\n" + dimStyle.Render(ansi.Truncate(help, m.width, "…"))
+	return body + "\n" + dimStyle.Render(footerLine(lead, strings.Split(help, " · "), m.width))
+}
+
+// footerLine joins lead and hints. When it is wider than width, it drops the hints next to
+// the last one, so the final hint (quit) stays visible, and cuts what's left at width.
+func footerLine(lead, hints []string, width int) string {
+	join := func() string { return strings.Join(append(append([]string{}, lead...), hints...), " · ") }
+	for len(hints) > 1 && ansi.StringWidth(join()) > width {
+		hints = append(hints[:len(hints)-2], hints[len(hints)-1])
+	}
+	return ansi.Truncate(join(), width, "…")
 }
 
 func (m Model) listView() string {
