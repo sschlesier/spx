@@ -5,7 +5,7 @@ type: feature
 priority: 2
 depends-on: []
 approved: "Scott Schlesier, 2026-10-04: dependencies and blocks in the detail pane, done/ receipts read for lookup, ]/[ cycle and enter jumps, match by id; parent/children split out. Cold read: not run (one area, no flags)"
-status: in-progress
+status: in-review
 ---
 
 The detail pane lists what the selected spec depends on and what it blocks, each with title and status, and a key jumps to one of them, so I can see what's in the way.
@@ -56,3 +56,4 @@ Don't touch: the store files; the CLI flags.
 - 2026-10-04: Answered: done receipts are in `<project>/done/`, so read those for lookup only (no wait on look-up-done-specs-in-project-repos, no guess); `]`/`[` cycle and `enter` jumps; match by id only; parent/children split out.
 - 2026-10-04: Approved: Scott Schlesier, 2026-10-04: dependencies and blocks in the detail pane, done/ receipts read for lookup, ]/[ cycle and enter jumps, match by id; parent/children split out. Cold read: not run (one area, no flags)
 - 2026-10-04: Started on branch show-dependencies-in-detail-pane (store move to started/ pending; done after the fact, as the start steps were skipped).
+- 2026-10-04: Review started
