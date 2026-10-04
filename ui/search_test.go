@@ -217,10 +217,13 @@ func TestBackspaceOnEmptyInputCloses(t *testing.T) {
 
 func TestArrowsAndCtrlPNMoveTheSelectionWhileTyping(t *testing.T) {
 	m := press(t, start(t, findable(), 120, 20), "/")
-	for k, want := range map[string]int{"down": 1, "ctrl+n": 2, "up": 1, "ctrl+p": 0} {
-		m = press(t, m, k)
-		if m.cursor != want {
-			t.Fatalf("%s: cursor %d, want %d", k, m.cursor, want)
+	for _, step := range []struct {
+		key  string
+		want int
+	}{{"down", 1}, {"ctrl+n", 2}, {"up", 1}, {"ctrl+p", 0}} {
+		m = press(t, m, step.key)
+		if m.cursor != step.want {
+			t.Fatalf("%s: cursor %d, want %d", step.key, m.cursor, step.want)
 		}
 	}
 	if !m.typing || m.input.Value() != "" {
@@ -278,6 +281,36 @@ func TestFooterHintsListSlashFilter(t *testing.T) {
 		if got := footer(m); !strings.Contains(got, "/ filter") {
 			t.Errorf("width %d: footer %q has no / filter hint", w, got)
 		}
+	}
+}
+
+func TestSpecScoresByItsBestField(t *testing.T) {
+	specs := []store.Spec{
+		{Project: "p", Status: "draft", Slug: "other", Title: "f1z medium", Type: "feature"},
+		{Project: "p", Status: "draft", Slug: "fz", Title: "f12345z loose", Type: "feature"},
+	}
+	m := typed(t, press(t, start(t, specs, 120, 20), "/"), "fz")
+	want := []string{"fz", "other"}
+	if got := listed(m); !reflect.DeepEqual(got, want) {
+		t.Fatalf("listed %v, want %v: the slug match should outrank the medium title match", got, want)
+	}
+}
+
+func TestReopenedInputDoesNotKeepClearedText(t *testing.T) {
+	m := press(t, typed(t, press(t, start(t, findable(), 120, 20), "/"), "zeb"), "enter", "esc", "/")
+	if m.query != "" || m.input.Value() != "" {
+		t.Fatalf("query %q, input %q, want both empty after esc and /", m.query, m.input.Value())
+	}
+}
+
+func TestNarrowFooterWithAQueryKeepsTheFilterHint(t *testing.T) {
+	m := press(t, typed(t, press(t, start(t, findable(), 80, 20), "/"), "zebra"), "enter")
+	got := footer(m)
+	if !strings.HasPrefix(got, "/zebra · 1 shown · enter open") || !strings.HasSuffix(got, "· / filter · q quit") {
+		t.Fatalf("footer %q", got)
+	}
+	if strings.Contains(got, "g/G") {
+		t.Fatalf("footer %q still has g/G while a query is on", got)
 	}
 }
 
