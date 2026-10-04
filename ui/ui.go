@@ -30,7 +30,7 @@ const (
 	pollInterval = time.Second            // reload interval while the watcher is down
 )
 
-const footerHelp = "j/k move · g/G top/bottom · ctrl+d/u scroll · d/a/s/x status · / filter · p project · q quit"
+const footerHelp = "j/k move · g/G top/bottom · ctrl+d/u scroll · d/a/s/x status · / filter · e edit · y/Y copy slug/path · p project · q quit"
 
 // filterKeys maps each status filter key to the status it lists.
 var filterKeys = map[string]string{"d": "draft", "a": "approved", "s": "started", "x": store.Dropped}
@@ -75,6 +75,10 @@ type Model struct {
 	loads      int            // loads issued
 	applied    int            // the newest load whose result was handled
 	unreadable bool           // the last load couldn't read the root
+
+	notice    string // shown in place of the footer; cleared by a key press or noticeTime
+	noticeGen int    // only the tick for the latest notice clears it
+	editLoad  int    // the load issued when the editor exited
 }
 
 // Reload messages. A message from a watcher other than the current one is stale.
@@ -186,6 +190,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	case loadedMsg:
 		return m.loaded(msg)
+	case editorDoneMsg:
+		return m.editorDone(msg)
+	case noticeMsg:
+		if msg.gen == m.noticeGen {
+			m.notice = ""
+		}
 	default:
 		if m.typing {
 			return m.edit(msg)
@@ -250,8 +260,11 @@ func (m Model) loaded(msg loadedMsg) (tea.Model, tea.Cmd) {
 	if msg.err != nil {
 		m.unreadable = true
 		m.stopWatch()
-		cmd := m.poll()
-		return m, cmd
+		cmds := []tea.Cmd{m.poll()}
+		if msg.seq == m.editLoad {
+			cmds = append(cmds, m.setNotice("spx: "+msg.err.Error()))
+		}
+		return m, tea.Batch(cmds...)
 	}
 	m.unreadable = false
 	m.projects = msg.projects
@@ -395,6 +408,8 @@ func find(specs []store.Spec, s store.Spec) int {
 }
 
 func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	m.notice = ""
+	m.noticeGen++
 	if m.typing {
 		return m.typingKey(msg)
 	}
@@ -405,6 +420,10 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch k {
 	case "q", "ctrl+c":
 		return m, tea.Quit
+	case "e":
+		return m.openEditor()
+	case "y", "Y":
+		return m.copySelected(k == "Y")
 	case "ctrl+d":
 		if m.detailVisible() {
 			m.detail.HalfPageDown()
@@ -713,9 +732,9 @@ func (m Model) render() string {
 	}
 	help := footerHelp
 	if m.detailOpen {
-		help = "esc back · j/k scroll · ctrl+d/u scroll · q quit"
+		help = "esc back · j/k scroll · ctrl+d/u scroll · e edit · y/Y copy slug/path · q quit"
 	} else if !m.split() {
-		help = "enter open · d/a/s/x · / filter · p project · q quit"
+		help = "enter open · d/a/s/x · / filter · e edit · y/Y copy slug/path · p project · q quit"
 	}
 	if m.picking {
 		help = "j/k move · g/G top/bottom · enter apply · esc cancel · q quit"
@@ -737,7 +756,11 @@ func (m Model) render() string {
 	if m.typing {
 		return body + "\n" + ansi.Truncate(m.input.View(), m.width, "")
 	}
-	out := body + "\n" + dimStyle.Render(footerLine(lead, strings.Split(help, " · "), m.width))
+	footer := footerLine(lead, strings.Split(help, " · "), m.width)
+	if m.notice != "" {
+		footer = ansi.Truncate(m.notice, m.width, "…")
+	}
+	out := body + "\n" + dimStyle.Render(footer)
 	if m.picking {
 		return m.overlay(out)
 	}
