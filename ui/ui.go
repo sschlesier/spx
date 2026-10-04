@@ -863,28 +863,39 @@ func (m Model) listView() string {
 	if len(m.specs) == 0 {
 		return m.emptyMessage()
 	}
-	dupes := duplicateIDs(m.all)
-	idW, projectW, typeW := 0, 0, len("feature")
-	for _, s := range m.specs {
-		idW = max(idW, ansi.StringWidth(idCell(s, dupes)))
-		projectW = max(projectW, len(s.Project))
-		typeW = max(typeW, len(s.Type))
-	}
+	all := Rows(m.all, m.specs)
 	w := m.listWidth()
 	end := min(len(m.specs), m.offset+m.bodyHeight())
 	rows := make([]string, 0, end-m.offset)
 	for i := m.offset; i < end; i++ {
-		s := m.specs[i]
-		cell := idCell(s, dupes)
-		row := fmt.Sprintf("%s%s  %-*s  %-8s %-2s  %-*s  %s",
-			cell, strings.Repeat(" ", idW-ansi.StringWidth(cell)), projectW, s.Project, s.Status, priority(s.Priority), typeW, orDash(s.Type), s.Title)
-		row = ansi.Truncate(row, w, "…")
+		row := ansi.Truncate(all[i], w, "…")
 		if i == m.cursor {
 			row = selectedStyle.Render(row + strings.Repeat(" ", max(0, w-ansi.StringWidth(row))))
 		}
 		rows = append(rows, row)
 	}
 	return strings.Join(rows, "\n")
+}
+
+// Rows formats shown as list rows, one per spec, without the terminal-width cut or any styling.
+// Column widths come from shown; all is every loaded spec, for spotting duplicate ids.
+func Rows(all, shown []store.Spec) []string {
+	dupes := duplicateIDs(all)
+	idW, projectW, typeW := 0, 0, len("feature")
+	projects, types := make([]string, len(shown)), make([]string, len(shown))
+	for i, s := range shown {
+		projects[i], types[i] = printable(s.Project), printable(s.Type)
+		idW = max(idW, ansi.StringWidth(idCell(s, dupes)))
+		projectW = max(projectW, len(projects[i]))
+		typeW = max(typeW, len(types[i]))
+	}
+	rows := make([]string, len(shown))
+	for i, s := range shown {
+		cell := idCell(s, dupes)
+		rows[i] = fmt.Sprintf("%s%s  %-*s  %-8s %-2s  %-*s  %s",
+			cell, strings.Repeat(" ", idW-ansi.StringWidth(cell)), projectW, projects[i], s.Status, priority(s.Priority), typeW, orDash(types[i]), printable(s.Title))
+	}
+	return rows
 }
 
 // fit pads or cuts s to exactly width x height cells, so panes line up when joined.
