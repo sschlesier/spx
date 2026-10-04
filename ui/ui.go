@@ -30,7 +30,7 @@ const (
 	pollInterval = time.Second            // reload interval while the watcher is down
 )
 
-const footerHelp = "j/k move · g/G top/bottom · ctrl+d/u scroll · d/a/s/x status · / filter · e edit · y/Y copy slug/path · p project · q quit"
+const footerHelp = "j/k move · g/G top/bottom · ctrl+d/u scroll · d/a/s/x status · / filter · ]/[ deps · e edit · y/Y copy slug/path · p project · q quit"
 
 // filterKeys maps each status filter key to the status it lists.
 var filterKeys = map[string]string{"d": "draft", "a": "approved", "s": "started", "x": store.Dropped}
@@ -46,6 +46,8 @@ type Model struct {
 	root   string
 	all    []store.Spec // everything loaded, dropped included
 	specs  []store.Spec // the listed rows
+	done   []store.Spec // done receipts, for dependency lookup only; never listed
+	hl     string       // key of the highlighted dependency entry; empty for none
 	cursor int
 	offset int    // first list row shown
 	scope  string // the only project listed; empty lists every project
@@ -97,6 +99,7 @@ type (
 	loadedMsg   struct {
 		seq      int
 		specs    []store.Spec
+		done     []store.Spec
 		projects []string
 		err      error // root unreadable
 		w        *store.Watcher
@@ -236,6 +239,9 @@ func (m *Model) load() tea.Cmd {
 		if msg.err == nil {
 			msg.projects, msg.err = store.Projects(root)
 		}
+		if msg.err == nil {
+			msg.done, msg.err = store.LoadDone(root)
+		}
 		return msg
 	}
 }
@@ -271,7 +277,7 @@ func (m Model) loaded(msg loadedMsg) (tea.Model, tea.Cmd) {
 	}
 	m.unreadable = false
 	m.projects = msg.projects
-	m.apply(msg.specs)
+	m.apply(msg.specs, msg.done)
 	if m.picking {
 		m.pick = m.entryIndex(m.pickName)
 		entries := m.pickerEntries()
@@ -292,13 +298,22 @@ func (m Model) loaded(msg loadedMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// apply replaces the loaded specs. A gone spec selects the row at the same index.
-func (m *Model) apply(specs []store.Spec) {
-	if reflect.DeepEqual(specs, m.all) {
+// apply replaces the loaded specs and done receipts. A gone spec selects the row at the
+// same index. The detail is redrawn when either changed, as its dependency sections may.
+func (m *Model) apply(specs, done []store.Spec) {
+	if reflect.DeepEqual(specs, m.all) && reflect.DeepEqual(done, m.done) {
 		return
 	}
-	m.all = specs
+	m.all, m.done = specs, done
 	m.show(m.visible(), m.cursor)
+	m.renderDetail()
+}
+
+// WithDone gives the model the done receipts, which the detail pane reads to resolve
+// dependencies. They are never listed.
+func (m Model) WithDone(done []store.Spec) Model {
+	m.done = done
+	return m
 }
 
 // visible is the listed rows: the scope's project, then the filter's status, or every live
@@ -365,7 +380,7 @@ func matchScore(query string, s store.Spec) (int, bool) {
 func (m *Model) setQuery(query string) {
 	m.query = query
 	m.specs = m.visible()
-	m.cursor = 0
+	m.cursor, m.hl = 0, ""
 	m.scrollList()
 	m.renderDetail()
 	m.detail.GotoTop()
@@ -398,7 +413,7 @@ func (m *Model) show(rows []store.Spec, fallback int) {
 		}
 		return
 	}
-	m.cursor = max(0, min(fallback, len(rows)-1))
+	m.cursor, m.hl = max(0, min(fallback, len(rows)-1)), ""
 	m.detailOpen = false
 	m.scrollList()
 	m.renderDetail()
@@ -431,6 +446,17 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.openEditor()
 	case "y", "Y":
 		return m.copySelected(k == "Y")
+	case "]", "[":
+		if m.detailVisible() {
+			m.cycleHighlight(map[string]int{"]": 1, "[": -1}[k])
+		}
+		return m, nil
+	case "enter":
+		if m.detailVisible() && m.hl != "" {
+			if ok, cmd := m.jumpHighlight(); ok {
+				return m, cmd
+			}
+		}
 	case "ctrl+d":
 		if m.detailVisible() {
 			m.detail.HalfPageDown()
@@ -597,7 +623,7 @@ func (m *Model) setScope(project string) {
 	}
 	m.scope = project
 	m.specs = m.visible()
-	m.cursor = 0
+	m.cursor, m.hl = 0, ""
 	m.scrollList()
 	m.renderDetail()
 	m.detail.GotoTop()
@@ -664,7 +690,7 @@ func (m *Model) selectRow(i int) {
 	if i == m.cursor {
 		return
 	}
-	m.cursor = i
+	m.cursor, m.hl = i, ""
 	m.scrollList()
 	m.renderDetail()
 	m.detail.GotoTop()
@@ -714,11 +740,13 @@ func (m *Model) renderDetail() {
 		return
 	}
 	s := m.specs[m.cursor]
-	m.detail.SetContent(header(s, isDuplicate(s, duplicateIDs(m.all)), m.detail.Width()) + "\n" + m.markdown(s.Body))
+	depends, blocks := depEntries(s, m.all, m.done)
+	head := header(s, isDuplicate(s, duplicateIDs(m.all)), m.detail.Width(), depLines(depends, blocks, m.hl))
+	m.detail.SetContent(head + "\n" + m.markdown(s.Body))
 	m.detail.SetYOffset(m.detail.YOffset())
 }
 
-func header(s store.Spec, duplicate bool, width int) string {
+func header(s store.Spec, duplicate bool, width int, deps []string) string {
 	idPart := "id: " + orDash(printable(s.ID))
 	if duplicate {
 		idPart += "   (duplicate id)"
@@ -728,12 +756,10 @@ func header(s store.Spec, duplicate bool, width int) string {
 		s.Project + "/" + s.Status + "/" + s.Slug,
 		idPart + "   type: " + orDash(s.Type) + "   priority: " + priority(s.Priority),
 	}
-	if len(s.DependsOn) > 0 {
-		lines = append(lines, "depends-on: "+strings.Join(s.DependsOn, ", "))
-	}
 	if s.Approved != "" {
 		lines = append(lines, "approved: "+s.Approved)
 	}
+	lines = append(lines, deps...)
 	style := lipgloss.NewStyle().Width(width).Padding(1, 2, 0)
 	return style.Render(strings.Join(lines, "\n"))
 }
@@ -778,7 +804,7 @@ func (m Model) render() string {
 	}
 	help := footerHelp
 	if m.detailOpen {
-		help = "esc back · j/k scroll · ctrl+d/u scroll · e edit · y/Y copy · q quit"
+		help = "esc back · j/k scroll · ]/[ deps · ctrl+d/u scroll · e edit · y/Y copy · q quit"
 	} else if !m.split() {
 		help = "enter open · d/a/s/x · / filter · e edit · y/Y copy · p project · q quit"
 	}

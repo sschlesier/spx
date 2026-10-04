@@ -10,8 +10,8 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-// Watcher reports changes to the folders Load reads: the root, each project folder and
-// each listed status folder.
+// Watcher reports changes to the folders Load reads: the root, each project folder, each
+// listed status folder and done/.
 type Watcher struct {
 	root string
 	fs   *fsnotify.Watcher
@@ -54,7 +54,7 @@ func (w *Watcher) Sync() error {
 		if err := w.add(dir); err != nil {
 			return err
 		}
-		for _, status := range Statuses {
+		for _, status := range append([]string{Done}, Statuses...) {
 			if err := w.add(filepath.Join(dir, status)); err != nil {
 				return err
 			}

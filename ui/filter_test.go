@@ -88,7 +88,7 @@ func TestNarrowFilteredFooterFits80Columns(t *testing.T) {
 }
 
 func TestFooterWithAndWithoutFilter(t *testing.T) {
-	m := start(t, mixed(), 170, 20)
+	m := start(t, mixed(), 190, 20)
 	if f, want := footer(m), "all projects · "+footerHelp; f != want || !strings.Contains(f, "d/a/s/x status") {
 		t.Errorf("unfiltered footer %q, want %q", f, want)
 	}

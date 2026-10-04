@@ -114,7 +114,12 @@ func run(args []string, stdout, stderr io.Writer, dir string, start func(tea.Mod
 		}
 		return 0
 	}
-	if err := start(ui.New(root, specs, "").WithScope(scope, projects).WithReload()); err != nil {
+	done, err := store.LoadDone(root)
+	if err != nil {
+		fmt.Fprintf(stderr, "spx: %v\n", err)
+		return 1
+	}
+	if err := start(ui.New(root, specs, "").WithDone(done).WithScope(scope, projects).WithReload()); err != nil {
 		fmt.Fprintf(stderr, "spx: %v\n", err)
 		return 1
 	}
