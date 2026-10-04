@@ -31,8 +31,8 @@ Out of scope:
 - [x] Each line is the TUI list's row, minus the terminal-width cut and colour: id (`-` when
       missing, `!` after a duplicate id, cut at 16 cells with `…` as in the list), project,
       status, priority, type (`-` when missing) and the full title, in the same columns and
-      spacing, with column widths taken from the printed rows. Control characters in a title
-      or id are dropped, so a spec is always one line.
+      spacing, with column widths taken from the printed rows. Control characters in any
+      field (id, project, type, title) are dropped, so a spec is always one line.
 - [x] Flags combine: `spx -d -a` (or `-da`) prints draft then approved specs, in the list's
       order; `-d -d` is the same as `-d`.
 - [x] The project argument works with the flags (`spx -d dgrid`, `spx dgrid -d`); without it the
@@ -69,8 +69,8 @@ Out of scope:
 - Output format: the TUI's list row, so the two can't drift. Move the row formatting out of
   `ui.Model.listView` into an exported `ui` function that takes all specs (for duplicate ids) and
   the shown ones and returns untruncated, unstyled rows; `listView` truncates and highlights
-  those, `run` prints them. The shared function also drops control characters from the title
-  (the TUI row then differs from today's only for titles containing them). No header, no trailing spaces. Columns are space-aligned, so
+  those, `run` prints them. The shared function also drops control characters from the project, type and
+  title (the TUI row then differs from today's only for specs containing them). No header, no trailing spaces. Columns are space-aligned, so
   scripts should split on whitespace (the title is the remainder after the fifth field).
 - Output is written to the `stdout` writer `run` already receives.
 
@@ -94,3 +94,6 @@ Stop and ask if: matching the TUI row would change how the TUI list looks.
 - 2026-10-04: Review round 1 re-verify: added a test that the list still cuts a long row with an
   ellipsis (the refactored `listView` truncation was untested). Dismissed the same equivalent
   mutant again. Still escalated: `type` and `project` control characters.
+- 2026-10-04: Decision (Scott Schlesier, review round 1): sanitise `type` and `project` in
+  `ui.Rows` too. Criterion 2 and Design now say control characters are dropped from every field,
+  not only title and id; the TUI row changes only for specs holding such characters.

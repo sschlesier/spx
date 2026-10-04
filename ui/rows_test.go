@@ -24,6 +24,21 @@ func TestListRowsStartWithTheSharedRows(t *testing.T) {
 	}
 }
 
+func TestRowsDropControlCharactersInEveryCell(t *testing.T) {
+	specs := []store.Spec{
+		{ID: "a\nb", Project: "p\x1b[0m", Status: "draft", Priority: 1, Type: "bu\ng", Title: "T\tx"},
+		{Project: "q", Status: "draft", Priority: 1, Type: "\n", Title: "U"},
+	}
+	got := Rows(specs, specs)
+	want := []string{
+		"ab  p[0m  draft    P1  bug      Tx",
+		"-   q     draft    P1  -        U",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %q\nwant %q", got, want)
+	}
+}
+
 func TestListCutsALongRowWithAnEllipsis(t *testing.T) {
 	specs := []store.Spec{{Project: "p", Status: "draft", Slug: "long", Title: strings.Repeat("word ", 40), Priority: 2}}
 	m := start(t, specs, 60, 10)

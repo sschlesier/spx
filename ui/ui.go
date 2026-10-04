@@ -859,16 +859,18 @@ func (m Model) listView() string {
 func Rows(all, shown []store.Spec) []string {
 	dupes := duplicateIDs(all)
 	idW, projectW, typeW := 0, 0, len("feature")
-	for _, s := range shown {
+	projects, types := make([]string, len(shown)), make([]string, len(shown))
+	for i, s := range shown {
+		projects[i], types[i] = printable(s.Project), printable(s.Type)
 		idW = max(idW, ansi.StringWidth(idCell(s, dupes)))
-		projectW = max(projectW, len(s.Project))
-		typeW = max(typeW, len(s.Type))
+		projectW = max(projectW, len(projects[i]))
+		typeW = max(typeW, len(types[i]))
 	}
 	rows := make([]string, len(shown))
 	for i, s := range shown {
 		cell := idCell(s, dupes)
 		rows[i] = fmt.Sprintf("%s%s  %-*s  %-8s %-2s  %-*s  %s",
-			cell, strings.Repeat(" ", idW-ansi.StringWidth(cell)), projectW, s.Project, s.Status, priority(s.Priority), typeW, orDash(s.Type), printable(s.Title))
+			cell, strings.Repeat(" ", idW-ansi.StringWidth(cell)), projectW, projects[i], s.Status, priority(s.Priority), typeW, orDash(types[i]), printable(s.Title))
 	}
 	return rows
 }
