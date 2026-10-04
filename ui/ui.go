@@ -501,8 +501,12 @@ func (m Model) pickerKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.setScope(entries[m.pick])
 			return m, nil
 		}
-	default:
+	case "backspace":
 		m.pickIn, cmd = m.pickIn.Update(msg)
+	default:
+		if msg.Text != "" && msg.Mod&(tea.ModCtrl|tea.ModAlt) == 0 {
+			m.pickIn, cmd = m.pickIn.Update(msg)
+		}
 	}
 	if m.pickIn.Value() != query {
 		m.pick, m.pickOff = 0, 0
@@ -521,10 +525,13 @@ func (m *Model) closePicker() {
 	m.pickIn.Blur()
 }
 
+// allProjects is the label of the scope that lists every project.
+const allProjects = "all projects"
+
 // pickerEntries are the scopes the popup lists. With an empty query: "" for all projects,
-// then every project folder, alphabetically. Otherwise only the folders whose name
-// fuzzy-matches the query, best match first. The current scope is offered even when its
-// folder is gone.
+// then every project folder, alphabetically. Otherwise only the entries whose name (for "",
+// its label) fuzzy-matches the query, best match first. The current scope is offered even
+// when its folder is gone.
 func (m Model) pickerEntries() []string {
 	set := map[string]bool{}
 	for _, p := range m.projects {
@@ -541,14 +548,16 @@ func (m Model) pickerEntries() []string {
 		names = append(names, p)
 	}
 	sort.Strings(names)
+	entries := append([]string{""}, names...)
 	if q := m.pickIn.Value(); q != "" {
-		matched := make([]string, 0, len(names))
-		for _, hit := range fuzzy.Find(q, names) {
-			matched = append(matched, hit.Str)
+		labels := append([]string{allProjects}, names...)
+		matched := make([]string, 0, len(entries))
+		for _, hit := range fuzzy.Find(q, labels) {
+			matched = append(matched, entries[hit.Index])
 		}
 		return matched
 	}
-	return append([]string{""}, names...)
+	return entries
 }
 
 // entryIndex is the popup entry for project, or 0 (all projects) when it is gone.
@@ -813,7 +822,7 @@ func (m Model) popup() string {
 	labels := make([]string, len(entries))
 	width := 20
 	for i, e := range entries {
-		labels[i] = "all projects"
+		labels[i] = allProjects
 		if e != "" {
 			labels[i] = fmt.Sprintf("%s (%d)", printable(e), m.liveCount(e))
 		}

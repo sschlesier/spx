@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -159,11 +160,11 @@ func TestPopupSwallowsEveryOtherKey(t *testing.T) {
 func TestPopupTypingFiltersByFuzzyMatchBestFirst(t *testing.T) {
 	m := typed(t, press(t, scoped(t, "", 100), "p"), "a")
 	got := m.pickerEntries()
-	if len(got) != 2 || got[0] != "alpha" || got[1] != "beta" {
-		t.Fatalf("entries %q, want [alpha beta]", got)
+	if len(got) != 3 || got[0] != "alpha" {
+		t.Fatalf("entries %q, want alpha first of alpha, beta and all projects", got)
 	}
 	s := ansi.Strip(m.popup())
-	if !strings.Contains(s, "> a") || strings.Contains(s, "all projects") || strings.Contains(s, "idle") {
+	if !strings.Contains(s, "> a") || strings.Contains(s, "idle") {
 		t.Fatalf("popup should show the query and only the matches:\n%s", s)
 	}
 	m = typed(t, press(t, scoped(t, "", 100), "p"), "bta") // a subsequence, not a substring
@@ -178,7 +179,7 @@ func TestPopupSelectsTheBestMatchAfterEveryEdit(t *testing.T) {
 	if m.pick != 0 || m.pickName != "alpha" {
 		t.Fatalf("after typing: selected %d (%q)", m.pick, m.pickName)
 	}
-	m = press(t, m, "ctrl+j")
+	m = press(t, m, "ctrl+j", "ctrl+j")
 	if m.pickName != "beta" {
 		t.Fatalf("ctrl+j selected %q, want beta", m.pickName)
 	}
@@ -252,11 +253,56 @@ func TestPopupOpensWithAnEmptyQueryOnTheCurrentScope(t *testing.T) {
 
 func TestPopupSelectionFallsBackToTheBestMatchWhenFilteredOut(t *testing.T) {
 	m := typed(t, press(t, scoped(t, "", 100), "p"), "a")
-	m = press(t, m, "ctrl+j") // beta
+	m = press(t, m, "ctrl+j", "ctrl+j") // beta
 	next, _ := m.Update(loadedMsg{seq: m.applied + 1, specs: []store.Spec{{Project: "alpha", Status: "draft", Slug: "a-one", Title: "A one", Priority: 2}}, projects: []string{"alpha"}})
 	m = next.(Model)
-	if got := m.pickerEntries(); !reflect.DeepEqual(got, []string{"alpha"}) || m.pick != 0 {
+	if got := m.pickerEntries(); !reflect.DeepEqual(got, []string{"alpha", ""}) || m.pick != 0 {
 		t.Fatalf("entries %q, selected %d", got, m.pick)
+	}
+}
+
+func TestPopupTypingCanSelectAllProjects(t *testing.T) {
+	m := typed(t, press(t, scoped(t, "alpha", 140), "p"), "all")
+	if got := m.pickerEntries(); !reflect.DeepEqual(got, []string{""}) {
+		t.Fatalf("entries %q, want just all projects", got)
+	}
+	if s := ansi.Strip(m.popup()); !strings.Contains(s, "all projects") {
+		t.Fatalf("popup should list all projects:\n%s", s)
+	}
+	m = press(t, m, "enter")
+	if m.picking || m.scope != "" {
+		t.Fatalf("picking %v, scope %q, want the all-projects scope", m.picking, m.scope)
+	}
+}
+
+func TestPopupAllProjectsRanksWithTheProjects(t *testing.T) {
+	m := typed(t, press(t, scoped(t, "", 100), "p"), "a")
+	got := m.pickerEntries()
+	if !slices.Contains(got, "") || !slices.Contains(got, "alpha") || !slices.Contains(got, "beta") || slices.Contains(got, "idle") {
+		t.Fatalf("entries %q, want all projects, alpha and beta but not idle", got)
+	}
+}
+
+func TestPopupOnlyPrintableTextAndBackspaceEditTheQuery(t *testing.T) {
+	m := typed(t, press(t, scoped(t, "", 100), "p"), "bet")
+	m = send(t, m,
+		tea.KeyPressMsg{Code: 'a', Mod: tea.ModCtrl},
+		tea.KeyPressMsg{Code: 'w', Mod: tea.ModCtrl},
+		tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl},
+		tea.KeyPressMsg{Code: 'd', Mod: tea.ModCtrl},
+		tea.KeyPressMsg{Code: tea.KeyDelete},
+		tea.KeyPressMsg{Code: tea.KeyLeft},
+		tea.KeyPressMsg{Code: tea.KeyHome},
+	)
+	if got := m.pickIn.Value(); got != "bet" {
+		t.Fatalf("editing keys changed the query to %q", got)
+	}
+	m = typed(t, m, "a") // the cursor never moved, so text appends
+	if got := m.pickIn.Value(); got != "beta" {
+		t.Fatalf("query %q, want beta", got)
+	}
+	if m = press(t, m, "backspace"); m.pickIn.Value() != "bet" {
+		t.Fatalf("backspace left %q", m.pickIn.Value())
 	}
 }
 
@@ -452,7 +498,7 @@ func TestReloadAddsAProjectToThePopup(t *testing.T) {
 
 func TestSelectionStaysOnTheFallbackWhenTheFilteredProjectReturns(t *testing.T) {
 	m := typed(t, press(t, scoped(t, "", 100), "p"), "a")
-	m = press(t, m, "ctrl+j") // beta
+	m = press(t, m, "ctrl+j", "ctrl+j") // beta
 	only := []store.Spec{{Project: "alpha", Status: "draft", Slug: "a-one", Title: "A one", Priority: 2}}
 	next, _ := m.Update(loadedMsg{seq: m.applied + 1, specs: only, projects: []string{"alpha"}})
 	next, _ = next.(Model).Update(loadedMsg{seq: m.applied + 2, specs: projectsFixture(), projects: []string{"alpha", "beta", "idle"}})
