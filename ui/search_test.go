@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -92,6 +93,28 @@ func TestBestScoreFirstThenNormalOrder(t *testing.T) {
 	want := []string{"two", "three", "one"}
 	if got := listed(m); !reflect.DeepEqual(got, want) {
 		t.Fatalf("listed %v, want %v (best first, ties in list order)", got, want)
+	}
+}
+
+// A list longer than the insertion-sort cutoff, with two interleaved scores, so an
+// unstable sort would shuffle the ties.
+func TestTiesKeepListOrderInALongList(t *testing.T) {
+	var specs []store.Spec
+	var tight, loose []string
+	for i := range 20 {
+		s := store.Spec{Project: "p", Status: "draft", Slug: fmt.Sprintf("s%02d", i), Title: "same", Type: "feature"}
+		if i%2 == 1 {
+			s.Title = "sxaxmxe"
+			loose = append(loose, s.Slug)
+		} else {
+			tight = append(tight, s.Slug)
+		}
+		specs = append(specs, s)
+	}
+	m := typed(t, press(t, start(t, specs, 120, 20), "/"), "same")
+	want := append(tight, loose...)
+	if got := listed(m); !reflect.DeepEqual(got, want) {
+		t.Fatalf("listed %v, want %v", got, want)
 	}
 }
 
@@ -229,6 +252,17 @@ func TestArrowsAndCtrlPNMoveTheSelectionWhileTyping(t *testing.T) {
 	}
 	if !m.typing || m.input.Value() != "" {
 		t.Fatalf("moving changed the input: typing %v, value %q", m.typing, m.input.Value())
+	}
+}
+
+// noiseMsg stands for any message the input ignores, such as a cursor blink.
+type noiseMsg struct{}
+
+func TestNonKeyMessageWhileTypingKeepsTheSelection(t *testing.T) {
+	m := press(t, start(t, findable(), 120, 20), "/", "down", "down")
+	m = send(t, m, noiseMsg{})
+	if m.cursor != 2 {
+		t.Fatalf("cursor %d after a non-key message, want 2", m.cursor)
 	}
 }
 
