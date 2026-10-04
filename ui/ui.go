@@ -261,7 +261,11 @@ func (m Model) loaded(msg loadedMsg) (tea.Model, tea.Cmd) {
 	m.apply(msg.specs)
 	if m.picking {
 		m.pick = m.entryIndex(m.pickName)
-		m.pickOff = m.pickScroll(len(m.pickerEntries()))
+		entries := m.pickerEntries()
+		if len(entries) > 0 {
+			m.pickName = entries[m.pick]
+		}
+		m.pickOff = m.pickScroll(len(entries))
 	}
 	if msg.syncErr != nil && msg.w == m.watcher {
 		m.stopWatch()

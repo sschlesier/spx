@@ -448,3 +448,25 @@ func TestReloadAddsAProjectToThePopup(t *testing.T) {
 		t.Fatalf("the new folder should be offered:\n%s", s)
 	}
 }
+
+func TestSelectionStaysOnTheFallbackWhenTheFilteredProjectReturns(t *testing.T) {
+	m := typed(t, press(t, scoped(t, "", 100), "p"), "a")
+	m = press(t, m, "ctrl+j") // beta
+	only := []store.Spec{{Project: "alpha", Status: "draft", Slug: "a-one", Title: "A one", Priority: 2}}
+	next, _ := m.Update(loadedMsg{seq: m.applied + 1, specs: only, projects: []string{"alpha"}})
+	next, _ = next.(Model).Update(loadedMsg{seq: m.applied + 2, specs: projectsFixture(), projects: []string{"alpha", "beta", "idle"}})
+	m = next.(Model)
+	if got := m.pickerEntries()[m.pick]; got != "alpha" {
+		t.Fatalf("after beta returned the popup selects %q, want alpha", got)
+	}
+}
+
+func TestPopupQueryLineFitsANarrowTerminal(t *testing.T) {
+	m := send(t, manyProjects(3), tea.WindowSizeMsg{Width: 30, Height: 14})
+	m = typed(t, press(t, m, "p"), "this-query-is-much-wider-than-the-whole-terminal")
+	for i, l := range strings.Split(screen(m), "\n") {
+		if w := ansi.StringWidth(l); w > 30 {
+			t.Fatalf("row %d is %d columns wide: %q", i, w, l)
+		}
+	}
+}
