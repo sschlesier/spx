@@ -261,6 +261,23 @@ func TestPopupSelectionFallsBackToTheBestMatchWhenFilteredOut(t *testing.T) {
 	}
 }
 
+func TestReloadWithASingleMatchKeepsItSelected(t *testing.T) {
+	m := typed(t, press(t, scoped(t, "", 100), "p"), "bet")
+	next, _ := m.Update(loadedMsg{seq: m.applied + 1, specs: projectsFixture(), projects: []string{"alpha", "beta", "idle"}})
+	m = press(t, next.(Model), "enter")
+	if m.scope != "beta" {
+		t.Fatalf("scope %q, want beta", m.scope)
+	}
+}
+
+func TestPopupFooterKeepsEscAndQuitAt80Columns(t *testing.T) {
+	m := press(t, scoped(t, "a-rather-long-project", 80), "p")
+	f := footer(m)
+	if w := ansi.StringWidth(f); w > 80 || !strings.HasSuffix(f, "ctrl+c quit") || !strings.Contains(f, "esc clear/cancel") {
+		t.Fatalf("footer %q (%d columns)", f, w)
+	}
+}
+
 func TestPopupTypingCanSelectAllProjects(t *testing.T) {
 	m := typed(t, press(t, scoped(t, "alpha", 140), "p"), "all")
 	if got := m.pickerEntries(); !reflect.DeepEqual(got, []string{""}) {
@@ -293,6 +310,8 @@ func TestPopupOnlyPrintableTextAndBackspaceEditTheQuery(t *testing.T) {
 		tea.KeyPressMsg{Code: tea.KeyDelete},
 		tea.KeyPressMsg{Code: tea.KeyLeft},
 		tea.KeyPressMsg{Code: tea.KeyHome},
+		tea.KeyPressMsg{Code: 'b', Text: "b", Mod: tea.ModAlt},
+		tea.KeyPressMsg{Code: 'f', Text: "f", Mod: tea.ModAlt},
 	)
 	if got := m.pickIn.Value(); got != "bet" {
 		t.Fatalf("editing keys changed the query to %q", got)
