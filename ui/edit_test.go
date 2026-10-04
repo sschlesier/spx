@@ -357,3 +357,21 @@ func TestFooterHintsListEditAndCopy(t *testing.T) {
 		t.Errorf("detail footer %q lacks the edit and copy hints", f)
 	}
 }
+
+func TestEditorExecCarriesTheEditorArgumentsAndPath(t *testing.T) {
+	t.Setenv("VISUAL", "code -w")
+	t.Setenv("EDITOR", "nano")
+	if got, want := editorExec("/s/a.md").Args, []string{"code", "-w", "/s/a.md"}; !slices.Equal(got, want) {
+		t.Errorf("args %q, want %q", got, want)
+	}
+}
+
+func TestEditorFinishedWrapsTheExitError(t *testing.T) {
+	boom := errors.New("exit status 1")
+	if got := editorFinished(boom); got != (editorDoneMsg{boom}) {
+		t.Errorf("got %v, want the error in an editorDoneMsg", got)
+	}
+	if got := editorFinished(nil); got != (editorDoneMsg{}) {
+		t.Errorf("got %v, want an empty editorDoneMsg", got)
+	}
+}
