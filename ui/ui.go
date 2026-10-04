@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	"charm.land/bubbles/v2/textinput"
 	"charm.land/bubbles/v2/viewport"
@@ -531,12 +532,12 @@ func (m *Model) renderDetail() {
 		return
 	}
 	s := m.specs[m.cursor]
-	m.detail.SetContent(header(s, duplicateIDs(m.all)[s.ID], m.detail.Width()) + "\n" + m.markdown(s.Body))
+	m.detail.SetContent(header(s, isDuplicate(s, duplicateIDs(m.all)), m.detail.Width()) + "\n" + m.markdown(s.Body))
 	m.detail.SetYOffset(m.detail.YOffset())
 }
 
 func header(s store.Spec, duplicate bool, width int) string {
-	idPart := "id: " + orDash(s.ID)
+	idPart := "id: " + orDash(printable(s.ID))
 	if duplicate {
 		idPart += "   (duplicate id)"
 	}
@@ -645,7 +646,7 @@ func (m Model) listView() string {
 	dupes := duplicateIDs(m.all)
 	idW, projectW, typeW := 0, 0, len("feature")
 	for _, s := range m.specs {
-		idW = max(idW, len(idCell(s, dupes)))
+		idW = max(idW, ansi.StringWidth(idCell(s, dupes)))
 		projectW = max(projectW, len(s.Project))
 		typeW = max(typeW, len(s.Type))
 	}
@@ -654,8 +655,9 @@ func (m Model) listView() string {
 	rows := make([]string, 0, end-m.offset)
 	for i := m.offset; i < end; i++ {
 		s := m.specs[i]
-		row := fmt.Sprintf("%-*s  %-*s  %-8s %-2s  %-*s  %s",
-			idW, idCell(s, dupes), projectW, s.Project, s.Status, priority(s.Priority), typeW, orDash(s.Type), s.Title)
+		cell := idCell(s, dupes)
+		row := fmt.Sprintf("%s%s  %-*s  %-8s %-2s  %-*s  %s",
+			cell, strings.Repeat(" ", idW-ansi.StringWidth(cell)), projectW, s.Project, s.Status, priority(s.Priority), typeW, orDash(s.Type), s.Title)
 		row = ansi.Truncate(row, w, "…")
 		if i == m.cursor {
 			row = selectedStyle.Render(row + strings.Repeat(" ", max(0, w-ansi.StringWidth(row))))
@@ -681,30 +683,50 @@ func fit(s string, width, height int) string {
 	return strings.Join(lines, "\n")
 }
 
-// duplicateIDs is the set of ids carried by more than one of specs.
+// maxIDWidth caps the id column, in cells, so a long id can't squeeze the rest of the row.
+const maxIDWidth = 16
+
+// duplicateIDs is the set of ids, lowercased, carried by more than one of specs.
 func duplicateIDs(specs []store.Spec) map[string]bool {
 	seen, dupes := map[string]bool{}, map[string]bool{}
 	for _, s := range specs {
-		if s.ID == "" {
+		id := strings.ToLower(s.ID)
+		if id == "" {
 			continue
 		}
-		if seen[s.ID] {
-			dupes[s.ID] = true
+		if seen[id] {
+			dupes[id] = true
 		}
-		seen[s.ID] = true
+		seen[id] = true
 	}
 	return dupes
 }
 
-// idCell is the id as the list shows it: "-" without one, a trailing "!" on a duplicate.
+func isDuplicate(s store.Spec, dupes map[string]bool) bool {
+	return dupes[strings.ToLower(s.ID)]
+}
+
+// printable drops control characters, so an id can't split a row or send terminal escapes.
+func printable(id string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return -1
+		}
+		return r
+	}, id)
+}
+
+// idCell is the id as the list shows it: printable, cut to maxIDWidth, "-" without one, and a
+// trailing "!" on a duplicate.
 func idCell(s store.Spec, dupes map[string]bool) string {
-	if s.ID == "" {
+	id := ansi.Truncate(printable(s.ID), maxIDWidth, "…")
+	if id == "" {
 		return "-"
 	}
-	if dupes[s.ID] {
-		return s.ID + "!"
+	if isDuplicate(s, dupes) {
+		return id + "!"
 	}
-	return s.ID
+	return id
 }
 
 func priority(p int) string {

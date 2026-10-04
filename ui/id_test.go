@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/x/ansi"
+
 	"spx/store"
 )
 
@@ -108,6 +110,54 @@ func TestSpecsWithoutAnIDAreNeverDuplicates(t *testing.T) {
 	}})
 	if s := screen(m); strings.Contains(s, "!") || strings.Contains(s, "(duplicate id)") {
 		t.Errorf("id-less specs marked as duplicates:\n%s", s)
+	}
+}
+
+func TestIDsDifferingOnlyInCaseAreDuplicates(t *testing.T) {
+	specs := []store.Spec{
+		{Project: "p", Status: "draft", Slug: "a", Title: "A", ID: "Red-Fox", Priority: 2},
+		{Project: "p", Status: "draft", Slug: "b", Title: "B", ID: "red-fox", Priority: 2},
+	}
+	m := start(t, specs, 120, 20)
+	for _, title := range []string{"A", "B"} {
+		if row := rowOf(m, title+" "); !strings.Contains(row, "-fox!") && !strings.Contains(row, "-Fox!") {
+			t.Errorf("row for %s = %q, want the duplicate marker", title, row)
+		}
+	}
+	if s := screen(m); !strings.Contains(s, "(duplicate id)") {
+		t.Errorf("detail missing the duplicate note:\n%s", s)
+	}
+}
+
+func TestLongIDIsCutToTheColumnCap(t *testing.T) {
+	long := strings.Repeat("x", 40)
+	m := start(t, []store.Spec{{Project: "p", Status: "draft", Slug: "a", Title: "Title", ID: long, Type: "feature", Priority: 2}}, 80, 10)
+	row := rowOf(m, "Title")
+	want := strings.Repeat("x", maxIDWidth-1) + "…  p "
+	if !strings.HasPrefix(row, want) {
+		t.Errorf("row %q, want prefix %q", row, want)
+	}
+}
+
+func TestControlCharactersInAnIDNeverReachTheScreen(t *testing.T) {
+	m := start(t, []store.Spec{{Project: "p", Status: "draft", Slug: "a", Title: "Title", ID: "red\n\x1b[31mfox\t", Type: "feature", Priority: 2}}, 120, 10)
+	if row := rowOf(m, "Title"); !strings.HasPrefix(row, "red[31mfox  p ") {
+		t.Errorf("row %q, want the control characters dropped", row)
+	}
+	if !strings.Contains(m.detail.View(), "id: red[31mfox   type: feature") {
+		t.Errorf("detail %q, want the control characters dropped", m.detail.View())
+	}
+}
+
+func TestMultiCellIDsAlignTheColumns(t *testing.T) {
+	specs := []store.Spec{
+		{Project: "p", Status: "draft", Slug: "a", Title: "Wide", ID: "日本語", Priority: 2},
+		{Project: "p", Status: "draft", Slug: "b", Title: "Narrow", ID: "ab", Priority: 2},
+	}
+	m := start(t, specs, 80, 10)
+	wide, narrow := rowOf(m, "Wide"), rowOf(m, "Narrow")
+	if ansi.StringWidth(wide[:strings.Index(wide, "p ")]) != ansi.StringWidth(narrow[:strings.Index(narrow, "p ")]) {
+		t.Errorf("project column misaligned:\n%q\n%q", wide, narrow)
 	}
 }
 
