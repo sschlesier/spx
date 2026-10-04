@@ -178,7 +178,7 @@ func TestNarrowFooterDropsHintsToKeepQuit(t *testing.T) {
 	m := press(t, start(t, findable(), 80, 20), "d", "/")
 	m = press(t, typed(t, m, "zebra"), "enter")
 	got := footer(m)
-	want := "all projects · draft · /zebra · 1 shown · enter open · j/k move · q quit"
+	want := "all projects · draft · /zebra · 1 shown · enter open · p project · q quit"
 	if got != want {
 		t.Fatalf("footer %q, want %q", got, want)
 	}
@@ -333,7 +333,7 @@ func TestNoMatchMessages(t *testing.T) {
 }
 
 func TestFooterHintsListSlashFilter(t *testing.T) {
-	for _, w := range []int{120} {
+	for _, w := range []int{120, 80} {
 		m := start(t, findable(), w, 20)
 		if got := footer(m); !strings.Contains(got, "/ filter") {
 			t.Errorf("width %d: footer %q has no / filter hint", w, got)

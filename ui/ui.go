@@ -30,7 +30,7 @@ const (
 	pollInterval = time.Second            // reload interval while the watcher is down
 )
 
-const footerHelp = "j/k move · g/G top/bottom · ctrl+d/u scroll · d/a/s/x status · / filter · q quit"
+const footerHelp = "j/k move · g/G top/bottom · ctrl+d/u scroll · d/a/s/x status · / filter · p project · q quit"
 
 // filterKeys maps each status filter key to the status it lists.
 var filterKeys = map[string]string{"d": "draft", "a": "approved", "s": "started", "x": store.Dropped}
@@ -55,6 +55,9 @@ type Model struct {
 	input  textinput.Model
 
 	projects []string // project folders in the store, alphabetical
+	picking  bool     // the project popup has the keys
+	pick     int      // the popup's selected entry; 0 is all projects
+	pickOff  int      // the popup's first entry shown
 
 	width, height int
 	detailOpen    bool // narrow layout only: detail shown full-width
@@ -391,6 +394,9 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.typingKey(msg)
 	}
 	k := msg.String()
+	if m.picking {
+		return m.pickerKey(k)
+	}
 	switch k {
 	case "q", "ctrl+c":
 		return m, tea.Quit
@@ -430,6 +436,10 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.detailOpen = true
 			m.layout()
 		}
+	case "p":
+		m.picking = true
+		m.pick, m.pickOff = m.pickIndex(), 0
+		m.pickOff = m.pickScroll(len(m.pickerEntries()))
 	case "/":
 		m.typing = true
 		m.input.SetValue(m.query)
@@ -449,6 +459,87 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 	}
 	return m, nil
+}
+
+// pickerKey handles a key while the project popup is open. No key reaches the list.
+func (m Model) pickerKey(k string) (tea.Model, tea.Cmd) {
+	entries := m.pickerEntries()
+	m.pick = min(m.pick, len(entries)-1)
+	switch k {
+	case "q", "ctrl+c":
+		return m, tea.Quit
+	case "j", "down":
+		m.pick = min(m.pick+1, len(entries)-1)
+	case "k", "up":
+		m.pick = max(m.pick-1, 0)
+	case "g":
+		m.pick = 0
+	case "G":
+		m.pick = len(entries) - 1
+	case "esc", "p":
+		m.picking = false
+	case "enter":
+		m.picking = false
+		m.setScope(entries[m.pick])
+	}
+	m.pickOff = m.pickScroll(len(entries))
+	return m, nil
+}
+
+// pickerEntries are the scopes the popup offers: "" for all projects, then every project
+// folder, alphabetically. The current scope is offered even when its folder is gone.
+func (m Model) pickerEntries() []string {
+	set := map[string]bool{}
+	for _, p := range m.projects {
+		set[p] = true
+	}
+	for _, s := range m.all {
+		set[s.Project] = true
+	}
+	if m.scope != "" {
+		set[m.scope] = true
+	}
+	names := make([]string, 0, len(set))
+	for p := range set {
+		names = append(names, p)
+	}
+	sort.Strings(names)
+	return append([]string{""}, names...)
+}
+
+// pickIndex is the popup entry of the current scope.
+func (m Model) pickIndex() int {
+	for i, e := range m.pickerEntries() {
+		if e == m.scope {
+			return i
+		}
+	}
+	return 0
+}
+
+// setScope lists only project's specs, or every project's when it is empty, and selects the
+// first row, showing its detail from the top. The same scope changes nothing.
+func (m *Model) setScope(project string) {
+	if project == m.scope {
+		return
+	}
+	m.scope = project
+	m.specs = m.visible()
+	m.cursor = 0
+	m.scrollList()
+	m.renderDetail()
+	m.detail.GotoTop()
+}
+
+// liveCount is how many draft, approved and started specs project has; "" counts them all.
+func (m Model) liveCount(project string) int {
+	n := 0
+	for _, s := range m.all {
+		if s.Status != store.Dropped && (project == "" || s.Project == project) {
+			n++
+		}
+	}
+	return n
 }
 
 // typingKey handles a key while the query input is open: everything printable goes into
@@ -616,10 +707,11 @@ func (m Model) render() string {
 	help := footerHelp
 	if m.detailOpen {
 		help = "esc back · j/k scroll · ctrl+d/u scroll · q quit"
-	} else if !m.split() && (m.filter != "" || m.query != "") {
-		help = "enter open · j/k move · d/a/s/x status · / filter · q quit" // fits 80 columns after a status filter
 	} else if !m.split() {
-		help = "enter open · j/k move · g/G top/bottom · d/a/s/x status · / filter · q quit"
+		help = "enter open · d/a/s/x status · / filter · p project · q quit"
+	}
+	if m.picking {
+		help = "j/k move · g/G top/bottom · enter apply · esc cancel · q quit"
 	}
 	var lead, active []string
 	if m.unreadable {
@@ -638,17 +730,76 @@ func (m Model) render() string {
 	if m.typing {
 		return body + "\n" + ansi.Truncate(m.input.View(), m.width, "")
 	}
-	return body + "\n" + dimStyle.Render(footerLine(lead, strings.Split(help, " · "), m.width))
+	out := body + "\n" + dimStyle.Render(footerLine(lead, strings.Split(help, " · "), m.width))
+	if m.picking {
+		return m.overlay(out)
+	}
+	return out
 }
 
-// footerLine joins lead and hints. When it is wider than width, it drops the hints next to
-// the last one, so the final hint (quit) stays visible, and cuts what's left at width.
+// footerLine joins lead and hints. When it is wider than width, it drops hints from the one
+// before the last two, so the last two (project, quit) stay visible, and cuts what's left at
+// width.
 func footerLine(lead, hints []string, width int) string {
 	join := func() string { return strings.Join(append(append([]string{}, lead...), hints...), " · ") }
 	for len(hints) > 1 && ansi.StringWidth(join()) > width {
-		hints = append(hints[:len(hints)-2], hints[len(hints)-1])
+		i := max(0, len(hints)-3)
+		hints = append(hints[:i], hints[i+1:]...)
 	}
 	return ansi.Truncate(join(), width, "…")
+}
+
+// popupRows is how many entries the project popup shows at once.
+func (m Model) popupRows() int { return max(1, m.height-6) }
+
+// pickScroll is the first popup entry shown: the offset kept while moving, moved just far
+// enough to include the selection.
+func (m Model) pickScroll(n int) int {
+	rows := min(n, m.popupRows())
+	off := min(m.pickOff, m.pick)
+	if m.pick >= off+rows {
+		off = m.pick - rows + 1
+	}
+	return max(0, min(off, n-rows))
+}
+
+// popup is the bordered project picker. Its list scrolls to keep the selection visible.
+func (m Model) popup() string {
+	entries := m.pickerEntries()
+	labels := make([]string, len(entries))
+	width := len("Project")
+	for i, e := range entries {
+		labels[i] = "all projects"
+		if e != "" {
+			labels[i] = fmt.Sprintf("%s (%d)", printable(e), m.liveCount(e))
+		}
+		width = max(width, ansi.StringWidth(labels[i]))
+	}
+	width = min(width, max(1, m.width-6))
+	rows := min(len(entries), m.popupRows())
+	first := m.pickScroll(len(entries))
+	lines := []string{titleStyle.Render("Project")}
+	for i := first; i < first+rows; i++ {
+		l := ansi.Truncate(labels[i], width, "…")
+		l += strings.Repeat(" ", width-ansi.StringWidth(l))
+		if i == m.pick {
+			l = selectedStyle.Render(l)
+		}
+		lines = append(lines, l)
+	}
+	return lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1).
+		Render(strings.Join(lines, "\n"))
+}
+
+// overlay draws the project popup centered over view.
+func (m Model) overlay(view string) string {
+	p := m.popup()
+	x := max(0, (m.width-lipgloss.Width(p))/2)
+	y := max(0, (m.height-lipgloss.Height(p))/2)
+	return lipgloss.NewCompositor(
+		lipgloss.NewLayer(view),
+		lipgloss.NewLayer(p).X(x).Y(y).Z(1),
+	).Render()
 }
 
 // scopeLabel is the project listed, or "all projects".

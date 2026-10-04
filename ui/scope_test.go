@@ -14,7 +14,8 @@ import (
 // projectsFixture has specs in three projects, one of them (idle) holding only a dropped spec.
 func projectsFixture() []store.Spec {
 	mk := func(project, status, slug string) store.Spec {
-		return store.Spec{Project: project, Status: status, Slug: slug, Title: "Title " + slug, Type: "feature", Priority: 2}
+		return store.Spec{Project: project, Status: status, Slug: slug, Title: "Title " + slug, Type: "feature", Priority: 2,
+			Body: strings.Repeat("A line of the body.\n\n", 40)}
 	}
 	return []store.Spec{
 		mk("alpha", "started", "a-one"),
