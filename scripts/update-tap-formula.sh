@@ -52,4 +52,11 @@ awk -v tag="$tag" '
   { print }
 ' "$checksums" "$formula" > "$tmp"
 
+grep -qF "  version \"${tag#v}\"" "$tmp" || { echo "error: formula has no version line to rewrite" >&2; exit 1; }
+[ "$(grep -cF "/download/$tag/spx-" "$tmp")" -eq 4 ] || { echo "error: expected four download URLs in the formula" >&2; exit 1; }
+for asset in spx-macos-arm64 spx-macos-amd64 spx-linux-arm64 spx-linux-amd64; do
+  sum=$(awk -v name="$asset" '$2 == name { print $1 }' "$checksums")
+  grep -qF "sha256 \"$sum\"" "$tmp" || { echo "error: formula has no sha256 line for $asset" >&2; exit 1; }
+done
+
 cat "$tmp" > "$formula"
