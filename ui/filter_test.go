@@ -82,22 +82,22 @@ func TestNarrowFilteredFooterFits80Columns(t *testing.T) {
 		specs[i].Status = "approved"
 	}
 	m := press(t, start(t, specs, 80, 30), "a")
-	if f := footer(m); !strings.HasPrefix(f, "approved · 20 shown · ") || !strings.HasSuffix(strings.TrimRight(f, " "), "q quit") {
+	if f := footer(m); !strings.HasPrefix(f, "all projects · approved · 20 shown · ") || !strings.HasSuffix(strings.TrimRight(f, " "), "q quit") {
 		t.Fatalf("footer %q should keep the filter and end with q quit", f)
 	}
 }
 
 func TestFooterWithAndWithoutFilter(t *testing.T) {
 	m := start(t, mixed(), 140, 20)
-	if f := footer(m); f != footerHelp || !strings.Contains(f, "d/a/s/x status") {
-		t.Errorf("unfiltered footer %q, want %q", f, footerHelp)
+	if f, want := footer(m), "all projects · "+footerHelp; f != want || !strings.Contains(f, "d/a/s/x status") {
+		t.Errorf("unfiltered footer %q, want %q", f, want)
 	}
 	m = press(t, m, "d")
-	if f, want := footer(m), "draft · 2 shown · "+footerHelp; f != want {
+	if f, want := footer(m), "all projects · draft · 2 shown · "+footerHelp; f != want {
 		t.Errorf("filtered footer %q, want %q", f, want)
 	}
 	n := press(t, start(t, mixed(), 80, 20), "x")
-	if f := footer(n); !strings.HasPrefix(f, "dropped · 2 shown · enter open") || !strings.Contains(f, "d/a/s/x status") {
+	if f := footer(n); !strings.HasPrefix(f, "all projects · dropped · 2 shown · enter open") {
 		t.Errorf("narrow filtered footer %q", f)
 	}
 }
@@ -144,7 +144,7 @@ func TestFilterWithNoMatches(t *testing.T) {
 	if !strings.Contains(s, "No approved specs") || strings.Contains(s, "Outcome of spec") {
 		t.Fatalf("want the empty message and an empty detail:\n%s", s)
 	}
-	if f := footer(m); !strings.HasPrefix(f, "approved · 0 shown · ") {
+	if f := footer(m); !strings.HasPrefix(f, "all projects · approved · 0 shown · ") {
 		t.Errorf("footer %q", f)
 	}
 	m = press(t, m, "j", "G", "ctrl+d", "a")
@@ -173,7 +173,7 @@ func TestStatusKeysIgnoredInTheFullWidthDetail(t *testing.T) {
 func TestUnreadableNoticeComesBeforeTheFilter(t *testing.T) {
 	m := press(t, start(t, mixed(), 140, 20), "d")
 	next, _ := m.Update(loadedMsg{seq: m.applied + 1, err: errors.New("spec store not found: /store")})
-	if f, want := footer(next.(Model)), "store unreadable: /store · draft · 2 shown · "; !strings.HasPrefix(f, want) {
+	if f, want := footer(next.(Model)), "store unreadable: /store · all projects · draft · 2 shown · "; !strings.HasPrefix(f, want) {
 		t.Fatalf("footer %q, want prefix %q", f, want)
 	}
 }

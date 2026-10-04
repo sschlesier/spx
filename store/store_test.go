@@ -282,3 +282,28 @@ func TestRoot(t *testing.T) {
 		t.Errorf("empty env: %q", got)
 	}
 }
+
+func TestProjectsListsNonHiddenFoldersAlphabetically(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "zed/draft/a.md", spec("A", "2"))
+	write(t, root, "alpha/dropped/b.md", spec("B", "2"))
+	write(t, root, ".hidden/draft/c.md", spec("C", "2"))
+	if err := os.MkdirAll(filepath.Join(root, "empty"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	write(t, root, "README.md", "not a project")
+	got, err := Projects(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"alpha", "empty", "zed"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("Projects = %v, want %v", got, want)
+	}
+}
+
+func TestProjectsFailsOnAnUnreadableRoot(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "nope")
+	if _, err := Projects(missing); err == nil || err.Error() != "spec store not found: "+missing {
+		t.Fatalf("err = %v", err)
+	}
+}
