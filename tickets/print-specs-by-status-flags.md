@@ -91,3 +91,6 @@ Stop and ask if: matching the TUI row would change how the TUI list looks.
   duplicate-status check in `parseArgs` (equivalent: the filter uses `slices.Contains`);
   U+2028/U+2029 in titles (`store.go` runs titles through `strings.Fields`, which splits on them,
   and the run-level test covers it). Escalated: `type` and `project` are not sanitised in rows.
+- 2026-10-04: Review round 1 re-verify: added a test that the list still cuts a long row with an
+  ellipsis (the refactored `listView` truncation was untested). Dismissed the same equivalent
+  mutant again. Still escalated: `type` and `project` control characters.

@@ -24,6 +24,14 @@ func TestListRowsStartWithTheSharedRows(t *testing.T) {
 	}
 }
 
+func TestListCutsALongRowWithAnEllipsis(t *testing.T) {
+	specs := []store.Spec{{Project: "p", Status: "draft", Slug: "long", Title: strings.Repeat("word ", 40), Priority: 2}}
+	m := start(t, specs, 60, 10)
+	if row := rowOf(m, "word"); !strings.HasSuffix(strings.TrimRight(row, " "), "…") {
+		t.Fatalf("row %q does not end with an ellipsis", row)
+	}
+}
+
 func TestRowsFormatsUntruncatedAlignedRows(t *testing.T) {
 	long := strings.Repeat("long title ", 30)
 	all := []store.Spec{
