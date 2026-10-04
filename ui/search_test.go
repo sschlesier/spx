@@ -281,6 +281,18 @@ func TestFooterHintsListSlashFilter(t *testing.T) {
 	}
 }
 
+func TestPasteWhileTypingNarrowsTheList(t *testing.T) {
+	m := press(t, start(t, findable(), 120, 20), "/")
+	m = send(t, m, tea.PasteMsg{Content: "zebra"})
+	if m.query != "zebra" || !reflect.DeepEqual(listed(m), []string{"beta"}) {
+		t.Fatalf("query %q, listed %v, want the paste applied", m.query, listed(m))
+	}
+	m = press(t, m, "enter")
+	if m.query != "zebra" {
+		t.Fatalf("enter kept query %q", m.query)
+	}
+}
+
 func TestSlashIsIgnoredInTheFullWidthDetail(t *testing.T) {
 	m := press(t, start(t, findable(), 80, 20), "enter", "/")
 	if m.typing {

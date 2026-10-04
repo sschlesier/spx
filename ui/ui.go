@@ -171,9 +171,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.loaded(msg)
 	default:
 		if m.typing {
-			var cmd tea.Cmd
-			m.input, cmd = m.input.Update(msg)
-			return m, cmd
+			return m.edit(msg)
 		}
 	}
 	return m, nil
