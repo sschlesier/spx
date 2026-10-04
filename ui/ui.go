@@ -5,15 +5,18 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
+	"charm.land/bubbles/v2/textinput"
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/glamour/v2"
 	"charm.land/glamour/v2/styles"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/sahilm/fuzzy"
 
 	"spx/store"
 )
@@ -26,7 +29,7 @@ const (
 	pollInterval = time.Second            // reload interval while the watcher is down
 )
 
-const footerHelp = "j/k move · g/G top/bottom · ctrl+d/u scroll · d/a/s/x status · q quit"
+const footerHelp = "j/k move · g/G top/bottom · ctrl+d/u scroll · d/a/s/x status · / filter · q quit"
 
 // filterKeys maps each status filter key to the status it lists.
 var filterKeys = map[string]string{"d": "draft", "a": "approved", "s": "started", "x": store.Dropped}
@@ -45,6 +48,9 @@ type Model struct {
 	cursor int
 	offset int    // first list row shown
 	filter string // the only status listed; empty lists the live statuses
+	query  string // fuzzy text filter, applied after the status filter
+	typing bool   // the query input has the keys
+	input  textinput.Model
 
 	width, height int
 	detailOpen    bool // narrow layout only: detail shown full-width
@@ -87,7 +93,8 @@ type (
 // New returns a model for specs loaded from root. An empty style detects light or dark
 // from the terminal background; tests pass a fixed style.
 func New(root string, specs []store.Spec, style string) Model {
-	m := Model{root: root, all: specs, style: style, detail: viewport.New()}
+	m := Model{root: root, all: specs, style: style, detail: viewport.New(), input: textinput.New()}
+	m.input.Prompt = "/"
 	m.specs = m.visible()
 	if style == "" {
 		m.style = styles.DarkStyle
@@ -128,7 +135,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.renderDetail()
 	case tea.KeyPressMsg:
-		return m.key(msg.String())
+		return m.key(msg)
 	case watchStartedMsg:
 		m.starting = false
 		if msg.err != nil {
@@ -162,6 +169,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	case loadedMsg:
 		return m.loaded(msg)
+	default:
+		if m.typing {
+			var cmd tea.Cmd
+			m.input, cmd = m.input.Update(msg)
+			return m, cmd
+		}
 	}
 	return m, nil
 }
@@ -245,7 +258,8 @@ func (m *Model) apply(specs []store.Spec) {
 	m.show(m.visible(), m.cursor)
 }
 
-// visible is the listed rows: the filter's status, or every live status without one.
+// visible is the listed rows: the filter's status, or every live status without one, then
+// the specs matching the query, best first.
 func (m Model) visible() []store.Spec {
 	var out []store.Spec
 	for _, s := range m.all {
@@ -253,7 +267,47 @@ func (m Model) visible() []store.Spec {
 			out = append(out, s)
 		}
 	}
+	if m.query == "" {
+		return out
+	}
+	type scored struct {
+		spec  store.Spec
+		score int
+	}
+	var hits []scored
+	for _, s := range out {
+		if score, ok := matchScore(m.query, s); ok {
+			hits = append(hits, scored{s, score})
+		}
+	}
+	sort.SliceStable(hits, func(i, j int) bool { return hits[i].score > hits[j].score })
+	out = nil
+	for _, h := range hits {
+		out = append(out, h.spec)
+	}
 	return out
+}
+
+// matchScore is the best fuzzy score of query over the spec's title, slug, project and type.
+func matchScore(query string, s store.Spec) (int, bool) {
+	best, ok := 0, false
+	for _, field := range []string{s.Title, s.Slug, s.Project, s.Type} {
+		if ms := fuzzy.Find(query, []string{field}); len(ms) > 0 && (!ok || ms[0].Score > best) {
+			best, ok = ms[0].Score, true
+		}
+	}
+	return best, ok
+}
+
+// setQuery lists the specs matching query and selects the best one, showing its detail
+// from the top.
+func (m *Model) setQuery(query string) {
+	m.query = query
+	m.specs = m.visible()
+	m.cursor = 0
+	m.scrollList()
+	m.renderDetail()
+	m.detail.GotoTop()
 }
 
 // setFilter lists only status, or the live statuses when status is empty. A spec that's
@@ -299,7 +353,11 @@ func find(specs []store.Spec, s store.Spec) int {
 	return -1
 }
 
-func (m Model) key(k string) (tea.Model, tea.Cmd) {
+func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	if m.typing {
+		return m.typingKey(msg)
+	}
+	k := msg.String()
 	switch k {
 	case "q", "ctrl+c":
 		return m, tea.Quit
@@ -339,8 +397,15 @@ func (m Model) key(k string) (tea.Model, tea.Cmd) {
 			m.detailOpen = true
 			m.layout()
 		}
+	case "/":
+		m.typing = true
+		m.input.SetValue(m.query)
+		cmd := m.input.Focus()
+		return m, cmd
 	case "esc":
-		if m.filter != "" {
+		if m.query != "" {
+			m.setQuery("")
+		} else if m.filter != "" {
 			m.setFilter("")
 		}
 	case "d", "a", "s", "x":
@@ -351,6 +416,51 @@ func (m Model) key(k string) (tea.Model, tea.Cmd) {
 		}
 	}
 	return m, nil
+}
+
+// typingKey handles a key while the query input is open: everything printable goes into
+// the input.
+func (m Model) typingKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c":
+		return m, tea.Quit
+	case "enter":
+		m.closeInput()
+	case "esc":
+		m.closeInput()
+		m.input.Reset()
+		if m.query != "" {
+			m.setQuery("")
+		}
+	case "up", "ctrl+p":
+		m.selectRow(m.cursor - 1)
+	case "down", "ctrl+n":
+		m.selectRow(m.cursor + 1)
+	case "backspace":
+		if m.input.Value() == "" {
+			m.closeInput()
+			return m, nil
+		}
+		return m.edit(msg)
+	default:
+		return m.edit(msg)
+	}
+	return m, nil
+}
+
+func (m *Model) closeInput() {
+	m.typing = false
+	m.input.Blur()
+}
+
+// edit passes msg to the input and lists the specs matching what it now holds.
+func (m Model) edit(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	m.input, cmd = m.input.Update(msg)
+	if q := m.input.Value(); q != m.query {
+		m.setQuery(q)
+	}
+	return m, cmd
 }
 
 func (m *Model) selectRow(i int) {
@@ -387,6 +497,7 @@ func (m *Model) layout() {
 		m.detail.SetWidth(m.width)
 	}
 	m.detail.SetHeight(m.bodyHeight())
+	m.input.SetWidth(max(1, m.width-2))
 	m.scrollList()
 }
 
@@ -473,18 +584,33 @@ func (m Model) render() string {
 	} else if !m.split() {
 		help = "enter open · j/k move · g/G top/bottom · d/a/s/x status · q quit"
 	}
+	var active []string
 	if m.filter != "" {
-		help = fmt.Sprintf("%s · %d shown · %s", m.filter, len(m.specs), help)
+		active = append(active, m.filter)
+	}
+	if m.query != "" {
+		active = append(active, "/"+m.query)
+	}
+	if len(active) > 0 {
+		help = fmt.Sprintf("%s · %d shown · %s", strings.Join(active, " · "), len(m.specs), help)
 	}
 	if m.unreadable {
 		help = "store unreadable: " + m.root + " · " + help
+	}
+	if m.typing {
+		return body + "\n" + ansi.Truncate(m.input.View(), m.width, "")
 	}
 	return body + "\n" + dimStyle.Render(ansi.Truncate(help, m.width, "…"))
 }
 
 func (m Model) listView() string {
 	if len(m.specs) == 0 {
-		if m.filter != "" {
+		switch {
+		case m.query != "" && m.filter != "":
+			return fmt.Sprintf("No %s specs match %q", m.filter, m.query)
+		case m.query != "":
+			return fmt.Sprintf("No specs match %q", m.query)
+		case m.filter != "":
 			return "No " + m.filter + " specs"
 		}
 		return "No specs in " + m.root
