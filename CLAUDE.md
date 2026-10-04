@@ -39,8 +39,8 @@ Invariants:
   only to resolve `depends-on` ids in the detail pane (watched, never listed).
 - An unreadable root exits 1 with `spx: spec store not found: <path>` before the UI starts;
   quitting exits 0 and restores the terminal.
-- The CLI is `spx [-d] [-a] [-s] [project]`: exit 0 on success or `-h`/`--help`, 1 for a missing
+- The CLI is `spx [-d] [-a] [-s] [project]` (`spx --version` alone prints `spx <version>`): exit 0 on success, `-h`/`--help` or `--version`, 1 for a missing
   store or an unknown project, 2 for a usage error. Status flags print the matching specs to
-  stdout instead of starting the UI. Usage paths never read the store. The only processes
+  stdout instead of starting the UI. Usage paths and `--version` never read the store. The only processes
   spx starts are one `git rev-parse` at startup, to scope to the current repo's project; the
   editor on `e`; and one clipboard tool (pbcopy, wl-copy or xclip) on `y`/`Y`.
