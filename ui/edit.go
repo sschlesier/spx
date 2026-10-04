@@ -89,11 +89,17 @@ func (m Model) openEditor() (tea.Model, tea.Cmd) {
 		cmd := m.setNotice("only drafts can be edited (" + s.Status + ")")
 		return m, cmd
 	}
-	argv := editorCommand(os.Getenv("VISUAL"), os.Getenv("EDITOR"), s.Path)
-	return m, tea.ExecProcess(exec.Command(argv[0], argv[1:]...), func(err error) tea.Msg {
-		return editorDoneMsg{err}
-	})
+	return m, tea.ExecProcess(editorExec(s.Path), editorFinished)
 }
+
+// editorExec is the command that opens path in the user's editor. It doesn't go through a
+// shell.
+func editorExec(path string) *exec.Cmd {
+	argv := editorCommand(os.Getenv("VISUAL"), os.Getenv("EDITOR"), path)
+	return exec.Command(argv[0], argv[1:]...)
+}
+
+func editorFinished(err error) tea.Msg { return editorDoneMsg{err} }
 
 // editorDone reloads the store after the editor exits, so the edited spec shows its new
 // content.
