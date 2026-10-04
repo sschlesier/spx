@@ -6,7 +6,7 @@ priority: 3
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-10-04: type-to-filter popup, always typing, ctrl-j/ctrl-k move. Cold read: not run (one area, no flags)"
-status: in-progress
+status: in-review
 ---
 
 In the project popup I can type to fuzzy-match a project name and move the selection with ctrl-j / ctrl-k, so I reach a project without scrolling the list.
@@ -65,3 +65,6 @@ Stop and ask if: ctrl-j cannot be distinguished from enter in Bubble Tea's key r
 
 - 2026-10-04: Approved: Scott Schlesier, 2026-10-04: type-to-filter popup, always typing, ctrl-j/ctrl-k move. Cold read: not run (one area, no flags)
 - 2026-10-04: Started on branch pick-project-by-typing
+- 2026-10-04: Manual check in tmux (100x28, real store): `p`, `s`, ctrl-j, enter scoped to the second match (mdserver). ctrl-j arrives as ctrl-j, so the Boundaries stop did not trigger.
+- 2026-10-04: Assumption: the popup is at least 20 columns wide (capped by the terminal) so the query line fits; the popup footer help now names the new keys (`ui/ui.go` footer).
+- 2026-10-04: Review started
