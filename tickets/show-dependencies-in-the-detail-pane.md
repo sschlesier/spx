@@ -5,7 +5,7 @@ type: feature
 priority: 2
 depends-on: []
 approved: "Scott Schlesier, 2026-10-04: dependencies and blocks in the detail pane, done/ receipts read for lookup, ]/[ cycle and enter jumps, match by id; parent/children split out. Cold read: not run (one area, no flags)"
-status: in-review
+status: done
 ---
 
 The detail pane lists what the selected spec depends on and what it blocks, each with title and status, and a key jumps to one of them, so I can see what's in the way.
@@ -19,15 +19,15 @@ Out of scope:
 
 ## Acceptance criteria
 
-- [ ] The detail header has a "Depends on" section with one line per `depends-on` id: `<id>  <title>  (<status>)`, replacing the raw `depends-on:` line. It is absent when the list is empty.
-- [ ] A "Blocks" section lists the specs in the same project whose `depends-on` contains this spec's id, in the same format. It is absent when none, and for a spec without an id.
-- [ ] An id that matches a spec in `done/` shows `(done)`; one that matches a spec in `dropped/` shows `(dropped)`; the other statuses show their folder name.
-- [ ] An id matching no spec in the project shows `<id> (not in store)`.
-- [ ] `]` and `[` move a highlight forward and back through the listed entries (Depends on, then Blocks), wrapping; `enter` with a highlight jumps the list selection to that spec. Without a highlight `enter` behaves as before. The highlight clears when the selection changes.
-- [ ] Jumping to a spec hidden by the `/` query or a status filter clears them so it is selected. Jumping to a dropped spec sets the `x` filter. A `done` or `not in store` entry does not jump and shows a notice.
-- [ ] Ids match exactly and only within the spec's project. If two specs share an id, the first in list order is used and the entry shows `(duplicate id)`.
-- [ ] spx still writes nothing, and `done/` specs never appear in the list.
-- [ ] The footer hints include the new keys, and they work in both the split and the narrow (detail full-width) layout.
+- [x] The detail header has a "Depends on" section with one line per `depends-on` id: `<id>  <title>  (<status>)`, replacing the raw `depends-on:` line. It is absent when the list is empty.
+- [x] A "Blocks" section lists the draft, approved and started specs in the same project (not dropped) whose `depends-on` contains this spec's id, in the same format. It is absent when none, and for a spec without an id.
+- [x] An id that matches a spec in `done/` shows `(done)`; one that matches a spec in `dropped/` shows `(dropped)`; the other statuses show their folder name.
+- [x] An id matching no spec in the project shows `<id> (not in store)`.
+- [x] `]` and `[` move a highlight forward and back through the listed entries (Depends on, then Blocks), wrapping; `enter` with a highlight jumps the list selection to that spec. Without a highlight `enter` behaves as before. The highlight clears when the selection changes.
+- [x] Jumping to a spec hidden by the `/` query or a status filter clears them so it is selected. Jumping to a dropped spec sets the `x` filter. A `done` or `not in store` entry does not jump and shows a notice.
+- [x] Ids match exactly and only within the spec's project. If two specs share an id, the first in list order is used and the entry shows `(<status>, duplicate id)`.
+- [x] spx still writes nothing, and `done/` specs never appear in the list.
+- [x] The footer hints include the new keys, and they work in both the split and the narrow (detail full-width) layout.
 
 ## Verification
 
@@ -57,3 +57,5 @@ Don't touch: the store files; the CLI flags.
 - 2026-10-04: Approved: Scott Schlesier, 2026-10-04: dependencies and blocks in the detail pane, done/ receipts read for lookup, ]/[ cycle and enter jumps, match by id; parent/children split out. Cold read: not run (one area, no flags)
 - 2026-10-04: Started on branch show-dependencies-in-detail-pane (store move to started/ pending; done after the fact, as the start steps were skipped).
 - 2026-10-04: Review started
+- 2026-10-04: Changed during review (Scott Schlesier, round 1): criterion 2, Blocks lists only draft/approved/started dependents, not dropped; criterion 7, a duplicate shows `(<status>, duplicate id)` rather than `(duplicate id)`.
+- 2026-10-04: Done: Reviewed round 1: all 9 criteria verified by tests that fail on revert; two decisions answered (Blocks hides dropped, duplicate label keeps status); the `]` `[` flow was checked by hand by the author.
