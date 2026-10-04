@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"spx/store"
 )
@@ -311,6 +312,51 @@ func TestNarrowFooterWithAQueryKeepsTheFilterHint(t *testing.T) {
 	}
 	if strings.Contains(got, "g/G") {
 		t.Fatalf("footer %q still has g/G while a query is on", got)
+	}
+}
+
+func TestQueryMatchesTheProjectAlone(t *testing.T) {
+	m := typed(t, press(t, start(t, findable(), 120, 20), "/"), "kb")
+	if got := listed(m); !reflect.DeepEqual(got, []string{"fuzzy-filter"}) {
+		t.Fatalf("listed %v, want only the kb spec: no other field contains k", got)
+	}
+}
+
+func TestQueryChangeResetsTheListScroll(t *testing.T) {
+	m := press(t, start(t, fixture(30), 120, 10), "G")
+	if m.offset == 0 {
+		t.Fatal("setup: G did not scroll the list")
+	}
+	m = typed(t, press(t, m, "/"), "spec")
+	if m.cursor != 0 || m.offset != 0 {
+		t.Fatalf("cursor %d, offset %d, want the first row in view", m.cursor, m.offset)
+	}
+}
+
+func TestQueryChangeShowsTheNewFirstDetail(t *testing.T) {
+	m := start(t, findable(), 120, 20)
+	if !strings.Contains(ansi.Strip(m.detail.View()), "Render the grid") {
+		t.Fatal("setup: the detail does not show the first spec")
+	}
+	m = typed(t, press(t, m, "/"), "zebra")
+	if got := ansi.Strip(m.detail.View()); !strings.Contains(got, "Zebra stripes") {
+		t.Fatalf("detail %q, want the best match's header", got)
+	}
+}
+
+func TestReloadWhileTypingKeepsTheQueryAndInput(t *testing.T) {
+	m := typed(t, press(t, start(t, findable(), 120, 20), "/"), "zeb")
+	more := append(findable(), store.Spec{Project: "spx", Status: "draft", Slug: "zebra-two", Title: "Zebra two", Type: "bug"})
+	m = reload(t, m, more)
+	if !m.typing || m.query != "zeb" || m.input.Value() != "zeb" {
+		t.Fatalf("typing %v, query %q, input %q after a reload", m.typing, m.query, m.input.Value())
+	}
+	if got := len(m.specs); got != 2 {
+		t.Fatalf("%d rows after the reload, want the two zeb matches", got)
+	}
+	m = typed(t, m, "r")
+	if m.query != "zebr" {
+		t.Fatalf("typing after the reload gave query %q", m.query)
 	}
 }
 
