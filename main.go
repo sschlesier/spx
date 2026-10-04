@@ -17,9 +17,13 @@ import (
 )
 
 const (
-	usage       = "usage: spx [project]"
-	description = "Browse the spec store in the terminal, limited to one project if named."
+	usage       = "usage: spx [-d] [-a] [-s] [project]"
+	description = "Browse the spec store in the terminal, limited to one project if named.\n" +
+		"-d, -a and -s print the draft, approved or started specs instead, one per line."
 )
+
+// statusFlags maps each status flag letter to the status it prints.
+var statusFlags = map[rune]string{'d': "draft", 'a': "approved", 's': "started"}
 
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr, ".", func(m tea.Model) error {
@@ -28,15 +32,44 @@ func main() {
 	}))
 }
 
+// parseArgs splits args into the project argument and the statuses named by the -d, -a and -s
+// flags (clusters like -da included). It reports false for anything else.
+func parseArgs(args []string) (project string, named bool, statuses []string, ok bool) {
+	for _, arg := range args {
+		if !strings.HasPrefix(arg, "-") {
+			if named {
+				return "", false, nil, false
+			}
+			project, named = arg, true
+			continue
+		}
+		if len(arg) < 2 {
+			return "", false, nil, false
+		}
+		for _, c := range arg[1:] {
+			status, known := statusFlags[c]
+			if !known {
+				return "", false, nil, false
+			}
+			if !slices.Contains(statuses, status) {
+				statuses = append(statuses, status)
+			}
+		}
+	}
+	return project, named, statuses, true
+}
+
 // run parses args, loads the store and hands the model to start, returning the exit status.
 // Without a project argument it limits the list to the project of the git checkout in dir,
-// when the store has one.
+// when the store has one. With status flags it prints those specs to stdout instead of
+// starting the UI.
 func run(args []string, stdout, stderr io.Writer, dir string, start func(tea.Model) error) int {
 	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
 		fmt.Fprintf(stdout, "%s\n%s\n", usage, description)
 		return 0
 	}
-	if len(args) > 1 || len(args) == 1 && strings.HasPrefix(args[0], "-") {
+	project, named, statuses, ok := parseArgs(args)
+	if !ok {
 		fmt.Fprintln(stderr, usage)
 		return 2
 	}
@@ -56,8 +89,8 @@ func run(args []string, stdout, stderr io.Writer, dir string, start func(tea.Mod
 		return 1
 	}
 	scope := ""
-	if len(args) == 1 {
-		scope = args[0]
+	if named {
+		scope = project
 		if !slices.Contains(projects, scope) {
 			known := "none"
 			if len(projects) > 0 {
@@ -68,6 +101,18 @@ func run(args []string, stdout, stderr io.Writer, dir string, start func(tea.Mod
 		}
 	} else if p := repoProject(dir); slices.Contains(projects, p) {
 		scope = p
+	}
+	if len(statuses) > 0 {
+		var shown []store.Spec
+		for _, spec := range specs {
+			if slices.Contains(statuses, spec.Status) && (scope == "" || spec.Project == scope) {
+				shown = append(shown, spec)
+			}
+		}
+		for _, row := range ui.Rows(specs, shown) {
+			fmt.Fprintln(stdout, row)
+		}
+		return 0
 	}
 	if err := start(ui.New(root, specs, "").WithScope(scope, projects).WithReload()); err != nil {
 		fmt.Fprintf(stderr, "spx: %v\n", err)
