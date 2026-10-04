@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -89,7 +90,7 @@ func TestHelpPrintsUsageWithoutReadingTheStore(t *testing.T) {
 			t.Errorf("%s: code=%d started=%v stderr=%q", flag, r.code, r.model != nil, r.stderr)
 		}
 		lines := strings.Split(strings.TrimRight(r.stdout, "\n"), "\n")
-		if len(lines) != 2 || lines[0] != "usage: spx [project]" || lines[1] == "" {
+		if len(lines) != 3 || lines[0] != "usage: spx [-d] [-a] [-s] [project]" || lines[1] == "" {
 			t.Errorf("%s: stdout = %q", flag, r.stdout)
 		}
 	}
@@ -97,9 +98,9 @@ func TestHelpPrintsUsageWithoutReadingTheStore(t *testing.T) {
 
 func TestBadArgumentsPrintUsageAndExitTwoWithoutReadingTheStore(t *testing.T) {
 	t.Setenv("AGENT_SPECS_DIR", filepath.Join(t.TempDir(), "nope"))
-	for _, args := range [][]string{{"a", "b"}, {"-x"}, {"--nope"}, {"-"}, {"-h", "p"}, {"p", "-h"}, {"--help", "--help"}} {
+	for _, args := range [][]string{{"a", "b"}, {"-d", "-h"}, {"-dh"}, {"-d", "a", "b"}, {"-x"}, {"--nope"}, {"-"}, {"-h", "p"}, {"p", "-h"}, {"--help", "--help"}} {
 		r := runCLI(t, t.TempDir(), args...)
-		if r.code != 2 || r.model != nil || r.stdout != "" || r.stderr != "usage: spx [project]\n" {
+		if r.code != 2 || r.model != nil || r.stdout != "" || r.stderr != "usage: spx [-d] [-a] [-s] [project]\n" {
 			t.Errorf("%q: code=%d started=%v stdout=%q stderr=%q", args, r.code, r.model != nil, r.stdout, r.stderr)
 		}
 	}
@@ -230,5 +231,139 @@ func TestExplicitArgumentBeatsTheRepo(t *testing.T) {
 	r := runCLI(t, main, "beta")
 	if f := footer(t, r.model); !strings.HasPrefix(f, "beta · ") {
 		t.Fatalf("footer %q", f)
+	}
+}
+
+// printStore writes a store whose specs span every status, two projects and a duplicate id.
+func printStore(t *testing.T) {
+	t.Helper()
+	root := makeStore(t)
+	spec := func(path, front string) {
+		full := filepath.Join(root, path)
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte("---\n"+front+"\n---\n\nBody.\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	spec("alpha/draft/d1.md", "title: Draft one\nid: red-fox\ntype: bug\npriority: 1")
+	spec("alpha/draft/d2.md", "title: Draft two")
+	spec("alpha/approved/a1.md", "title: Approved one\nid: tan-owl\ntype: feature\npriority: 2")
+	spec("alpha/started/s1.md", "title: Started one\nid: red-fox\ntype: task\npriority: 3")
+	spec("beta/draft/d3.md", "title: Beta draft\nid: big-elk\ntype: chore\npriority: 2")
+	spec("alpha/dropped/x1.md", "title: Dropped one\nid: old-yak\ntype: bug\npriority: 1")
+}
+
+// titles is the last column of each printed row.
+func titles(stdout string) []string {
+	var out []string
+	for line := range strings.SplitSeq(strings.TrimRight(stdout, "\n"), "\n") {
+		if line != "" {
+			out = append(out, line[strings.LastIndex(line, "  ")+2:])
+		}
+	}
+	return out
+}
+
+func TestStatusFlagsPrintRowsWithoutStartingTheUI(t *testing.T) {
+	printStore(t)
+	cases := []struct {
+		args []string
+		want []string
+	}{
+		{[]string{"-d"}, []string{"Draft one", "Beta draft", "Draft two"}},
+		{[]string{"-a"}, []string{"Approved one"}},
+		{[]string{"-s"}, []string{"Started one"}},
+		{[]string{"-d", "-a"}, []string{"Approved one", "Draft one", "Beta draft", "Draft two"}},
+		{[]string{"-da"}, []string{"Approved one", "Draft one", "Beta draft", "Draft two"}},
+		{[]string{"-d", "-d"}, []string{"Draft one", "Beta draft", "Draft two"}},
+		{[]string{"-d", "alpha"}, []string{"Draft one", "Draft two"}},
+		{[]string{"alpha", "-d"}, []string{"Draft one", "Draft two"}},
+		{[]string{"-s", "beta"}, nil},
+	}
+	for _, c := range cases {
+		r := runCLI(t, t.TempDir(), c.args...)
+		if r.code != 0 || r.model != nil || r.stderr != "" {
+			t.Errorf("%q: code=%d started=%v stderr=%q", c.args, r.code, r.model != nil, r.stderr)
+		}
+		if got := titles(r.stdout); !reflect.DeepEqual(got, c.want) {
+			t.Errorf("%q: got %q, want %q", c.args, got, c.want)
+		}
+	}
+}
+
+func TestStatusFlagRowsMatchTheList(t *testing.T) {
+	printStore(t)
+	r := runCLI(t, t.TempDir(), "-s")
+	want := "red-fox!  alpha  started  P3  task     Started one\n"
+	if r.stdout != want {
+		t.Fatalf("got %q, want %q", r.stdout, want)
+	}
+	r = runCLI(t, t.TempDir(), "-d", "alpha")
+	want = "red-fox!  alpha  draft    P1  bug      Draft one\n" +
+		"-         alpha  draft    -   -        Draft two\n"
+	if r.stdout != want {
+		t.Fatalf("got %q, want %q", r.stdout, want)
+	}
+}
+
+func TestStatusFlagsUseTheRepoProject(t *testing.T) {
+	main, _ := repo(t, "beta")
+	printStore(t)
+	r := runCLI(t, main, "-d")
+	if got := titles(r.stdout); !reflect.DeepEqual(got, []string{"Beta draft"}) {
+		t.Fatalf("got %q", got)
+	}
+	r = runCLI(t, main, "-d", "alpha")
+	if got := titles(r.stdout); !reflect.DeepEqual(got, []string{"Draft one", "Draft two"}) {
+		t.Fatalf("explicit project: got %q", got)
+	}
+}
+
+func TestStatusFlagsWithAnUnknownProjectOrMissingStorePrintNothing(t *testing.T) {
+	printStore(t)
+	r := runCLI(t, t.TempDir(), "-d", "nope")
+	if r.code != 1 || r.stdout != "" || !strings.HasPrefix(r.stderr, "spx: unknown project: nope") {
+		t.Errorf("code=%d stdout=%q stderr=%q", r.code, r.stdout, r.stderr)
+	}
+	missing := filepath.Join(t.TempDir(), "nope")
+	t.Setenv("AGENT_SPECS_DIR", missing)
+	r = runCLI(t, t.TempDir(), "-d")
+	if r.code != 1 || r.stdout != "" || r.stderr != "spx: spec store not found: "+missing+"\n" {
+		t.Errorf("code=%d stdout=%q stderr=%q", r.code, r.stdout, r.stderr)
+	}
+}
+
+func TestStatusFlagsNeverListDropped(t *testing.T) {
+	printStore(t)
+	r := runCLI(t, t.TempDir(), "-d", "-a", "-s")
+	if got := len(titles(r.stdout)); got != 5 || strings.Contains(r.stdout, "Dropped") {
+		t.Fatalf("%d rows, stdout %q", got, r.stdout)
+	}
+}
+
+func TestStatusFlagRowsAreOneLineWhateverTheTitleHolds(t *testing.T) {
+	root := makeStore(t)
+	dir := filepath.Join(root, "alpha", "draft")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	front := "---\ntitle: \"a\\e[31mb\\u2028c\\nd\"\nid: \"x\\ny\"\n---\n\nBody.\n"
+	if err := os.WriteFile(filepath.Join(dir, "t.md"), []byte(front), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	r := runCLI(t, t.TempDir(), "-d")
+	if r.stdout != "xy  alpha  draft    -   -        a[31mb c d\n" {
+		t.Fatalf("stdout %q", r.stdout)
+	}
+}
+
+func TestHelpMentionsTheStatusFlags(t *testing.T) {
+	r := runCLI(t, t.TempDir(), "-h")
+	for _, f := range []string{"-d", "-a", "-s"} {
+		if !strings.Contains(r.stdout, f) {
+			t.Errorf("help lacks %s: %q", f, r.stdout)
+		}
 	}
 }
