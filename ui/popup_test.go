@@ -249,6 +249,63 @@ func TestFooterHintsKeepProjectAndQuitAt80Columns(t *testing.T) {
 	}
 }
 
+func TestSelectionFollowsItsProjectWhenAReloadShiftsTheEntries(t *testing.T) {
+	m := press(t, scoped(t, "", 100), "p", "j", "j") // beta
+	if got := m.pickerEntries()[m.pick]; got != "beta" {
+		t.Fatalf("setup: selected %q", got)
+	}
+	next, _ := m.Update(loadedMsg{seq: m.applied + 1, specs: projectsFixture(), projects: []string{"aaa", "alpha", "beta", "idle"}})
+	m = next.(Model)
+	if got := m.pickerEntries()[m.pick]; got != "beta" {
+		t.Fatalf("after the reload the popup selects %q, want beta", got)
+	}
+	m = press(t, m, "enter")
+	if m.scope != "beta" {
+		t.Fatalf("enter applied %q, want beta", m.scope)
+	}
+}
+
+func TestSelectionFallsBackToAllWhenItsFolderIsGone(t *testing.T) {
+	m := press(t, scoped(t, "", 100), "p", "G") // idle, which has a folder but no live specs
+	next, _ := m.Update(loadedMsg{seq: m.applied + 1, specs: projectsFixture()[:4], projects: []string{"alpha", "beta"}})
+	m = press(t, next.(Model), "enter")
+	if m.scope != "" || m.picking {
+		t.Fatalf("scope %q, picking %v", m.scope, m.picking)
+	}
+}
+
+func manyProjects(n int) Model {
+	var projects []string
+	var specs []store.Spec
+	for i := range n {
+		name := fmt.Sprintf("proj%02d", i)
+		projects = append(projects, name)
+		specs = append(specs, store.Spec{Project: name, Status: "draft", Slug: "s-" + name, Title: "T " + name, Priority: 2})
+	}
+	return New("/store", specs, styles.AsciiStyle).WithScope("", projects)
+}
+
+func TestPopupKeepsItsScrollWhenMovingUp(t *testing.T) {
+	m := send(t, manyProjects(30), tea.WindowSizeMsg{Width: 100, Height: 14})
+	m = press(t, m, "p", "G", "k", "k")
+	s := screen(m)
+	// Moving up inside the window must not shift it: the last entry is still shown.
+	if !strings.Contains(s, "proj29 (1)") || !strings.Contains(s, "proj27 (1)") {
+		t.Fatalf("the window shifted while moving up:\n%s", s)
+	}
+}
+
+func TestPopupFitsANarrowTerminal(t *testing.T) {
+	m := send(t, manyProjects(3), tea.WindowSizeMsg{Width: 20, Height: 14})
+	m.projects = append(m.projects, "a-project-name-much-longer-than-the-terminal")
+	m = press(t, m, "p")
+	for i, l := range strings.Split(screen(m), "\n") {
+		if w := ansi.StringWidth(l); w > 20 {
+			t.Fatalf("row %d is %d columns wide: %q", i, w, l)
+		}
+	}
+}
+
 func TestReloadAddsAProjectToThePopup(t *testing.T) {
 	m := scoped(t, "", 100)
 	next, _ := m.Update(loadedMsg{seq: m.applied + 1, specs: projectsFixture(), projects: []string{"alpha", "beta", "idle", "zeta"}})

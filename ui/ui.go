@@ -58,6 +58,7 @@ type Model struct {
 	picking  bool     // the project popup has the keys
 	pick     int      // the popup's selected entry; 0 is all projects
 	pickOff  int      // the popup's first entry shown
+	pickName string   // the project the popup has selected; follows it when the entries shift
 
 	width, height int
 	detailOpen    bool // narrow layout only: detail shown full-width
@@ -255,6 +256,10 @@ func (m Model) loaded(msg loadedMsg) (tea.Model, tea.Cmd) {
 	m.unreadable = false
 	m.projects = msg.projects
 	m.apply(msg.specs)
+	if m.picking {
+		m.pick = m.entryIndex(m.pickName)
+		m.pickOff = m.pickScroll(len(m.pickerEntries()))
+	}
 	if msg.syncErr != nil && msg.w == m.watcher {
 		m.stopWatch()
 		cmd := m.poll()
@@ -438,7 +443,8 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 	case "p":
 		m.picking = true
-		m.pick, m.pickOff = m.pickIndex(), 0
+		m.pickName = m.scope
+		m.pick, m.pickOff = m.entryIndex(m.scope), 0
 		m.pickOff = m.pickScroll(len(m.pickerEntries()))
 	case "/":
 		m.typing = true
@@ -482,6 +488,7 @@ func (m Model) pickerKey(k string) (tea.Model, tea.Cmd) {
 		m.picking = false
 		m.setScope(entries[m.pick])
 	}
+	m.pickName = entries[m.pick]
 	m.pickOff = m.pickScroll(len(entries))
 	return m, nil
 }
@@ -507,10 +514,10 @@ func (m Model) pickerEntries() []string {
 	return append([]string{""}, names...)
 }
 
-// pickIndex is the popup entry of the current scope.
-func (m Model) pickIndex() int {
+// entryIndex is the popup entry for project, or 0 (all projects) when it is gone.
+func (m Model) entryIndex(project string) int {
 	for i, e := range m.pickerEntries() {
-		if e == m.scope {
+		if e == project {
 			return i
 		}
 	}
