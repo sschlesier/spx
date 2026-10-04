@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"slices"
 
 	tea "charm.land/bubbletea/v2"
@@ -35,10 +36,10 @@ func depEntries(s store.Spec, all, done []store.Spec) (depends, blocks []depEntr
 		}
 		return out
 	}
-	for _, id := range s.DependsOn {
+	for i, id := range s.DependsOn {
 		shown := printable(id)
 		found := matches(id)
-		e := depEntry{key: "dep:" + id}
+		e := depEntry{key: fmt.Sprintf("dep:%d:%s", i, id)}
 		switch {
 		case len(found) == 0:
 			e.label = shown + " (not in store)"
@@ -128,6 +129,7 @@ func (m *Model) cycleHighlight(dir int) {
 	}
 	m.hl = entries[i].key
 	m.renderDetail()
+	m.detail.GotoTop() // the sections are in the header, at the top
 }
 
 // jumpHighlight selects the highlighted entry's spec. It reports whether there was a

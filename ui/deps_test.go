@@ -103,7 +103,7 @@ func TestDoneReceiptsAreNeverListed(t *testing.T) {
 func TestHighlightCyclesAndWraps(t *testing.T) {
 	m := depsModel(t, 140) // entries: s1 d1 g1 zz dup, then blocks: after
 	m = press(t, m, "]")
-	if m.hl != "dep:s1" {
+	if m.hl != "dep:0:s1" {
 		t.Fatalf("first ] highlights %q", m.hl)
 	}
 	m = press(t, m, "]", "]", "]", "]", "]")
@@ -111,7 +111,7 @@ func TestHighlightCyclesAndWraps(t *testing.T) {
 		t.Errorf("sixth ] should reach the last entry, got %q", m.hl)
 	}
 	m = press(t, m, "]")
-	if m.hl != "dep:s1" {
+	if m.hl != "dep:0:s1" {
 		t.Errorf("] from the last wraps to the first, got %q", m.hl)
 	}
 	m = press(t, m, "[")
