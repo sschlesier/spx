@@ -75,3 +75,59 @@ func TestDuplicateIDIsMarked(t *testing.T) {
 		t.Errorf("unique id noted as a duplicate:\n%s", s)
 	}
 }
+
+func idSpecs() []store.Spec {
+	return []store.Spec{
+		// Sorts first and matches "red" strongly in the title, but its id doesn't start with it.
+		{Project: "p", Status: "started", Slug: "a-title", Title: "red red red", ID: "blue-owl", Priority: 0},
+		{Project: "p", Status: "draft", Slug: "b-fox", Title: "Fox", ID: "red-fox", Priority: 2},
+		{Project: "p", Status: "draft", Slug: "c-fig", Title: "Fig", ID: "red-fig", Priority: 3},
+		{Project: "p", Status: "draft", Slug: "d-none", Title: "Nothing", Priority: 3},
+	}
+}
+
+func TestIDPrefixRanksAboveAStrongerFuzzyMatch(t *testing.T) {
+	m := typed(t, press(t, start(t, idSpecs(), 120, 20), "/"), "red")
+	if got := listed(m); len(got) < 3 || got[0] != "b-fox" || got[1] != "c-fig" || got[2] != "a-title" {
+		t.Fatalf("listed %v, want the id-prefix matches (in store order) before the title match", got)
+	}
+}
+
+func TestIDPrefixIsCaseInsensitive(t *testing.T) {
+	m := typed(t, press(t, start(t, idSpecs(), 120, 20), "/"), "RED-F")
+	if got := listed(m); len(got) < 2 || got[0] != "b-fox" || got[1] != "c-fig" {
+		t.Fatalf("listed %v", got)
+	}
+}
+
+func TestPartialIDListsEveryCandidateOrTheOne(t *testing.T) {
+	m := typed(t, press(t, start(t, idSpecs(), 120, 20), "/"), "red-f")
+	if got := listed(m); len(got) < 2 || got[0] != "b-fox" || got[1] != "c-fig" {
+		t.Fatalf("two candidates: listed %v", got)
+	}
+	m = typed(t, press(t, start(t, idSpecs()[:2], 120, 20), "/"), "red-f")
+	if got := listed(m); len(got) == 0 || got[0] != "b-fox" {
+		t.Fatalf("one candidate: listed %v", got)
+	}
+}
+
+func TestQueryMatchesTheIDFuzzily(t *testing.T) {
+	m := typed(t, press(t, start(t, idSpecs(), 120, 20), "/"), "bluowl")
+	if got := listed(m); len(got) != 1 || got[0] != "a-title" {
+		t.Fatalf("listed %v, want a-title", got)
+	}
+}
+
+func TestReloadShowsAnEditedID(t *testing.T) {
+	m := start(t, idSpecs(), 120, 20)
+	edited := idSpecs()
+	edited[3].ID = "new-id"
+	m = send(t, m, loadedMsg{seq: 1, specs: edited})
+	if row := rowOf(m, "Nothing"); !strings.Contains(row, "new-id") {
+		t.Fatalf("row %q after the reload, want the new id", row)
+	}
+	m = typed(t, press(t, m, "/"), "new-i")
+	if got := listed(m); len(got) == 0 || got[0] != "d-none" {
+		t.Fatalf("listed %v, want d-none first", got)
+	}
+}
