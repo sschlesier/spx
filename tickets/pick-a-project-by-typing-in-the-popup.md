@@ -6,7 +6,7 @@ priority: 3
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-10-04: type-to-filter popup, always typing, ctrl-j/ctrl-k move. Cold read: not run (one area, no flags)"
-status: in-review
+status: done
 ---
 
 In the project popup I can type to fuzzy-match a project name and move the selection with ctrl-j / ctrl-k, so I reach a project without scrolling the list.
@@ -21,17 +21,17 @@ Out of scope:
 
 ## Acceptance criteria
 
-- [ ] With the popup open, typing printable characters shows them in a query line in the popup and lists only projects whose name fuzzy-matches, best match first (ties alphabetical).
-- [ ] The best match is selected after every edit to the query; enter applies it as the scope.
-- [ ] While the query is non-empty the "all projects" entry is not listed; with an empty query the popup lists it first, as today.
-- [ ] ctrl-j moves the selection down and ctrl-k up, without wrapping, in the filtered or unfiltered list; up/down arrows do the same.
-- [ ] Backspace deletes the last query character; on an empty query it does nothing.
-- [ ] esc clears a non-empty query (popup stays open, all entries back); on an empty query it closes the popup without changing the scope.
-- [ ] With the query matching no project, the popup shows "no matching project" and enter changes nothing and keeps the popup open.
-- [ ] Opening the popup always starts with an empty query and the current scope selected.
-- [ ] j, k, g, G, p and q typed in the popup are query text, not commands; ctrl-c still quits.
-- [ ] The popup's selection still follows its project when a store reload shifts the entries, and falls back to the best match when its project is gone or filtered out.
-- [ ] The popup still fits and scrolls to keep the selection visible, at 80x24 and in a narrow terminal, with the query line included.
+- [x] With the popup open, typing printable characters shows them in a query line in the popup and lists only projects whose name fuzzy-matches, best match first (ties alphabetical).
+- [x] The best match is selected after every edit to the query; enter applies it as the scope.
+- [x] While the query is non-empty the "all projects" entry is not listed; with an empty query the popup lists it first, as today.
+- [x] ctrl-j moves the selection down and ctrl-k up, without wrapping, in the filtered or unfiltered list; up/down arrows do the same.
+- [x] Backspace deletes the last query character; on an empty query it does nothing.
+- [x] esc clears a non-empty query (popup stays open, all entries back); on an empty query it closes the popup without changing the scope.
+- [x] With the query matching no project, the popup shows "no matching project" and enter changes nothing and keeps the popup open.
+- [x] Opening the popup always starts with an empty query and the current scope selected.
+- [x] j, k, g, G, p and q typed in the popup are query text, not commands; ctrl-c still quits.
+- [x] The popup's selection still follows its project when a store reload shifts the entries, and falls back to the best match when its project is gone or filtered out.
+- [x] The popup still fits and scrolls to keep the selection visible, at 80x24 and in a narrow terminal, with the query line included.
 
 ## Verification
 
@@ -68,3 +68,5 @@ Stop and ask if: ctrl-j cannot be distinguished from enter in Bubble Tea's key r
 - 2026-10-04: Manual check in tmux (100x28, real store): `p`, `s`, ctrl-j, enter scoped to the second match (mdserver). ctrl-j arrives as ctrl-j, so the Boundaries stop did not trigger.
 - 2026-10-04: Assumption: the popup is at least 20 columns wide (capped by the terminal) so the query line fits; the popup footer help now names the new keys (`ui/ui.go` footer).
 - 2026-10-04: Review started
+- 2026-10-04: Review decisions: a gone current scope stays listed under a query; paste into the popup stays ignored (as in `/`); minimum popup width 20 kept; ctrl-j-as-enter in other terminals accepted as a risk.
+- 2026-10-04: Done: Reviewed round 1: 11/11 criteria verified by tests (17/17 fail on revert); two review fixes (reload selection name, narrow query test) and a height-margin test; ctrl-j checked in tmux only.
