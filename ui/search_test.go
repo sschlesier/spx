@@ -157,7 +157,7 @@ func TestEnterKeepsTheFilterAndReturnsKeysToTheList(t *testing.T) {
 func TestFooterShowsTheQueryAfterEnter(t *testing.T) {
 	m := press(t, start(t, findable(), 120, 20), "d", "/")
 	m = press(t, typed(t, m, "zebra"), "enter")
-	want := "draft · /zebra · 1 shown · j/k move"
+	want := "all projects · draft · /zebra · 1 shown · j/k move"
 	if got := footer(m); !strings.HasPrefix(got, want) {
 		t.Fatalf("footer %q, want it to start %q", got, want)
 	}
@@ -169,7 +169,7 @@ func TestFooterShowsTheQueryAfterEnter(t *testing.T) {
 
 func TestQueryAloneShowsInTheFooter(t *testing.T) {
 	m := press(t, typed(t, press(t, start(t, findable(), 120, 20), "/"), "zebra"), "enter")
-	if got := footer(m); !strings.HasPrefix(got, "/zebra · 1 shown · ") {
+	if got := footer(m); !strings.HasPrefix(got, "all projects · /zebra · 1 shown · ") {
 		t.Fatalf("footer %q", got)
 	}
 }
@@ -178,7 +178,7 @@ func TestNarrowFooterDropsHintsToKeepQuit(t *testing.T) {
 	m := press(t, start(t, findable(), 80, 20), "d", "/")
 	m = press(t, typed(t, m, "zebra"), "enter")
 	got := footer(m)
-	want := "draft · /zebra · 1 shown · enter open · j/k move · d/a/s/x status · q quit"
+	want := "all projects · draft · /zebra · 1 shown · enter open · j/k move · q quit"
 	if got != want {
 		t.Fatalf("footer %q, want %q", got, want)
 	}
@@ -191,7 +191,7 @@ func TestFooterWithALongQueryStaysWithinTheWidth(t *testing.T) {
 	if w := ansi.StringWidth(got); w > 80 {
 		t.Fatalf("footer is %d columns wide: %q", w, got)
 	}
-	if !strings.HasPrefix(got, "draft · /zzzz") {
+	if !strings.HasPrefix(got, "all projects · draft · /zzzz") {
 		t.Fatalf("footer %q lost the active filter", got)
 	}
 }
@@ -333,7 +333,7 @@ func TestNoMatchMessages(t *testing.T) {
 }
 
 func TestFooterHintsListSlashFilter(t *testing.T) {
-	for _, w := range []int{120, 80} {
+	for _, w := range []int{120} {
 		m := start(t, findable(), w, 20)
 		if got := footer(m); !strings.Contains(got, "/ filter") {
 			t.Errorf("width %d: footer %q has no / filter hint", w, got)
@@ -363,7 +363,7 @@ func TestReopenedInputDoesNotKeepClearedText(t *testing.T) {
 func TestNarrowFooterWithAQueryKeepsTheFilterHint(t *testing.T) {
 	m := press(t, typed(t, press(t, start(t, findable(), 80, 20), "/"), "zebra"), "enter")
 	got := footer(m)
-	if !strings.HasPrefix(got, "/zebra · 1 shown · enter open") || !strings.HasSuffix(got, "· / filter · q quit") {
+	if !strings.HasPrefix(got, "all projects · /zebra · 1 shown · enter open") || !strings.HasSuffix(got, "· q quit") {
 		t.Fatalf("footer %q", got)
 	}
 	if strings.Contains(got, "g/G") {

@@ -48,10 +48,13 @@ type Model struct {
 	specs  []store.Spec // the listed rows
 	cursor int
 	offset int    // first list row shown
+	scope  string // the only project listed; empty lists every project
 	filter string // the only status listed; empty lists the live statuses
 	query  string // fuzzy text filter, applied after the status filter
 	typing bool   // the query input has the keys
 	input  textinput.Model
+
+	projects []string // project folders in the store, alphabetical
 
 	width, height int
 	detailOpen    bool // narrow layout only: detail shown full-width
@@ -83,11 +86,12 @@ type (
 	debounceMsg struct{ gen int }
 	pollMsg     struct{}
 	loadedMsg   struct {
-		seq     int
-		specs   []store.Spec
-		err     error // root unreadable
-		w       *store.Watcher
-		syncErr error
+		seq      int
+		specs    []store.Spec
+		projects []string
+		err      error // root unreadable
+		w        *store.Watcher
+		syncErr  error
 	}
 )
 
@@ -102,6 +106,14 @@ func New(root string, specs []store.Spec, style string) Model {
 		m.detectBG = true
 	}
 	m.detail.SoftWrap = true
+	return m
+}
+
+// WithScope lists only project's specs, or every project's when it is empty. projects are
+// the store's project folders, which the project popup offers.
+func (m Model) WithScope(project string, projects []string) Model {
+	m.scope, m.projects = project, projects
+	m.specs = m.visible()
 	return m
 }
 
@@ -204,6 +216,9 @@ func (m *Model) load() tea.Cmd {
 			msg.syncErr = w.Sync()
 		}
 		msg.specs, msg.err = store.Load(root)
+		if msg.err == nil {
+			msg.projects, msg.err = store.Projects(root)
+		}
 		return msg
 	}
 }
@@ -235,6 +250,7 @@ func (m Model) loaded(msg loadedMsg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 	m.unreadable = false
+	m.projects = msg.projects
 	m.apply(msg.specs)
 	if msg.syncErr != nil && msg.w == m.watcher {
 		m.stopWatch()
@@ -257,11 +273,14 @@ func (m *Model) apply(specs []store.Spec) {
 	m.show(m.visible(), m.cursor)
 }
 
-// visible is the listed rows: the filter's status, or every live status without one, then
-// the specs matching the query, best first.
+// visible is the listed rows: the scope's project, then the filter's status, or every live
+// status without one, then the specs matching the query, best first.
 func (m Model) visible() []store.Spec {
 	var out []store.Spec
 	for _, s := range m.all {
+		if m.scope != "" && s.Project != m.scope {
+			continue
+		}
 		if s.Status == m.filter || m.filter == "" && s.Status != store.Dropped {
 			out = append(out, s)
 		}
@@ -606,6 +625,7 @@ func (m Model) render() string {
 	if m.unreadable {
 		lead = append(lead, "store unreadable: "+m.root)
 	}
+	lead = append(lead, m.scopeLabel())
 	if m.filter != "" {
 		active = append(active, m.filter)
 	}
@@ -631,17 +651,36 @@ func footerLine(lead, hints []string, width int) string {
 	return ansi.Truncate(join(), width, "…")
 }
 
+// scopeLabel is the project listed, or "all projects".
+func (m Model) scopeLabel() string {
+	if m.scope == "" {
+		return "all projects"
+	}
+	return m.scope
+}
+
+// emptyMessage says why no spec is listed.
+func (m Model) emptyMessage() string {
+	in := ""
+	if m.scope != "" {
+		in = " in " + m.scope
+	}
+	switch {
+	case m.query != "" && m.filter != "":
+		return fmt.Sprintf("No %s specs match %q%s", m.filter, m.query, in)
+	case m.query != "":
+		return fmt.Sprintf("No specs match %q%s", m.query, in)
+	case m.filter != "":
+		return "No " + m.filter + " specs" + in
+	case m.scope != "":
+		return "No specs" + in
+	}
+	return "No specs in " + m.root
+}
+
 func (m Model) listView() string {
 	if len(m.specs) == 0 {
-		switch {
-		case m.query != "" && m.filter != "":
-			return fmt.Sprintf("No %s specs match %q", m.filter, m.query)
-		case m.query != "":
-			return fmt.Sprintf("No specs match %q", m.query)
-		case m.filter != "":
-			return "No " + m.filter + " specs"
-		}
-		return "No specs in " + m.root
+		return m.emptyMessage()
 	}
 	dupes := duplicateIDs(m.all)
 	idW, projectW, typeW := 0, 0, len("feature")
