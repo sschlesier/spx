@@ -5,7 +5,7 @@ type: chore
 priority: 3
 depends-on: []
 approved: "Scott Schlesier, 2026-10-04: Approved after refinement. Cold read: pass"
-status: in-progress
+status: in-review
 ---
 
 `brew install sschlesier/tap/spx` installs `spx`, and pushing a `v*` tag builds and
@@ -133,3 +133,8 @@ and secrets (preconditions are yours).
   license and `--version`. Cold read: pass.
 - 2026-10-04: Approved: Scott Schlesier, 2026-10-04: Approved after refinement. Cold read: pass
 - 2026-10-04: Started on branch release-via-homebrew-tap. LICENSE (step 0) was pushed straight to main at the user's request; the repo is public and the deploy key and TAP_DEPLOY_KEY secret are in place.
+- 2026-10-04: Assumption: the usage line is unchanged (existing tests pin it on stderr for exit 2); `--version` is mentioned in a third description line, so the help test now expects four lines.
+- 2026-10-04: Assumption: the awk in `scripts/update-tap-formula.sh` reads `checksums.txt` as its first input, because macOS awk rejects newlines in `-v` values.
+- 2026-10-04: Deviation: `Formula/spx.rb` and the tap README row are written in `/Users/scotts/src/homebrew-tap` but not committed, because a worktree-isolated session refuses git commands against another repo. Commit and push them after leaving the worktree, before tagging.
+- 2026-10-04: Assumption: the release job creates the GitHub Release before it pushes the tap bump. If the bump fails, the release stays and the script can be run by hand.
+- 2026-10-04: Review started
