@@ -54,20 +54,14 @@ func Root() (string, error) {
 // Load reads every spec in a live or dropped folder under root, sorted. It fails only when root itself can't
 // be read; a spec file that can't be read is listed with its slug as title.
 func Load(root string) ([]Spec, error) {
-	projects, err := os.ReadDir(root)
+	projects, err := Projects(root)
 	if err != nil {
-		return nil, fmt.Errorf("spec store not found: %s", root)
+		return nil, err
 	}
 	var specs []Spec
-	for _, p := range projects {
-		if hidden(p.Name()) {
-			continue
-		}
-		if info, err := os.Stat(filepath.Join(root, p.Name())); err != nil || !info.IsDir() {
-			continue
-		}
+	for _, project := range projects {
 		for _, status := range slices.Concat(Statuses, []string{Dropped}) {
-			dir := filepath.Join(root, p.Name(), status)
+			dir := filepath.Join(root, project, status)
 			files, err := os.ReadDir(dir)
 			if err != nil {
 				continue
@@ -81,12 +75,33 @@ func Load(root string) ([]Spec, error) {
 				if info, err := os.Stat(path); err != nil || !info.Mode().IsRegular() {
 					continue
 				}
-				specs = append(specs, read(p.Name(), status, path))
+				specs = append(specs, read(project, status, path))
 			}
 		}
 	}
 	Sort(specs)
 	return specs, nil
+}
+
+// Projects lists the project folders under root, alphabetically: the non-hidden directories,
+// whether or not they hold any specs. It fails only when root itself can't be read.
+func Projects(root string) ([]string, error) {
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return nil, fmt.Errorf("spec store not found: %s", root)
+	}
+	var names []string
+	for _, e := range entries {
+		if hidden(e.Name()) {
+			continue
+		}
+		if info, err := os.Stat(filepath.Join(root, e.Name())); err != nil || !info.IsDir() {
+			continue
+		}
+		names = append(names, e.Name())
+	}
+	sort.Strings(names)
+	return names, nil
 }
 
 func hidden(name string) bool { return strings.HasPrefix(name, ".") }
