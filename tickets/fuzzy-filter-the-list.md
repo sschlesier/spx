@@ -90,3 +90,4 @@ seems to need more than the footer line.
 - 2026-10-03: Review started
 - 2026-10-03: Review round 1 triage. Fixed: a paste while typing now applies to the query. Tests added for the best-field score, the reopened input and the narrow footer with a query. Dismissed: the input width mutant (`m.width-2`; the width only sets the text scroll window, nothing a test can observe) and the removed `m.input.Blur()` (only affects the cursor display).
 - 2026-10-03: Review round 1, second cold verify. Tests added for the project field alone, the list scroll reset, the detail refresh on a query change, and a reload while typing. Dismissed: the backspace-on-empty fall-through mutant (equivalent: backspace on an empty input does nothing).
+- 2026-10-03: Review round 1, third cold verify (the last rerun). Tests added for tie order in a list longer than the insertion-sort cutoff and for a non-key message while typing. No findings left to fix.
