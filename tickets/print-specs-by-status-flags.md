@@ -85,3 +85,4 @@ Stop and ask if: matching the TUI row would change how the TUI list looks.
 - 2026-10-03: Assumption: combined flags print in the list's order (started, approved, draft),
   not "draft then approved" as the criterion's example reads; "in the list's order" wins.
 - 2026-10-03: Assumption: the help text grows to three lines (usage, description, flag line).
+- 2026-10-03: Review started
