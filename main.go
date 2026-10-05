@@ -19,8 +19,12 @@ import (
 const (
 	usage       = "usage: spx [-d] [-a] [-s] [project]"
 	description = "Browse the spec store in the terminal, limited to one project if named.\n" +
-		"-d, -a and -s print the draft, approved or started specs instead, one per line."
+		"-d, -a and -s print the draft, approved or started specs instead, one per line.\n" +
+		"--version prints the version."
 )
+
+// version is the release tag, set at build time with -ldflags "-X main.version=<tag>".
+var version = "dev"
 
 // statusFlags maps each status flag letter to the status it prints.
 var statusFlags = map[rune]string{'d': "draft", 'a': "approved", 's': "started"}
@@ -66,6 +70,10 @@ func parseArgs(args []string) (project string, named bool, statuses []string, ok
 func run(args []string, stdout, stderr io.Writer, dir string, start func(tea.Model) error) int {
 	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
 		fmt.Fprintf(stdout, "%s\n%s\n", usage, description)
+		return 0
+	}
+	if len(args) == 1 && args[0] == "--version" {
+		fmt.Fprintf(stdout, "spx %s\n", version)
 		return 0
 	}
 	project, named, statuses, ok := parseArgs(args)
