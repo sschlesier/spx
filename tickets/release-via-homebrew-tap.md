@@ -5,7 +5,7 @@ type: chore
 priority: 3
 depends-on: []
 approved: "Scott Schlesier, 2026-10-04: Approved after refinement. Cold read: pass"
-status: in-review
+status: done
 ---
 
 `brew install sschlesier/tap/spx` installs `spx`, and pushing a `v*` tag builds and
@@ -27,9 +27,9 @@ Out of scope:
 
 ## Acceptance criteria
 
-- [ ] `spx --version` prints `spx <version>` to stdout and exits 0, without reading the
+- [x] `spx --version` prints `spx <version>` to stdout and exits 0, without reading the
       store; a build without a version injected prints `spx dev`.
-- [ ] `spx --version` combined with any other argument is a usage error (exit 2), and
+- [x] `spx --version` combined with any other argument is a usage error (exit 2), and
       `-h`/`--help` text mentions `--version`.
 - [ ] Pushing a `v*.*.*` tag runs vet and tests, then builds `spx-macos-arm64`,
       `spx-macos-amd64`, `spx-linux-arm64` and `spx-linux-amd64` (`CGO_ENABLED=0`, tag
@@ -139,4 +139,5 @@ and secrets (preconditions are yours).
 - 2026-10-04: Assumption: the release job creates the GitHub Release before it pushes the tap bump. If the bump fails, the release stays and the script can be run by hand.
 - 2026-10-04: Review started
 - 2026-10-04: Review round 1, triage: fixed (a) tags that aren't `vMAJOR.MINOR.PATCH` now fail before anything is published, (b) the release step uploads over an existing release on a re-run. Dismissed: no automated test for `scripts/update-tap-formula.sh`, because the spec's Verification for it is manual and the manual runs are recorded in the report. Round 2 (second pass 1): fixed (c) the bump script now refuses to write unless the version line, four URLs and four hashes all matched, (d) the workflow runs `git pull --rebase` before the tap push. Dismissed: pre-release tags fail early by design, since the spec's trigger is `v*.*.*` and the formula tracks plain versions; release-before-bump is the Log assumption above, and the re-run fix covers it. Noted: criterion 4 said the bump changes the formula's version and four sha256 values; the script also rewrites the tag in the four download URLs, which the formula needs.
+- 2026-10-05: Done: Reviewed round 2: criteria 1 and 2 verified; 3 to 7 are unproven until the v0.1.0 tag run and the tap commit (release workflow never run, deploy key push, runner checksums format, injected version in shipped binaries, `brew install/test/audit`, formula and README row uncommitted in the tap). Scott Schlesier accepted these concerns.
 - 2026-10-05: Review answers (Scott Schlesier): pre-release tags fail early, as now; the release is created before the tap bump, as now; the first real run of the workflow is the v0.1.0 tag, and the untested-workflow risk is accepted; criterion 4 amended to name the URL tag rewrite (spec change, yes given).
