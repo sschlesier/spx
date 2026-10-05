@@ -2,9 +2,10 @@
 # Point the tap's spx formula at a release.
 # Usage: update-tap-formula.sh <tag> <checksums.txt> <tap checkout>
 #
-# Rewrites the formula's version, the tag in each download URL and the four sha256 values,
-# and nothing else. Checks every checksum before it writes, so a missing one leaves the
-# formula untouched. Safe to run again with the same input.
+# Rewrites the tag in each download URL and the four sha256 values, and nothing else. The
+# formula has no `version` line: Homebrew reads the version from the URLs. Checks every
+# checksum before it writes, so a missing one leaves the formula untouched. Safe to run
+# again with the same input.
 set -euo pipefail
 
 if [ "$#" -ne 3 ]; then
@@ -30,11 +31,6 @@ trap 'rm -f "$tmp"' EXIT
 
 awk -v tag="$tag" '
   NR == FNR { sum[$2] = $1; next }
-  !versioned && /^  version "/ {
-    print "  version \"" substr(tag, 2) "\""
-    versioned = 1
-    next
-  }
   /^ *url "https:\/\/github.com\/sschlesier\/spx\/releases\/download\// {
     asset = $0
     sub(/^.*\//, "", asset)
@@ -52,7 +48,7 @@ awk -v tag="$tag" '
   { print }
 ' "$checksums" "$formula" > "$tmp"
 
-grep -qF "  version \"${tag#v}\"" "$tmp" || { echo "error: formula has no version line to rewrite" >&2; exit 1; }
+! grep -q '^  version "' "$tmp" || { echo "error: formula has a version line; Homebrew reads it from the URLs" >&2; exit 1; }
 [ "$(grep -cF "/download/$tag/spx-" "$tmp")" -eq 4 ] || { echo "error: expected four download URLs in the formula" >&2; exit 1; }
 for asset in spx-macos-arm64 spx-macos-amd64 spx-linux-arm64 spx-linux-amd64; do
   sum=$(awk -v name="$asset" '$2 == name { print $1 }' "$checksums")
