@@ -36,8 +36,8 @@ Out of scope:
       injected as the version), and attaches them plus `checksums.txt` to a GitHub Release
       for that tag. The release is not created if tests fail.
 - [ ] After a successful release, `sschlesier/homebrew-tap` `main` has one new commit
-      `feat: bump spx to <tag>` that changes only `Formula/spx.rb`: its `version` and the four
-      `sha256` values match `checksums.txt`.
+      `feat: bump spx to <tag>` that changes only `Formula/spx.rb`: its `version`, the tag in its four
+      download URLs and its four `sha256` values, which match `checksums.txt`.
 - [ ] On a macOS machine, `brew tap sschlesier/tap && brew install spx` installs a working
       binary, `spx --version` prints the released tag, and `brew test spx` and
       `brew audit --strict sschlesier/tap/spx` pass.
@@ -138,4 +138,5 @@ and secrets (preconditions are yours).
 - 2026-10-04: Deviation: `Formula/spx.rb` and the tap README row are written in `/Users/scotts/src/homebrew-tap` but not committed, because a worktree-isolated session refuses git commands against another repo. Commit and push them after leaving the worktree, before tagging.
 - 2026-10-04: Assumption: the release job creates the GitHub Release before it pushes the tap bump. If the bump fails, the release stays and the script can be run by hand.
 - 2026-10-04: Review started
-- 2026-10-04: Review round 1, triage: fixed (a) tags that aren't `vMAJOR.MINOR.PATCH` now fail before anything is published, (b) the release step uploads over an existing release on a re-run. Dismissed: no automated test for `scripts/update-tap-formula.sh`, because the spec's Verification for it is manual and the manual runs are recorded in the report. Round 2 (second pass 1): fixed (c) the bump script now refuses to write unless the version line, four URLs and four hashes all matched, (d) the workflow runs `git pull --rebase` before the tap push. Dismissed: pre-release tags fail early by design, since the spec's trigger is `v*.*.*` and the formula tracks plain versions; release-before-bump is the Log assumption above, and the re-run fix covers it. Noted: criterion 4 says the bump changes the formula's version and four sha256 values; the script also rewrites the tag in the four download URLs, which the formula needs.
+- 2026-10-04: Review round 1, triage: fixed (a) tags that aren't `vMAJOR.MINOR.PATCH` now fail before anything is published, (b) the release step uploads over an existing release on a re-run. Dismissed: no automated test for `scripts/update-tap-formula.sh`, because the spec's Verification for it is manual and the manual runs are recorded in the report. Round 2 (second pass 1): fixed (c) the bump script now refuses to write unless the version line, four URLs and four hashes all matched, (d) the workflow runs `git pull --rebase` before the tap push. Dismissed: pre-release tags fail early by design, since the spec's trigger is `v*.*.*` and the formula tracks plain versions; release-before-bump is the Log assumption above, and the re-run fix covers it. Noted: criterion 4 said the bump changes the formula's version and four sha256 values; the script also rewrites the tag in the four download URLs, which the formula needs.
+- 2026-10-05: Review answers (Scott Schlesier): pre-release tags fail early, as now; the release is created before the tap bump, as now; the first real run of the workflow is the v0.1.0 tag, and the untested-workflow risk is accepted; criterion 4 amended to name the URL tag rewrite (spec change, yes given).
