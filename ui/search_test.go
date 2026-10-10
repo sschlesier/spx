@@ -447,6 +447,23 @@ func TestQueryMatchingOnlyTheStatusOrPathMatchesNothing(t *testing.T) {
 	}
 }
 
+func TestQueryMatchingOnlyTheBodyMatchesNothing(t *testing.T) {
+	specs := []store.Spec{{Project: "p", Status: "draft", Slug: "a", Title: "One", Type: "bug", Priority: 2, Body: "xylqz\n"}}
+	if got := listed(typed(t, press(t, start(t, specs, 120, 20), "/"), "xylqz")); len(got) != 0 {
+		t.Errorf("listed %v", got)
+	}
+}
+
+func TestListRowsAreTheShownSpecsWhenFiltered(t *testing.T) {
+	m := typed(t, press(t, start(t, findable(), 120, 20), "/"), "zeb")
+	if row := rowOf(m, "Zebra stripes"); !strings.HasPrefix(row, "spx ") {
+		t.Errorf("row %q, want beta's own row", row)
+	}
+	if strings.Contains(screen(m), "Render the grid") {
+		t.Errorf("a filtered-out spec's row is shown:\n%s", screen(m))
+	}
+}
+
 func TestQueryEqualToAnIDLineMatchesNothing(t *testing.T) {
 	root := t.TempDir()
 	path := filepath.Join(root, "p", "draft", "plain.md")
