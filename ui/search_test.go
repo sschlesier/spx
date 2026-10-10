@@ -2,11 +2,14 @@ package ui
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/glamour/v2/styles"
 	"github.com/charmbracelet/x/ansi"
 
 	"spx/store"
@@ -432,5 +435,50 @@ func TestSlashIsIgnoredInTheFullWidthDetail(t *testing.T) {
 	m := press(t, start(t, findable(), 80, 20), "enter", "/")
 	if m.typing {
 		t.Fatal("/ opened the input while the detail was open")
+	}
+}
+
+func TestQueryMatchingOnlyTheStatusOrPathMatchesNothing(t *testing.T) {
+	specs := []store.Spec{{Project: "p", Status: "approved", Slug: "a", Path: "/store/p/approved/qzv.md", Title: "One", Type: "bug", Priority: 2}}
+	for _, q := range []string{"approved", "qzv"} {
+		if got := listed(typed(t, press(t, start(t, specs, 120, 20), "/"), q)); len(got) != 0 {
+			t.Errorf("/%s listed %v", q, got)
+		}
+	}
+}
+
+func TestQueryMatchingOnlyTheBodyMatchesNothing(t *testing.T) {
+	specs := []store.Spec{{Project: "p", Status: "draft", Slug: "a", Title: "One", Type: "bug", Priority: 2, Body: "xylqz\n"}}
+	if got := listed(typed(t, press(t, start(t, specs, 120, 20), "/"), "xylqz")); len(got) != 0 {
+		t.Errorf("listed %v", got)
+	}
+}
+
+func TestListRowsAreTheShownSpecsWhenFiltered(t *testing.T) {
+	m := typed(t, press(t, start(t, findable(), 120, 20), "/"), "zeb")
+	if row := rowOf(m, "Zebra stripes"); !strings.HasPrefix(row, "spx ") {
+		t.Errorf("row %q, want beta's own row", row)
+	}
+	if strings.Contains(screen(m), "Render the grid") {
+		t.Errorf("a filtered-out spec's row is shown:\n%s", screen(m))
+	}
+}
+
+func TestQueryEqualToAnIDLineMatchesNothing(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "p", "draft", "plain.md")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("---\ntitle: Plain\nid: zq-vw\ntype: chore\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m := New(root, nil, styles.AsciiStyle)
+	m = send(t, m, tea.WindowSizeMsg{Width: 120, Height: 20}, m.load()())
+	if got := listed(m); len(got) != 1 {
+		t.Fatalf("loaded %v", got)
+	}
+	if got := listed(typed(t, press(t, m, "/"), "zq-vw")); len(got) != 0 {
+		t.Fatalf("listed %v for a query only the id: line holds", got)
 	}
 }

@@ -9,7 +9,7 @@ import (
 func TestLoadDoneReadsReceiptsAndLoadNeverListsThem(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, "proj/started/a.md", spec("A", "2"))
-	write(t, root, "proj/done/z.md", "---\ntitle: Z\nid: zed\n---\n")
+	write(t, root, "proj/done/z.md", "---\ntitle: Z\n---\n")
 	write(t, root, "proj/done/y.md", spec("Y", "1"))
 	write(t, root, "proj/done/notes.txt", "x")
 	write(t, root, "proj/done/.hidden.md", spec("H", "1"))
@@ -24,8 +24,8 @@ func TestLoadDoneReadsReceiptsAndLoadNeverListsThem(t *testing.T) {
 	if got := slugs(done); !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %v, want %v", got, want)
 	}
-	if done[2].ID != "zed" {
-		t.Fatalf("id = %q", done[2].ID)
+	if done[2].Title != "Z" {
+		t.Fatalf("title = %q", done[2].Title)
 	}
 	specs, err := Load(root)
 	if err != nil {

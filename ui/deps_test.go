@@ -15,24 +15,24 @@ func init() {
 	keys["["] = tea.KeyPressMsg{Code: '[', Text: "["}
 }
 
-func dspec(project, status, slug, id string, deps ...string) store.Spec {
-	return store.Spec{Project: project, Status: status, Slug: slug, ID: id, Title: "Title " + slug,
+func dspec(project, status, slug string, deps ...string) store.Spec {
+	return store.Spec{Project: project, Status: status, Slug: slug, Title: "Title " + slug,
 		Priority: 2, DependsOn: deps}
 }
 
-// depsFixture is "main" (id m1) depending on a started, a done, a dropped, an unknown and a
-// duplicated id, with "after" depending on main.
+// depsFixture is "main" depending on a started, a done, a dropped, an unknown (done only in
+// another project) and a duplicated slug, with "after" depending on main.
 func depsFixture() (all, done []store.Spec) {
 	all = []store.Spec{
-		dspec("p", "started", "main", "m1", "s1", "d1", "g1", "zz", "dup"),
-		dspec("p", "started", "s1-spec", "s1"),
-		dspec("p", "approved", "after", "a1", "m1"),
-		dspec("p", "draft", "dup-a", "dup"),
-		dspec("p", "draft", "dup-b", "dup"),
-		dspec("q", "draft", "other", "o1", "m1"),
-		dspec("p", store.Dropped, "gone", "g1"),
+		dspec("p", "started", "main", "s1-spec", "finished", "gone", "zz", "dup"),
+		dspec("p", "started", "s1-spec"),
+		dspec("p", "approved", "after", "main"),
+		dspec("p", "draft", "dup"),
+		dspec("p", "approved", "dup"),
+		dspec("q", "draft", "other", "main"),
+		dspec("p", store.Dropped, "gone"),
 	}
-	done = []store.Spec{dspec("p", store.Done, "finished", "d1"), dspec("q", store.Done, "elsewhere", "zz")}
+	done = []store.Spec{dspec("p", store.Done, "finished"), dspec("q", store.Done, "zz")}
 	return all, done
 }
 
@@ -48,13 +48,13 @@ func TestDependsOnAndBlocksSections(t *testing.T) {
 	s := screen(m)
 	for _, want := range []string{
 		"Depends on",
-		"s1  Title s1-spec  (started)",
-		"d1  Title finished  (done)",
-		"g1  Title gone  (dropped)",
+		"s1-spec  Title s1-spec  (started)",
+		"finished  Title finished  (done)",
+		"gone  Title gone  (dropped)",
 		"zz (not in store)",
-		"dup  Title dup-a  (draft, duplicate id)",
+		"dup  Title dup  (draft)",
 		"Blocks",
-		"a1  Title after  (approved)",
+		"after  Title after  (approved)",
 	} {
 		if !strings.Contains(s, want) {
 			t.Errorf("detail lacks %q:\n%s", want, s)
@@ -63,14 +63,16 @@ func TestDependsOnAndBlocksSections(t *testing.T) {
 	if strings.Contains(s, "depends-on:") {
 		t.Errorf("raw depends-on line still shown:\n%s", s)
 	}
-	if strings.Contains(m.detail.GetContent(), "o1") {
+	if strings.Contains(s, "duplicate") {
+		t.Errorf("a duplicate slug is marked:\n%s", s)
+	}
+	if strings.Contains(m.detail.GetContent(), "Title other") {
 		t.Errorf("blocks lists a spec of another project:\n%s", s)
 	}
 }
 
-func TestSectionsAbsentWhenEmptyOrWithoutID(t *testing.T) {
-	all := []store.Spec{dspec("p", "draft", "noid", ""), dspec("p", "draft", "leaf", "l1")}
-	all[0].DependsOn = nil
+func TestSectionsAbsentWhenEmpty(t *testing.T) {
+	all := []store.Spec{dspec("p", "draft", "alone"), dspec("p", "draft", "leaf")}
 	m := send(t, New("/store", all, styles.AsciiStyle), tea.WindowSizeMsg{Width: 140, Height: 40})
 	for range 2 {
 		if s := screen(m); strings.Contains(s, "Depends on") || strings.Contains(s, "Blocks") {
@@ -80,11 +82,11 @@ func TestSectionsAbsentWhenEmptyOrWithoutID(t *testing.T) {
 	}
 }
 
-func TestSpecWithoutAnIDBlocksNothing(t *testing.T) {
-	all := []store.Spec{dspec("p", "draft", "a", ""), dspec("p", "draft", "b", "b1", "")}
+func TestBlocksMatchesBySlug(t *testing.T) {
+	all := []store.Spec{dspec("p", "draft", "base"), dspec("p", "draft", "user", "base")}
 	m := send(t, New("/store", all, styles.AsciiStyle), tea.WindowSizeMsg{Width: 140, Height: 20})
-	if s := screen(m); strings.Contains(s, "Blocks") {
-		t.Errorf("a spec without an id blocks something:\n%s", s)
+	if s := screen(m); !strings.Contains(s, "Blocks") || !strings.Contains(s, "user  Title user  (draft)") {
+		t.Errorf("a spec without an id gets no Blocks:\n%s", s)
 	}
 }
 
@@ -101,9 +103,9 @@ func TestDoneReceiptsAreNeverListed(t *testing.T) {
 }
 
 func TestHighlightCyclesAndWraps(t *testing.T) {
-	m := depsModel(t, 140) // entries: s1 d1 g1 zz dup, then blocks: after
+	m := depsModel(t, 140) // entries: s1-spec finished gone zz dup, then blocks: after
 	m = press(t, m, "]")
-	if m.hl != "dep:0:s1" {
+	if m.hl != "dep:0:s1-spec" {
 		t.Fatalf("first ] highlights %q", m.hl)
 	}
 	m = press(t, m, "]", "]", "]", "]", "]")
@@ -111,14 +113,14 @@ func TestHighlightCyclesAndWraps(t *testing.T) {
 		t.Errorf("sixth ] should reach the last entry, got %q", m.hl)
 	}
 	m = press(t, m, "]")
-	if m.hl != "dep:0:s1" {
+	if m.hl != "dep:0:s1-spec" {
 		t.Errorf("] from the last wraps to the first, got %q", m.hl)
 	}
 	m = press(t, m, "[")
 	if m.hl != "blk:p/after" {
 		t.Errorf("[ from the first wraps to the last, got %q", m.hl)
 	}
-	if !strings.Contains(m.detail.GetContent(), "\x1b[7m  a1  Title after") {
+	if !strings.Contains(m.detail.GetContent(), "\x1b[7m  after  Title after") {
 		t.Errorf("the highlighted entry is not reversed:\n%q", m.detail.GetContent())
 	}
 }
@@ -190,7 +192,7 @@ func TestDoneAndMissingEntriesShowANoticeInsteadOfJumping(t *testing.T) {
 		presses int
 		notice  string
 	}{
-		{2, "d1 is done"},
+		{2, "finished is done"},
 		{4, "zz is not in the store"},
 	} {
 		m := depsModel(t, 140)
@@ -204,11 +206,11 @@ func TestDoneAndMissingEntriesShowANoticeInsteadOfJumping(t *testing.T) {
 	}
 }
 
-func TestDuplicateIDUsesTheFirstSpec(t *testing.T) {
+func TestDuplicateSlugUsesTheFirstSpec(t *testing.T) {
 	m := depsModel(t, 140)
 	m = press(t, m, "]", "]", "]", "]", "]", "enter")
-	if selected(m) != "dup-a" {
-		t.Errorf("selected %s", selected(m))
+	if s := m.specs[m.cursor]; s.Slug != "dup" || s.Status != "draft" {
+		t.Errorf("selected %s/%s", s.Status, s.Slug)
 	}
 }
 
@@ -229,9 +231,12 @@ func TestDependencyKeysWorkInTheNarrowDetail(t *testing.T) {
 
 func TestReloadRedrawsSectionsWhenADoneReceiptGoes(t *testing.T) {
 	m := depsModel(t, 140)
+	if !strings.Contains(screen(m), "finished  Title finished  (done)") {
+		t.Fatalf("receipt not resolved before the reload:\n%s", screen(m))
+	}
 	all, _ := depsFixture()
 	m = send(t, m, loadedMsg{seq: 1, specs: all, projects: []string{"p", "q"}})
-	if !strings.Contains(screen(m), "d1 (not in store)") {
+	if !strings.Contains(screen(m), "finished (not in store)") {
 		t.Errorf("receipt removal not shown:\n%s", screen(m))
 	}
 }
