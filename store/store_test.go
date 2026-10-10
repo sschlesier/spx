@@ -239,28 +239,23 @@ func TestLoadMissingRoot(t *testing.T) {
 	}
 }
 
-func TestLoadReadsID(t *testing.T) {
-	cases := map[string]struct{ content, want string }{
-		"present":         {"---\nid: red-fox\n---\nbody\n", "red-fox"},
-		"missing":         {"---\ntitle: A\n---\nbody\n", ""},
-		"null":            {"---\nid:\n---\nbody\n", ""},
-		"list":            {"---\nid: [a, b]\n---\nbody\n", ""},
-		"as written":      {"---\nid: lid-ins\n---\nbody\n", "lid-ins"},
-		"whitespace kept": {"---\nid: \" lid-ins \"\n---\nbody\n", " lid-ins "},
-		"bad":             {"---\nid: [unclosed\n---\nbody\n", ""},
+func TestAnIDLineLoadsAsIfAbsent(t *testing.T) {
+	load := func(front string) Spec {
+		t.Helper()
+		root := t.TempDir()
+		write(t, root, "proj/draft/a.md", "---\ntitle: A\n"+front+"type: bug\npriority: 1\ndepends-on: [b]\n---\nbody\n")
+		specs, err := Load(root)
+		if err != nil || len(specs) != 1 {
+			t.Fatalf("Load: %v, %d specs", err, len(specs))
+		}
+		specs[0].Path = ""
+		return specs[0]
 	}
-	for name, c := range cases {
-		t.Run(name, func(t *testing.T) {
-			root := t.TempDir()
-			write(t, root, "proj/draft/a.md", c.content)
-			specs, err := Load(root)
-			if err != nil || len(specs) != 1 {
-				t.Fatalf("Load: %v, %d specs", err, len(specs))
-			}
-			if specs[0].ID != c.want {
-				t.Fatalf("ID = %q, want %q", specs[0].ID, c.want)
-			}
-		})
+	without := load("")
+	for _, line := range []string{"id: red-fox\n", "id:\n", "id: [a, b]\n"} {
+		if got := load(line); !reflect.DeepEqual(got, without) {
+			t.Errorf("with %q:\n got %+v\nwant %+v", line, got, without)
+		}
 	}
 }
 

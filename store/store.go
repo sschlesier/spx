@@ -33,7 +33,6 @@ type Spec struct {
 	Project   string
 	Status    string
 	Slug      string
-	ID        string // empty when missing
 	Path      string
 	Title     string // falls back to Slug
 	Type      string // empty when missing
@@ -148,9 +147,6 @@ func read(project, status, path string) Spec {
 	}
 	if t, ok := scalar(fm["title"]); ok && strings.TrimSpace(t) != "" {
 		s.Title = strings.Join(strings.Fields(t), " ")
-	}
-	if id, ok := scalar(fm["id"]); ok {
-		s.ID = id
 	}
 	if t, ok := scalar(fm["type"]); ok {
 		s.Type = t
