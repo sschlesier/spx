@@ -4,7 +4,7 @@ type: chore
 priority: 2
 depends-on: []
 approved: "Scott Schlesier, 2026-10-10: no id column, header part, duplicate marker or id filter; depends-on and Blocks match by slug; starts after chezmoi stop-assigning-spec-ids. Cold read: not run (one area, no flags)"
-status: in-review
+status: done
 ---
 
 spx no longer shows, filters by or resolves spec ids: the list and detail pane have no id, and
@@ -95,3 +95,8 @@ spec isn't done).
   reload; loaded beats done; first-loaded dependency; slug control characters; / ignores status,
   path and body; list rows follow filtered specs). Dismissed: `t := t` in `ui/deps.go`, a
   leftover loop-variable copy that predates this PR and is harmless.
+- 2026-10-10: Review answers (Scott): self-dependency stays as is (shown under Depends on, left
+  out of Blocks, same as the id version); manual step re-run by Scott in a real 80-column terminal,
+  looks right (the dependency is now done, so enter reports it done).
+- 2026-10-10: Done: Reviewed round 1: ids gone from list, status flags, header and filter;
+  depends-on and Blocks match by slug; 9/9 criteria verified, 7 tests added in triage.
