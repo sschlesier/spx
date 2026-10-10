@@ -438,6 +438,15 @@ func TestSlashIsIgnoredInTheFullWidthDetail(t *testing.T) {
 	}
 }
 
+func TestQueryMatchingOnlyTheStatusOrPathMatchesNothing(t *testing.T) {
+	specs := []store.Spec{{Project: "p", Status: "approved", Slug: "a", Path: "/store/p/approved/qzv.md", Title: "One", Type: "bug", Priority: 2}}
+	for _, q := range []string{"approved", "qzv"} {
+		if got := listed(typed(t, press(t, start(t, specs, 120, 20), "/"), q)); len(got) != 0 {
+			t.Errorf("/%s listed %v", q, got)
+		}
+	}
+}
+
 func TestQueryEqualToAnIDLineMatchesNothing(t *testing.T) {
 	root := t.TempDir()
 	path := filepath.Join(root, "p", "draft", "plain.md")
