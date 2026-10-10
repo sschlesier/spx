@@ -29,24 +29,24 @@ Out of scope:
 
 ## Acceptance criteria
 
-- [ ] `store.Spec` has no `ID` field and `store` doesn't read `id:`; a spec file with an `id:` line
+- [x] `store.Spec` has no `ID` field and `store` doesn't read `id:`; a spec file with an `id:` line
       loads exactly as one without it.
-- [ ] The list and the status-flag output (`spx -d` etc.) have no id column and no duplicate `!`
+- [x] The list and the status-flag output (`spx -d` etc.) have no id column and no duplicate `!`
       marker; the first column is what followed the id before.
-- [ ] The detail header's type line is `type: <type>   priority: P<n>`, with no `id:` part and no
+- [x] The detail header's type line is `type: <type>   priority: P<n>`, with no `id:` part and no
       `(duplicate id)` note.
-- [ ] The `/` filter matches title, slug, project and type only, best fuzzy score first; there is no
+- [x] The `/` filter matches title, slug, project and type only, best fuzzy score first; there is no
       id-prefix tier. A query equal to a spec's `id:` value finds it only if that text appears in
       one of those fields.
-- [ ] A `depends-on` entry matches the spec in the same project whose slug equals it, over loaded
+- [x] A `depends-on` entry matches the spec in the same project whose slug equals it, over loaded
       specs then `done/` receipts. Its line reads `<slug>  <title>  (<status>)`; one that matches
       nothing reads `<entry> (not in store)` and enter shows `<entry> is not in the store`.
-- [ ] Blocks lists the non-dropped specs of the project whose `depends-on` holds the selected
+- [x] Blocks lists the non-dropped specs of the project whose `depends-on` holds the selected
       spec's slug, each as `<slug>  <title>  (<status>)`. A spec without an `id:` gets its Blocks
       section (today it gets none).
-- [ ] `]`/`[` and enter behave as before on the new entries.
-- [ ] `CLAUDE.md`'s invariant says `done/` is read to resolve `depends-on` slugs, not ids.
-- [ ] Nothing under the store root is written, moved or deleted.
+- [x] `]`/`[` and enter behave as before on the new entries.
+- [x] `CLAUDE.md`'s invariant says `done/` is read to resolve `depends-on` slugs, not ids.
+- [x] Nothing under the store root is written, moved or deleted.
 
 ## Verification
 
@@ -83,3 +83,10 @@ spec isn't done).
   (in the chezmoi spec), so spx matches slug only; id matching removed from the filter.
 - 2026-10-10: Approved: Scott Schlesier, 2026-10-10: no id column, header part, duplicate marker or id filter; depends-on and Blocks match by slug; starts after chezmoi stop-assigning-spec-ids. Cold read: not run (one area, no flags)
 - 2026-10-10: Started on branch stop-showing-spec-ids
+- 2026-10-10: Implemented. Precondition checked: chezmoi `stop-assigning-spec-ids` is done and no
+  `depends-on` in the store holds an id. `go vet ./... && go test -race ./...` pass; the
+  verification grep finds nothing. Manual: `spx -d -a -s <project>` rows start with the project,
+  no id column. Detail check run through a throwaway test against the real store at 80 columns
+  (not the interactive UI): `move-mdserver-files-off-assets` shows `serve-only-markdown-and-images
+  … (started)` under Depends on, and `]` enter jumps to it. Assumption: `Rows` now takes only the
+  shown specs, since `all` was only for spotting duplicate ids.
