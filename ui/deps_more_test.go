@@ -19,14 +19,14 @@ func longModel(t *testing.T) Model {
 	return send(t, m, tea.WindowSizeMsg{Width: 140, Height: 12})
 }
 
-func TestARepeatedDependsOnIDHasOneEntryPerOccurrence(t *testing.T) {
-	all := []store.Spec{dspec("p", "draft", "a", "a1", "b1", "b1"), dspec("p", "draft", "b", "b1")}
+func TestARepeatedDependsOnEntryHasOneEntryPerOccurrence(t *testing.T) {
+	all := []store.Spec{dspec("p", "draft", "a", "b", "b"), dspec("p", "draft", "b")}
 	m := send(t, New("/store", all, styles.AsciiStyle), tea.WindowSizeMsg{Width: 140, Height: 20})
 	m = press(t, m, "]", "]")
-	if m.hl != "dep:1:b1" {
+	if m.hl != "dep:1:b" {
 		t.Errorf("second ] highlights %q", m.hl)
 	}
-	if m = press(t, m, "["); m.hl != "dep:0:b1" {
+	if m = press(t, m, "["); m.hl != "dep:0:b" {
 		t.Errorf("[ highlights %q", m.hl)
 	}
 }
@@ -59,8 +59,8 @@ func TestJumpKeepsAStatusFilterThatShowsTheTargetWhenOnlyTheQueryHidesIt(t *test
 }
 
 func TestBlocksLeavesOutDroppedDependents(t *testing.T) {
-	all := []store.Spec{dspec("p", "draft", "base", "b1"), dspec("p", "draft", "live", "l1", "b1"),
-		dspec("p", store.Dropped, "dead", "d1", "b1")}
+	all := []store.Spec{dspec("p", "draft", "base"), dspec("p", "draft", "live", "base"),
+		dspec("p", store.Dropped, "dead", "base")}
 	m := send(t, New("/store", all, styles.AsciiStyle), tea.WindowSizeMsg{Width: 140, Height: 20})
 	c := m.detail.GetContent()
 	if !strings.Contains(c, "Title live") || strings.Contains(c, "Title dead") {

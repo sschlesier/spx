@@ -12,41 +12,27 @@ import (
 // depEntry is one line of the detail pane's Depends on or Blocks section.
 type depEntry struct {
 	key    string      // identifies the entry across reloads
-	label  string      // `<id>  <title>  (<status>)`
+	label  string      // `<slug>  <title>  (<status>)`
 	target *store.Spec // the spec enter jumps to; nil when there is none
 	notice string      // shown on enter when target is nil
 }
 
-// depEntries lists what s depends on, one entry per depends-on id, and what it blocks: the
-// specs of its project whose depends-on holds its id. Ids match exactly and only within the
-// project, over the loaded specs then the done receipts.
+// depEntries lists what s depends on, one entry per depends-on slug, and what it blocks: the
+// specs of its project whose depends-on holds its slug. Slugs match exactly and only within
+// the project, over the loaded specs then the done receipts; the first match wins.
 func depEntries(s store.Spec, all, done []store.Spec) (depends, blocks []depEntry) {
-	var pool []store.Spec
-	for _, t := range slices.Concat(all, done) {
-		if t.Project == s.Project {
-			pool = append(pool, t)
-		}
-	}
-	matches := func(id string) []store.Spec {
-		var out []store.Spec
-		for _, t := range pool {
-			if t.ID != "" && t.ID == id {
-				out = append(out, t)
-			}
-		}
-		return out
-	}
-	for i, id := range s.DependsOn {
-		shown := printable(id)
-		found := matches(id)
-		e := depEntry{key: fmt.Sprintf("dep:%d:%s", i, id)}
+	pool := slices.Concat(all, done)
+	for i, slug := range s.DependsOn {
+		shown := printable(slug)
+		e := depEntry{key: fmt.Sprintf("dep:%d:%s", i, slug)}
+		j := slices.IndexFunc(pool, func(t store.Spec) bool { return t.Project == s.Project && t.Slug == slug })
 		switch {
-		case len(found) == 0:
+		case j < 0:
 			e.label = shown + " (not in store)"
 			e.notice = shown + " is not in the store"
 		default:
-			first := found[0]
-			e.label = entryLabel(first, len(found) > 1)
+			first := pool[j]
+			e.label = entryLabel(first)
 			if first.Status == store.Done {
 				e.notice = shown + " is done"
 			} else {
@@ -55,29 +41,22 @@ func depEntries(s store.Spec, all, done []store.Spec) (depends, blocks []depEntr
 		}
 		depends = append(depends, e)
 	}
-	if s.ID == "" {
-		return depends, nil
-	}
 	for _, t := range all {
-		if t.Project != s.Project || t.Slug == s.Slug || t.Status == store.Dropped || !slices.Contains(t.DependsOn, s.ID) {
+		if t.Project != s.Project || t.Slug == s.Slug || t.Status == store.Dropped || !slices.Contains(t.DependsOn, s.Slug) {
 			continue
 		}
 		t := t
 		blocks = append(blocks, depEntry{
 			key:    "blk:" + t.Project + "/" + t.Slug,
-			label:  entryLabel(t, t.ID != "" && len(matches(t.ID)) > 1),
+			label:  entryLabel(t),
 			target: &t,
 		})
 	}
 	return depends, blocks
 }
 
-func entryLabel(s store.Spec, duplicate bool) string {
-	status := s.Status
-	if duplicate {
-		status += ", duplicate id"
-	}
-	return orDash(printable(s.ID)) + "  " + printable(s.Title) + "  (" + status + ")"
+func entryLabel(s store.Spec) string {
+	return printable(s.Slug) + "  " + printable(s.Title) + "  (" + s.Status + ")"
 }
 
 // depLines renders the Depends on and Blocks sections, one entry per line, with the
