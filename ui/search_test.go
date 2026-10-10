@@ -2,11 +2,14 @@ package ui
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/glamour/v2/styles"
 	"github.com/charmbracelet/x/ansi"
 
 	"spx/store"
@@ -432,5 +435,24 @@ func TestSlashIsIgnoredInTheFullWidthDetail(t *testing.T) {
 	m := press(t, start(t, findable(), 80, 20), "enter", "/")
 	if m.typing {
 		t.Fatal("/ opened the input while the detail was open")
+	}
+}
+
+func TestQueryEqualToAnIDLineMatchesNothing(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "p", "draft", "plain.md")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("---\ntitle: Plain\nid: zq-vw\ntype: chore\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m := New(root, nil, styles.AsciiStyle)
+	m = send(t, m, tea.WindowSizeMsg{Width: 120, Height: 20}, m.load()())
+	if got := listed(m); len(got) != 1 {
+		t.Fatalf("loaded %v", got)
+	}
+	if got := listed(typed(t, press(t, m, "/"), "zq-vw")); len(got) != 0 {
+		t.Fatalf("listed %v for a query only the id: line holds", got)
 	}
 }

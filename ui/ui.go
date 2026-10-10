@@ -332,26 +332,16 @@ func (m Model) visible() []store.Spec {
 		return out
 	}
 	type scored struct {
-		spec   store.Spec
-		score  int
-		prefix bool // the id starts with the query
+		spec  store.Spec
+		score int
 	}
 	var hits []scored
 	for _, s := range out {
-		score, ok := matchScore(m.query, s)
-		prefix := idPrefix(m.query, s)
-		if ok || prefix {
-			hits = append(hits, scored{s, score, prefix})
+		if score, ok := matchScore(m.query, s); ok {
+			hits = append(hits, scored{s, score})
 		}
 	}
-	// Id-prefix matches come first in the store's order; the rest follow best score first.
-	sort.SliceStable(hits, func(i, j int) bool {
-		a, b := hits[i], hits[j]
-		if a.prefix != b.prefix {
-			return a.prefix
-		}
-		return !a.prefix && a.score > b.score
-	})
+	sort.SliceStable(hits, func(i, j int) bool { return hits[i].score > hits[j].score })
 	out = nil
 	for _, h := range hits {
 		out = append(out, h.spec)
@@ -359,15 +349,10 @@ func (m Model) visible() []store.Spec {
 	return out
 }
 
-// idPrefix reports whether the spec's id starts with query, ignoring case.
-func idPrefix(query string, s store.Spec) bool {
-	return s.ID != "" && strings.HasPrefix(strings.ToLower(s.ID), strings.ToLower(query))
-}
-
-// matchScore is the best fuzzy score of query over the spec's id, title, slug, project and type.
+// matchScore is the best fuzzy score of query over the spec's title, slug, project and type.
 func matchScore(query string, s store.Spec) (int, bool) {
 	best, ok := 0, false
-	for _, field := range []string{s.ID, s.Title, s.Slug, s.Project, s.Type} {
+	for _, field := range []string{s.Title, s.Slug, s.Project, s.Type} {
 		if ms := fuzzy.Find(query, []string{field}); len(ms) > 0 && (!ok || ms[0].Score > best) {
 			best, ok = ms[0].Score, true
 		}
