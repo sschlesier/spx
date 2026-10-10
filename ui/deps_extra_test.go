@@ -15,8 +15,20 @@ import (
 func TestSelfDependencyIsNotListedUnderBlocks(t *testing.T) {
 	all := []store.Spec{dspec("p", "draft", "loop", "loop")}
 	m := send(t, New("/store", all, styles.AsciiStyle), tea.WindowSizeMsg{Width: 140, Height: 20})
-	if s := screen(m); strings.Contains(s, "Blocks") || !strings.Contains(s, "Depends on") {
+	if s := screen(m); strings.Contains(s, "Blocks") || !strings.Contains(s, "loop  Title loop  (draft)") {
 		t.Errorf("self-dependency:\n%s", s)
+	}
+}
+
+func TestALoadedSpecWinsOverADoneReceiptWithTheSameSlug(t *testing.T) {
+	all := []store.Spec{dspec("p", "draft", "a", "x"), dspec("p", "started", "x")}
+	done := []store.Spec{dspec("p", store.Done, "x")}
+	m := send(t, New("/store", all, styles.AsciiStyle).WithDone(done), tea.WindowSizeMsg{Width: 140, Height: 20})
+	if c := m.detail.GetContent(); !strings.Contains(c, "x  Title x  (started)") || strings.Contains(c, "(done)") {
+		t.Errorf("depends on:\n%s", c)
+	}
+	if m = press(t, m, "]", "enter"); selected(m) != "x" || m.notice != "" {
+		t.Errorf("selected %s, notice %q", selected(m), m.notice)
 	}
 }
 
