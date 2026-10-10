@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0
+
+- Stop showing spec ids: drop the id column and id filtering, and no longer read `id:` from spec files
+- Match `depends-on` and Blocks by slug instead of id
+
 ## 0.1.0
 
 - Browse specs in a split view: a list beside the selected spec's rendered markdown
