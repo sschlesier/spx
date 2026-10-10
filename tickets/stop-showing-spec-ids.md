@@ -91,3 +91,7 @@ spec isn't done).
   … (started)` under Depends on, and `]` enter jumps to it. Assumption: `Rows` now takes only the
   shown specs, since `all` was only for spotting duplicate ids.
 - 2026-10-10: Review started
+- 2026-10-10: Review round 1 triage: 7 missing-test findings fixed (receipt asserted before
+  reload; loaded beats done; first-loaded dependency; slug control characters; / ignores status,
+  path and body; list rows follow filtered specs). Dismissed: `t := t` in `ui/deps.go`, a
+  leftover loop-variable copy that predates this PR and is harmless.
