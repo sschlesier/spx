@@ -96,7 +96,9 @@ jobs:
           if gh release view "${GITHUB_REF_NAME}" > /dev/null 2>&1; then
             gh release upload "${GITHUB_REF_NAME}" release/* --clobber
           else
-            gh release create "${GITHUB_REF_NAME}" release/* --title "spx ${GITHUB_REF_NAME}" --generate-notes
+            awk -v h="## ${GITHUB_REF_NAME#v}" '/^## / { on = ($0 == h); next } on' CHANGES.md > notes.md
+            [ -s notes.md ] || { echo "::error::CHANGES.md has no section for ${GITHUB_REF_NAME#v}"; exit 1; }
+            gh release create "${GITHUB_REF_NAME}" release/* --title "spx ${GITHUB_REF_NAME}" --notes-file notes.md
           fi
 
       - name: Check out the tap
