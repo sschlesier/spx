@@ -4,7 +4,7 @@ type: chore
 priority: 2
 depends-on: []
 approved: "Scott Schlesier, 2026-10-10: no id column, header part, duplicate marker or id filter; depends-on and Blocks match by slug; starts after chezmoi stop-assigning-spec-ids. Cold read: not run (one area, no flags)"
-status: in-progress
+status: in-review
 ---
 
 spx no longer shows, filters by or resolves spec ids: the list and detail pane have no id, and
@@ -90,3 +90,4 @@ spec isn't done).
   (not the interactive UI): `move-mdserver-files-off-assets` shows `serve-only-markdown-and-images
   … (started)` under Depends on, and `]` enter jumps to it. Assumption: `Rows` now takes only the
   shown specs, since `all` was only for spotting duplicate ids.
+- 2026-10-10: Review started
