@@ -49,6 +49,16 @@ func TestAnotherProjectsSameSlugDoesNotMatch(t *testing.T) {
 	}
 }
 
+func TestControlCharactersInASlugNeverReachTheDependencyLabel(t *testing.T) {
+	bad := "x\n\x1b[31my"
+	all := []store.Spec{dspec("p", "draft", "a", bad), dspec("p", "draft", bad)}
+	all[1].Title = "Target"
+	m := send(t, New("/store", all, styles.AsciiStyle), tea.WindowSizeMsg{Width: 140, Height: 20})
+	if c := m.detail.GetContent(); !strings.Contains(c, "x[31my  Target  (draft)") {
+		t.Errorf("depends on:\n%q", c)
+	}
+}
+
 func TestJumpEmptiesTheFilterInputWhenItClearsTheQuery(t *testing.T) {
 	m := depsModel(t, 140)
 	m.query, m.specs = "main", m.visible()
