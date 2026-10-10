@@ -8,9 +8,21 @@ import (
 	"spx/store"
 )
 
+func rowOf(m Model, title string) string {
+	for _, l := range strings.Split(screen(m), "\n") {
+		if strings.Contains(l, title) {
+			return l
+		}
+	}
+	return ""
+}
+
 func TestListRowsStartWithTheSharedRows(t *testing.T) {
-	specs := withIDs()
-	rows := Rows(specs, specs)
+	specs := []store.Spec{
+		{Project: "p", Status: "draft", Slug: "one", Title: "One", Type: "feature", Priority: 2},
+		{Project: "pq", Status: "approved", Slug: "two", Title: "Two", Priority: 1},
+	}
+	rows := Rows(specs)
 	m := start(t, specs, 200, 20)
 	lines := strings.Split(screen(m), "\n")
 	for _, row := range rows {
@@ -26,13 +38,13 @@ func TestListRowsStartWithTheSharedRows(t *testing.T) {
 
 func TestRowsDropControlCharactersInEveryCell(t *testing.T) {
 	specs := []store.Spec{
-		{ID: "a\nb", Project: "p\x1b[0m", Status: "draft", Priority: 1, Type: "bu\ng", Title: "T\tx"},
+		{Project: "p\x1b[0m", Status: "draft", Priority: 1, Type: "bu\ng", Title: "T\tx"},
 		{Project: "q", Status: "draft", Priority: 1, Type: "\n", Title: "U"},
 	}
-	got := Rows(specs, specs)
+	got := Rows(specs)
 	want := []string{
-		"ab  p[0m  draft    P1  bug      Tx",
-		"-   q     draft    P1  -        U",
+		"p[0m  draft    P1  bug      Tx",
+		"q     draft    P1  -        U",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %q\nwant %q", got, want)
@@ -47,19 +59,26 @@ func TestListCutsALongRowWithAnEllipsis(t *testing.T) {
 	}
 }
 
-func TestRowsFormatsUntruncatedAlignedRows(t *testing.T) {
+func TestRowsFormatsUntruncatedAlignedRowsStartingWithTheProject(t *testing.T) {
 	long := strings.Repeat("long title ", 30)
-	all := []store.Spec{
-		{ID: "red-fox", Project: "a", Status: "draft", Priority: 1, Type: "bug", Title: "First"},
+	shown := []store.Spec{
+		{Project: "a", Status: "draft", Priority: 1, Type: "bug", Title: "First"},
 		{Project: "bb", Status: "approved", Priority: store.NoPriority, Title: long + "\x1b[31m"},
-		{ID: "red-fox", Project: "a", Status: "started", Priority: 2, Type: "feature", Title: "Dupe"},
 	}
-	got := Rows(all, all[:2])
+	got := Rows(shown)
 	want := []string{
-		"red-fox!  a   draft    P1  bug      First",
-		"-         bb  approved -   -        " + long + "[31m",
+		"a   draft    P1  bug      First",
+		"bb  approved -   -        " + long + "[31m",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %q\nwant %q", got, want)
+	}
+}
+
+func TestDetailHeaderTypeLineHasNoID(t *testing.T) {
+	m := start(t, []store.Spec{{Project: "p", Status: "draft", Slug: "a", Title: "A", Type: "feature", Priority: 2}}, 120, 20)
+	s := screen(m)
+	if !strings.Contains(s, "type: feature   priority: P2") || strings.Contains(s, "id:") {
+		t.Errorf("detail header:\n%s", s)
 	}
 }

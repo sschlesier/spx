@@ -234,7 +234,8 @@ func TestExplicitArgumentBeatsTheRepo(t *testing.T) {
 	}
 }
 
-// printStore writes a store whose specs span every status, two projects and a duplicate id.
+// printStore writes a store whose specs span every status and two projects, some with an
+// `id:` line (repeated across two specs) that the output ignores.
 func printStore(t *testing.T) {
 	t.Helper()
 	root := makeStore(t)
@@ -296,13 +297,13 @@ func TestStatusFlagsPrintRowsWithoutStartingTheUI(t *testing.T) {
 func TestStatusFlagRowsMatchTheList(t *testing.T) {
 	printStore(t)
 	r := runCLI(t, t.TempDir(), "-s")
-	want := "red-fox!  alpha  started  P3  task     Started one\n"
+	want := "alpha  started  P3  task     Started one\n"
 	if r.stdout != want {
 		t.Fatalf("got %q, want %q", r.stdout, want)
 	}
 	r = runCLI(t, t.TempDir(), "-d", "alpha")
-	want = "red-fox!  alpha  draft    P1  bug      Draft one\n" +
-		"-         alpha  draft    -   -        Draft two\n"
+	want = "alpha  draft    P1  bug      Draft one\n" +
+		"alpha  draft    -   -        Draft two\n"
 	if r.stdout != want {
 		t.Fatalf("got %q, want %q", r.stdout, want)
 	}
@@ -349,12 +350,12 @@ func TestStatusFlagRowsAreOneLineWhateverTheTitleHolds(t *testing.T) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	front := "---\ntitle: \"a\\e[31mb\\u2028c\\nd\"\nid: \"x\\ny\"\n---\n\nBody.\n"
+	front := "---\ntitle: \"a\\e[31mb\\u2028c\\nd\"\n---\n\nBody.\n"
 	if err := os.WriteFile(filepath.Join(dir, "t.md"), []byte(front), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	r := runCLI(t, t.TempDir(), "-d")
-	if r.stdout != "xy  alpha  draft    -   -        a[31mb c d\n" {
+	if r.stdout != "alpha  draft    -   -        a[31mb c d\n" {
 		t.Fatalf("stdout %q", r.stdout)
 	}
 }

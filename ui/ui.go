@@ -726,20 +726,16 @@ func (m *Model) renderDetail() {
 	}
 	s := m.specs[m.cursor]
 	depends, blocks := depEntries(s, m.all, m.done)
-	head := header(s, isDuplicate(s, duplicateIDs(m.all)), m.detail.Width(), depLines(depends, blocks, m.hl))
+	head := header(s, m.detail.Width(), depLines(depends, blocks, m.hl))
 	m.detail.SetContent(head + "\n" + m.markdown(s.Body))
 	m.detail.SetYOffset(m.detail.YOffset())
 }
 
-func header(s store.Spec, duplicate bool, width int, deps []string) string {
-	idPart := "id: " + orDash(printable(s.ID))
-	if duplicate {
-		idPart += "   (duplicate id)"
-	}
+func header(s store.Spec, width int, deps []string) string {
 	lines := []string{
 		titleStyle.Render(s.Title),
 		s.Project + "/" + s.Status + "/" + s.Slug,
-		idPart + "   type: " + orDash(s.Type) + "   priority: " + priority(s.Priority),
+		"type: " + orDash(s.Type) + "   priority: " + priority(s.Priority),
 	}
 	if s.Approved != "" {
 		lines = append(lines, "approved: "+s.Approved)
@@ -923,7 +919,7 @@ func (m Model) listView() string {
 	if len(m.specs) == 0 {
 		return m.emptyMessage()
 	}
-	all := Rows(m.all, m.specs)
+	all := Rows(m.specs)
 	w := m.listWidth()
 	end := min(len(m.specs), m.offset+m.bodyHeight())
 	rows := make([]string, 0, end-m.offset)
@@ -938,22 +934,19 @@ func (m Model) listView() string {
 }
 
 // Rows formats shown as list rows, one per spec, without the terminal-width cut or any styling.
-// Column widths come from shown; all is every loaded spec, for spotting duplicate ids.
-func Rows(all, shown []store.Spec) []string {
-	dupes := duplicateIDs(all)
-	idW, projectW, typeW := 0, 0, len("feature")
+// Column widths come from shown.
+func Rows(shown []store.Spec) []string {
+	projectW, typeW := 0, len("feature")
 	projects, types := make([]string, len(shown)), make([]string, len(shown))
 	for i, s := range shown {
 		projects[i], types[i] = printable(s.Project), printable(s.Type)
-		idW = max(idW, ansi.StringWidth(idCell(s, dupes)))
 		projectW = max(projectW, len(projects[i]))
 		typeW = max(typeW, len(types[i]))
 	}
 	rows := make([]string, len(shown))
 	for i, s := range shown {
-		cell := idCell(s, dupes)
-		rows[i] = fmt.Sprintf("%s%s  %-*s  %-8s %-2s  %-*s  %s",
-			cell, strings.Repeat(" ", idW-ansi.StringWidth(cell)), projectW, projects[i], s.Status, priority(s.Priority), typeW, orDash(types[i]), printable(s.Title))
+		rows[i] = fmt.Sprintf("%-*s  %-8s %-2s  %-*s  %s",
+			projectW, projects[i], s.Status, priority(s.Priority), typeW, orDash(types[i]), printable(s.Title))
 	}
 	return rows
 }
@@ -974,50 +967,14 @@ func fit(s string, width, height int) string {
 	return strings.Join(lines, "\n")
 }
 
-// maxIDWidth caps the id column, in cells, so a long id can't squeeze the rest of the row.
-const maxIDWidth = 16
-
-// duplicateIDs is the set of ids, lowercased, carried by more than one of specs.
-func duplicateIDs(specs []store.Spec) map[string]bool {
-	seen, dupes := map[string]bool{}, map[string]bool{}
-	for _, s := range specs {
-		id := strings.ToLower(s.ID)
-		if id == "" {
-			continue
-		}
-		if seen[id] {
-			dupes[id] = true
-		}
-		seen[id] = true
-	}
-	return dupes
-}
-
-func isDuplicate(s store.Spec, dupes map[string]bool) bool {
-	return dupes[strings.ToLower(s.ID)]
-}
-
-// printable drops control characters, so an id can't split a row or send terminal escapes.
-func printable(id string) string {
+// printable drops control characters, so a field can't split a row or send terminal escapes.
+func printable(s string) string {
 	return strings.Map(func(r rune) rune {
 		if unicode.IsControl(r) {
 			return -1
 		}
 		return r
-	}, id)
-}
-
-// idCell is the id as the list shows it: printable, cut to maxIDWidth, "-" without one, and a
-// trailing "!" on a duplicate.
-func idCell(s store.Spec, dupes map[string]bool) string {
-	id := ansi.Truncate(printable(s.ID), maxIDWidth, "…")
-	if id == "" {
-		return "-"
-	}
-	if isDuplicate(s, dupes) {
-		return id + "!"
-	}
-	return id
+	}, s)
 }
 
 func priority(p int) string {
