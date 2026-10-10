@@ -231,6 +231,9 @@ func TestDependencyKeysWorkInTheNarrowDetail(t *testing.T) {
 
 func TestReloadRedrawsSectionsWhenADoneReceiptGoes(t *testing.T) {
 	m := depsModel(t, 140)
+	if !strings.Contains(screen(m), "finished  Title finished  (done)") {
+		t.Fatalf("receipt not resolved before the reload:\n%s", screen(m))
+	}
 	all, _ := depsFixture()
 	m = send(t, m, loadedMsg{seq: 1, specs: all, projects: []string{"p", "q"}})
 	if !strings.Contains(screen(m), "finished (not in store)") {
