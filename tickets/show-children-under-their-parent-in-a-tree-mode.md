@@ -23,7 +23,7 @@ Out of scope:
 ## Acceptance criteria
 
 - [ ] `t` in the list toggles tree mode; the list starts with it off, and with it off the list is exactly as today. `t` does nothing while the query input or project popup has the keys.
-- [ ] In tree mode a spec whose `parent:` resolves to a spec in the visible rows appears directly under that parent, indented two cells per level, with a branch glyph (`├─` for a non-last child, `└─` for the last). Children keep the order they have in the flat list. Nesting works to any depth.
+- [ ] In tree mode a spec whose `parent:` resolves to a spec in the visible rows appears directly under that parent, indented two cells per level, with a branch glyph (`├─` for a non-last child, `└─` for the last) and a `│ ` guide in the column of each ancestor that has more children below (a blank column for a last one). Children keep the order they have in the flat list. Nesting works to any depth.
 - [ ] A spec with no `parent:`, or whose parent is not in the visible rows (another status or project filtered out, hidden by the query, dropped, in `done/`, or missing), stays at the top level without indent, so nothing disappears.
 - [ ] `parent:` is a bare slug, naming a spec in the child's own project, or `<project>/<slug>`, naming one in that project. (`depends-on` resolves within the project only; the cross-project form is new here, as the store format defines it for `parent`.)
 - [ ] Each spec is shown once. A parent cycle, or a spec naming itself, shows its members at the top level.
@@ -66,3 +66,6 @@ Don't touch: any write path, the flat list's behaviour with `t` off.
 - 2026-10-12: Started on branch show-children-in-tree-mode
 - 2026-10-12: Assumption: the narrow-layout footer test moved from width 90 to 99, since the added `t tree` hint pushes `e edit · y/Y copy` out of the footer at 90.
 - 2026-10-12: Review started
+- 2026-10-12: Dismissed: the `seen` guard in `walk` is unreachable after cycle removal and kept as a defensive guard; the duplicate project/slug guard is an equivalent mutant (the store holds no duplicates).
+- 2026-10-12: Needs fixes (round 1): 1. Draw `│ ` guides under non-last ancestors (Scott Schlesier chose this over keeping bare indent; criterion 2 changed to say so). 2. Run the manual step in a real terminal.
+- 2026-10-12: Round 1 fixes: 1.1 guides added and tested; 1.2 manual run done in tmux against a scratch store (tree, grandchild guides, cross-project parent, `/` on a child, `d` then `a`, `t` off): rendering and footer as the criteria say; `git -C ~/src/specs status` clean.
