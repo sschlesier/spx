@@ -38,6 +38,7 @@ type Spec struct {
 	Type      string // empty when missing
 	Priority  int    // NoPriority when missing
 	DependsOn []string
+	Parent    string // the parent: field as written; empty when missing
 	Approved  string
 	Body      string // the file without its frontmatter
 }
@@ -167,6 +168,9 @@ func read(project, status, path string) Spec {
 		if d, ok := scalar(n); ok && d != "" {
 			s.DependsOn = []string{d}
 		}
+	}
+	if p, ok := scalar(fm["parent"]); ok {
+		s.Parent = p
 	}
 	if a, ok := scalar(fm["approved"]); ok {
 		s.Approved = a
