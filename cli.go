@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -39,6 +40,28 @@ var commands = []command{
 			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.",
 		Run: runLog,
 	},
+	{
+		Name:     "new",
+		Synopsis: `spx new <project> <file>`,
+		Effect:   "Add a finished draft written outside the store as a new spec in <project>/draft/ and commit it.",
+		Rule: "Write the whole spec in a file outside the store first, then run this once; spx copies it in, " +
+			"so a half-written spec is never on main. The slug comes from `title:` and is printed; it never " +
+			"changes. Missing template fields are appended empty. Leave `approved`, `status`, `accepted`, `pr` " +
+			"and `path` empty (exit 2 otherwise). A new project folder is created only for a name of lowercase " +
+			"letters, digits and hyphens. Unresolved `depends-on` or `parent` slugs warn on stderr.",
+		Usage: "usage: spx new <project> <file>\n" +
+			"<file> is the finished draft, with a title: in its frontmatter. Prints the new spec's slug.",
+		Run: runNew,
+	},
+}
+
+// commandNames are the names in the command table, for handlers that can't refer to it.
+var commandNames []string
+
+func init() {
+	for _, c := range commands {
+		commandNames = append(commandNames, c.Name)
+	}
 }
 
 func findCommand(name string) (command, bool) {
@@ -83,40 +106,112 @@ func usageError(c command, e env) int {
 	return ops.CodeUsage
 }
 
+// textArgError reports a text argument that is empty or spans lines, with the usage.
+func textArgError(c command, e env, err error) int {
+	fmt.Fprintf(e.stderr, "spx: %v\n", err)
+	return usageError(c, e)
+}
+
+// storeView is the store as a command sees it.
+type storeView struct {
+	root     string
+	all      []store.Spec // every listed spec and the done receipts
+	projects []string
+	scope    string // the current checkout's project, when the store has it
+}
+
+func openStore(e env) (storeView, error) {
+	root, err := store.Root()
+	if err != nil {
+		return storeView{}, ops.NotFound(err)
+	}
+	specs, err := store.Load(root)
+	if err != nil {
+		return storeView{}, ops.NotFound(err)
+	}
+	done, err := store.LoadDone(root)
+	if err != nil {
+		return storeView{}, ops.NotFound(err)
+	}
+	projects, err := store.Projects(root)
+	if err != nil {
+		return storeView{}, ops.NotFound(err)
+	}
+	v := storeView{root: root, all: slices.Concat(specs, done), projects: projects}
+	if p := repoProject(e.dir); slices.Contains(projects, p) {
+		v.scope = p
+	}
+	return v, nil
+}
+
+// resolve opens the store and finds the spec named by arg.
+func resolve(e env, arg string) (storeView, store.Spec, error) {
+	v, err := openStore(e)
+	if err != nil {
+		return v, store.Spec{}, err
+	}
+	spec, err := ops.Resolve(v.all, arg, v.scope)
+	return v, spec, err
+}
+
+// inputPath is path relative to the directory spx was run from.
+func inputPath(e env, path string) string {
+	if filepath.IsAbs(path) {
+		return path
+	}
+	return filepath.Join(e.dir, path)
+}
+
+// warnUnresolved prints a warning for each depends-on or parent reference in data that
+// matches no spec in the store.
+func warnUnresolved(e env, v storeView, project string, data []byte) {
+	for _, ref := range ops.Unresolved(v.all, project, data) {
+		fmt.Fprintf(e.stderr, "spx: warning: %s matches no spec in the store\n", ref)
+	}
+}
+
 func runLog(c command, args []string, e env) int {
 	if len(args) != 2 {
 		return usageError(c, e)
 	}
 	if err := ops.CheckLogText(args[1]); err != nil {
-		fmt.Fprintf(e.stderr, "spx: %v\n", err)
+		return textArgError(c, e, err)
+	}
+	v, spec, err := resolve(e, args[0])
+	if err != nil {
+		return report(e, err)
+	}
+	if err := ops.Log(v.root, spec, args[1], time.Now()); err != nil {
+		return report(e, err)
+	}
+	return ops.CodeOK
+}
+
+func runNew(c command, args []string, e env) int {
+	if len(args) != 2 || args[0] == "" || args[1] == "" {
 		return usageError(c, e)
 	}
-	root, err := store.Root()
-	if err != nil {
-		return report(e, ops.NotFound(err))
-	}
-	specs, err := store.Load(root)
-	if err != nil {
-		return report(e, ops.NotFound(err))
-	}
-	done, err := store.LoadDone(root)
-	if err != nil {
-		return report(e, ops.NotFound(err))
-	}
-	projects, err := store.Projects(root)
-	if err != nil {
-		return report(e, ops.NotFound(err))
-	}
-	scope := ""
-	if p := repoProject(e.dir); slices.Contains(projects, p) {
-		scope = p
-	}
-	spec, err := ops.Resolve(slices.Concat(specs, done), args[0], scope)
+	project := args[0]
+	v, err := openStore(e)
 	if err != nil {
 		return report(e, err)
 	}
-	if err := ops.Log(root, spec, args[1], time.Now()); err != nil {
+	if !slices.Contains(v.projects, project) {
+		if slices.Contains(commandNames, project) || !ops.ValidProjectName(project) {
+			fmt.Fprintf(e.stderr, "spx: no project %s, and it can't be created: a new project's name is "+
+				"lowercase letters, digits and hyphens, and not a command name\n", project)
+			return ops.CodeUsage
+		}
+	}
+	data, err := ops.ReadInput(inputPath(e, args[1]))
+	if err != nil {
 		return report(e, err)
 	}
+	slug, err := ops.New(v.root, project, data)
+	if err != nil {
+		return report(e, err)
+	}
+	fmt.Fprintln(e.stdout, slug)
+	warnUnresolved(e, v, project, data)
 	return ops.CodeOK
 }

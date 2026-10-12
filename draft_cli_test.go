@@ -1,0 +1,123 @@
+package main
+
+import (
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+// draftFile writes content to a file in a fresh directory and returns the directory and file name.
+func draftFile(t *testing.T, content string) (dir, name string) {
+	t.Helper()
+	dir = t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "draft.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return dir, "draft.md"
+}
+
+func gitOut(t *testing.T, root string, args ...string) string {
+	t.Helper()
+	out, err := exec.Command("git", append([]string{"-C", root}, args...)...).CombinedOutput()
+	if err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, out)
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// commitFile writes content at rel under root and commits it.
+func commitFile(t *testing.T, root, rel, content string) {
+	t.Helper()
+	path := filepath.Join(root, rel)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	gitOut(t, root, "add", "--", rel)
+	gitOut(t, root, "commit", "-q", "-m", "add "+rel)
+}
+
+func TestNewCommandPrintsTheSlugAndCommits(t *testing.T) {
+	root := gitStore(t)
+	dir, name := draftFile(t, "---\ntitle: Make it so\n---\n\nOutcome.\n")
+	r := runCLI(t, dir, "new", "p", name)
+	if r.code != 0 || r.stdout != "make-it-so\n" || r.stderr != "" || r.model != nil {
+		t.Fatalf("code=%d stdout=%q stderr=%q", r.code, r.stdout, r.stderr)
+	}
+	if _, err := os.Stat(filepath.Join(root, "p", "draft", "make-it-so.md")); err != nil {
+		t.Fatal(err)
+	}
+	if msg := gitOut(t, root, "log", "-1", "--format=%s"); msg != "p: draft make-it-so" {
+		t.Errorf("commit message = %q", msg)
+	}
+}
+
+func TestNewCommandProjectNames(t *testing.T) {
+	root := gitStore(t)
+	if err := os.MkdirAll(filepath.Join(root, "Odd_Name", "draft"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	dir, name := draftFile(t, "---\ntitle: T\n---\n")
+	for _, project := range []string{"log", "new", "Bad", "a/b", "..", ".git", "-x"} {
+		h := gitOut(t, root, "rev-parse", "HEAD")
+		if r := runCLI(t, dir, "new", project, name); r.code != 2 || !strings.Contains(r.stderr, "can't be created") {
+			t.Errorf("%q: code=%d stderr=%q", project, r.code, r.stderr)
+		}
+		if gitOut(t, root, "rev-parse", "HEAD") != h {
+			t.Errorf("%q: HEAD moved", project)
+		}
+	}
+	if r := runCLI(t, dir, "new", "Odd_Name", name); r.code != 0 {
+		t.Errorf("an existing folder: code=%d stderr=%q", r.code, r.stderr)
+	}
+	if r := runCLI(t, dir, "new", "brand-new", name); r.code != 0 {
+		t.Errorf("a new folder: code=%d stderr=%q", r.code, r.stderr)
+	}
+	if _, err := os.Stat(filepath.Join(root, "brand-new", "draft", "t.md")); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestNewCommandExitCodes(t *testing.T) {
+	gitStore(t)
+	dir, name := draftFile(t, "---\ntitle: T\n---\n")
+	tests := []struct {
+		args []string
+		code int
+		msg  string
+	}{
+		{[]string{"new"}, 2, "usage: spx new"},
+		{[]string{"new", "p"}, 2, "usage: spx new"},
+		{[]string{"new", "", name}, 2, "usage: spx new"},
+		{[]string{"new", "p", ""}, 2, "usage: spx new"},
+		{[]string{"new", "p", name, "x"}, 2, "usage: spx new"},
+		{[]string{"new", "p", "missing.md"}, 1, "file not found"},
+	}
+	for _, tt := range tests {
+		r := runCLI(t, dir, tt.args...)
+		if r.code != tt.code || !strings.Contains(r.stderr, tt.msg) || r.stdout != "" {
+			t.Errorf("%q: code=%d stderr=%q", tt.args, r.code, r.stderr)
+		}
+	}
+	notitle, nname := draftFile(t, "---\ntype: bug\n---\n")
+	if r := runCLI(t, notitle, "new", "p", nname); r.code != 2 || !strings.Contains(r.stderr, "title") {
+		t.Errorf("no title: code=%d stderr=%q", r.code, r.stderr)
+	}
+}
+
+func TestNewCommandWarnsOnUnresolvedReferences(t *testing.T) {
+	root := gitStore(t)
+	commitFile(t, root, "q/done/x.md", "---\ntitle: X\n---\n")
+	dir, name := draftFile(t, "---\ntitle: Deps\ndepends-on: [one, q/x, typo, q/nope]\nparent: x\n---\n")
+	r := runCLI(t, dir, "new", "p", name)
+	want := "spx: warning: typo matches no spec in the store\n" +
+		"spx: warning: q/nope matches no spec in the store\n" +
+		"spx: warning: x matches no spec in the store\n"
+	if r.code != 0 || r.stdout != "deps\n" || r.stderr != want {
+		t.Fatalf("code=%d stdout=%q stderr=%q", r.code, r.stdout, r.stderr)
+	}
+}

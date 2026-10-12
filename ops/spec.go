@@ -247,8 +247,8 @@ func clearApproved(data []byte) ([]byte, error) {
 	return SetField(data, "approved", "")
 }
 
-// readInput reads an input file named on the command line: a missing one is not found.
-func readInput(path string) ([]byte, error) {
+// ReadInput reads an input file named on the command line: a missing one is not found.
+func ReadInput(path string) ([]byte, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
