@@ -4,7 +4,7 @@ type: feature
 priority: 2
 depends-on: [run-store-operations-as-spx-commands]
 parent:
-status: in-review
+status: done
 approved: "Scott Schlesier, 2026-10-11: spx help --skill (and --body) prints a version-matched guide from the command table, with fixed transition and exit-code advice lists. Cold read: pass"
 ---
 
@@ -20,20 +20,20 @@ Out of scope:
 
 ## Acceptance criteria
 
-- [ ] `spx help --skill` prints the guide to stdout and exits 0 without reading the store, even when the store root is unset or unreadable. `spx help` alone prints the same text as `spx -h`. `spx help --skill --body` prints the guide without its frontmatter block, for skills that inject it into their own text. Any other argument or combination (`--body` without `--skill`, `--skill -h`, extra positional arguments, unknown flags) exits 2 with help's usage; `spx help -h` prints that usage and exits 0.
-- [ ] `help` is a command table entry with all fields filled, so the guide lists it.
-- [ ] The output has no ANSI sequences, is the same whether stdout is a terminal or a pipe, and ends with a newline.
-- [ ] The output starts with YAML frontmatter that satisfies the Agent Skills rules: `name: spx`, a fixed `description` of at most 1024 characters saying what the guide covers and when to use it (any work that creates, refines, approves, starts, accepts, closes or drops a spec in the store), and `metadata: {version: "<spx version>"}` so a stale copy shows which binary it came from. The body is at most 500 lines. Redirected to `<skills dir>/spx/SKILL.md` it is a loadable skill.
-- [ ] The body covers, in this order:
+- [x] `spx help --skill` prints the guide to stdout and exits 0 without reading the store, even when the store root is unset or unreadable. `spx help` alone prints the same text as `spx -h`. `spx help --skill --body` prints the guide without its frontmatter block, for skills that inject it into their own text. Any other argument or combination (`--body` without `--skill`, `--skill -h`, extra positional arguments, unknown flags) exits 2 with help's usage; `spx help -h` prints that usage and exits 0.
+- [x] `help` is a command table entry with all fields filled, so the guide lists it.
+- [x] The output has no ANSI sequences, is the same whether stdout is a terminal or a pipe, and ends with a newline.
+- [x] The output starts with YAML frontmatter that satisfies the Agent Skills rules: `name: spx`, a fixed `description` of at most 1024 characters saying what the guide covers and when to use it (any work that creates, refines, approves, starts, accepts, closes or drops a spec in the store), and `metadata: {version: "<spx version>"}` so a stale copy shows which binary it came from. The body is at most 500 lines. Redirected to `<skills dir>/spx/SKILL.md` it is a loadable skill.
+- [x] The body covers, in this order:
       1. what the store is: the root as spx resolves it (`$AGENT_SPECS_DIR` or `~/src/specs`, printed without reading it), `<project>/<status>/<slug>.md`, folder = status, slugs and `<project>/<slug>` references;
       2. the spec file format: frontmatter fields and sections, which ones the agent writes and which spx fills;
       3. the lifecycle as a sequence, draft → approved → started → done, plus send-back and drop. A fixed list in the code holds each transition with its command name and who decides it (the user's explicit yes for approval and acceptance, the agent otherwise); a transition is printed only if its command is in the table, so the section is true of the binary printing it;
       4. the rules, taken from the table entries' rule texts plus a fixed set: write content outside the store and hand it to a command; never edit, move or commit under the store root by hand and never change directory into it; run every store step with `spx` from wherever the session is;
       5. every command with its synopsis and one line on what it changes, taken from the table;
       6. what to do on a refusal (report spx's message to the user; don't work around it) and the exit codes, listed from the one list the CLI maps errors with, each with what the agent should do, from a fixed advice text keyed by code.
-- [ ] The commands, synopses, effects, rule texts and exit codes in the output come from the same table and constants the CLI dispatches on, so a command added to the table appears in the guide with no change to this spec's code; the fixed prose is a Go string constant next to the table.
-- [ ] The guide names no command that is not in the table, and its command list follows table order.
-- [ ] `spx -h` mentions `spx help --skill` in one line.
+- [x] The commands, synopses, effects, rule texts and exit codes in the output come from the same table and constants the CLI dispatches on, so a command added to the table appears in the guide with no change to this spec's code; the fixed prose is a Go string constant next to the table.
+- [x] The guide names no command that is not in the table, and its command list follows table order.
+- [x] `spx -h` mentions `spx help --skill` in one line.
 
 ## Verification
 
@@ -73,3 +73,6 @@ Don't touch: the commands' behavior, the TUI.
 - 2026-10-12: Assumption: if the home directory can't be resolved the guide prints `~/src/specs` as the root (`guide.go` `skillGuide`).
 - 2026-10-12: Scott Schlesier approved the wording of the guide's fixed prose.
 - 2026-10-12: Review started
+- 2026-10-12: Review round 1 fixes: the guide's spec-file paragraph told agents to leave owned fields empty in any command content, but `spx edit` needs them unchanged (reworded); the lifecycle intro claimed every step has a command (reworded); the `start` step read "draft → started" (now "approved → started"); the bare-slug sentence omitted the any-project case; the fallback root had no test (added); a comma was missing in CLAUDE.md. Cleared by context: `help` as a reserved project name (CLAUDE.md), reversed flag order exiting 2 (spec), exit-2 advice wording (spec).
+- 2026-10-12: Decided by Scott Schlesier: keep the `~/src/specs` fallback root; print a relative `AGENT_SPECS_DIR` as given; keep the revised wording of the two reworded passages.
+- 2026-10-12: Done: Reviewed round 1: `spx help --skill` and `--body` print a version-matched guide generated from the command table; 8/8 criteria verified, pass 1 twice with no surviving mutants.
