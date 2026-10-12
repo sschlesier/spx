@@ -5,7 +5,7 @@ priority: 3
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-10-12: y copies <project>/<slug>; footer hints unchanged. Cold read: not run"
-status: in-progress
+status: in-review
 ---
 
 In `spx`, `y` copies the selected spec's qualified `<project>/<slug>` name instead of the bare slug, so I can paste a reference that is unambiguous across projects.
@@ -40,3 +40,4 @@ Out of scope:
 
 - 2026-10-12: Approved: Scott Schlesier, 2026-10-12: y copies <project>/<slug>; footer hints unchanged. Cold read: not run
 - 2026-10-12: Started on branch copy-the-qualified-name-with-y
+- 2026-10-12: Review started
