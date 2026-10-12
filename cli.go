@@ -109,6 +109,7 @@ var commands = []command{
 var commandNames []string
 
 func init() {
+	commands = append(commands, helpCommand) // helpCommand's handler reads the table
 	for _, c := range commands {
 		commandNames = append(commandNames, c.Name)
 	}

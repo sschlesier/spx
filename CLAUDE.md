@@ -9,6 +9,7 @@ the editor you open with `e` and by the store-writing CLI commands (`spx log`, `
 
 - `main.go` - Entry point: resolves the store root, runs the UI
 - `cli.go` - Command table (name, synopsis, effect, guide rule, usage, handler) and dispatch
+- `guide.go` - `spx help`: the store guide (`--skill`), generated from the command table
 - `ops/` - Store-writing operations: exit codes, spec resolution, line-level edits, git commit with rollback
 - `store/` - Store discovery, frontmatter parsing, sorting (read-only)
 - `ui/` - Bubble Tea model: list pane, detail pane, key handling
@@ -48,7 +49,7 @@ Invariants:
 - The CLI is `spx [-d] [-a] [-s] [project]` (`spx --version` alone prints `spx <version>`) and
   the commands `spx log <slug> "<text>"`, `spx new <project> <file>`, `spx edit <slug> <file>`,
   `spx approve <slug> "<one line>" [--cold-read <result>]`, `spx send-back <slug> "<questions>"`
-  and `spx drop <slug> "<why>"`; a command name is not usable as a project name. Exit codes
+  `spx drop <slug> "<why>"` and `spx help [--skill [--body]]`; a command name is not usable as a project name. Exit codes
   (listed once in `ops.ExitCodes`): 0 success or `-h`/`--help`/`--version`; 1 not found (store,
   project, slug, input file); 2 usage error; 3 wrong status; 4 store conflict (not a git repo,
   not on main, index lock, uncommitted change on a touched path); 5 tool failure (git missing,
