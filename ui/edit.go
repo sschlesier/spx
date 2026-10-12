@@ -113,14 +113,15 @@ func (m Model) editorDone(msg editorDoneMsg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-// copySelected copies the selected spec's slug, or its absolute path when path is set.
+// copySelected copies the selected spec's <project>/<slug>, or its absolute path when path is set.
 func (m Model) copySelected(path bool) (tea.Model, tea.Cmd) {
 	if len(m.specs) == 0 {
 		return m, nil
 	}
-	text := m.specs[m.cursor].Slug
+	sp := m.specs[m.cursor]
+	text := sp.Project + "/" + sp.Slug
 	if path {
-		text = absPath(m.specs[m.cursor])
+		text = absPath(sp)
 	}
 	notice := m.setNotice("copied " + printable(text))
 	return m, tea.Batch(copyCmd(text), notice)

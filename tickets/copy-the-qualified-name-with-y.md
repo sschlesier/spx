@@ -19,10 +19,10 @@ Out of scope:
 
 ## Acceptance criteria
 
-- [ ] `y` on a selected spec copies `<project>/<slug>` (e.g. `spx/fuzzy-filter-the-list`) to the clipboard, and the footer shows `copied <project>/<slug>` (truncated to fit, as today).
-- [ ] The project is the spec's store folder name (`Spec.Project`), also for a spec shown under the all-projects view and for a dropped spec under the `x` filter.
-- [ ] `Y` still copies the absolute path; `y` and `Y` still do nothing with an empty list or while the project popup or a filter input is open.
-- [ ] The footer hints are unchanged: `y/Y copy slug/path` (wide) and `y/Y copy` (narrow).
+- [x] `y` on a selected spec copies `<project>/<slug>` (e.g. `spx/fuzzy-filter-the-list`) to the clipboard, and the footer shows `copied <project>/<slug>` (truncated to fit, as today).
+- [x] The project is the spec's store folder name (`Spec.Project`), also for a spec shown under the all-projects view and for a dropped spec under the `x` filter.
+- [x] `Y` still copies the absolute path; `y` and `Y` still do nothing with an empty list or while the project popup or a filter input is open.
+- [x] The footer hints are unchanged: `y/Y copy slug/path` (wide) and `y/Y copy` (narrow).
 
 ## Verification
 
