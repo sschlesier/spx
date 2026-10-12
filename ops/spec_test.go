@@ -20,6 +20,7 @@ func TestSlugify(t *testing.T) {
 		"Move mdserver’s own files off /assets/":              "move-mdservers-own-files-off-assets",
 		"Draft, refine & approve: v2.0":                       "draft-refine-approve-v2-0",
 		"Café crème":                                          "caf-cr-me",
+		"Zip a-z 0-9":                                         "zip-a-z-0-9",
 		"!!!":                                                 "",
 		"":                                                    "",
 	}
