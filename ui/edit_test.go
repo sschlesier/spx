@@ -233,14 +233,14 @@ func copied(t *testing.T, cmd tea.Cmd) string {
 	return text
 }
 
-func TestYCopiesTheSlugAndShiftYTheAbsolutePath(t *testing.T) {
+func TestYCopiesTheQualifiedSlugAndShiftYTheAbsolutePath(t *testing.T) {
 	quickNotices(t)
 	m := start(t, draftSpecs(2), 120, 20)
 	next, cmd := m.Update(keys["y"])
-	if got := copied(t, cmd); got != "spec-00" {
-		t.Errorf("y copied %q, want spec-00", got)
+	if got := copied(t, cmd); got != "proj/spec-00" {
+		t.Errorf("y copied %q, want proj/spec-00", got)
 	}
-	if next.(Model).notice != "copied spec-00" {
+	if next.(Model).notice != "copied proj/spec-00" {
 		t.Errorf("notice %q", next.(Model).notice)
 	}
 	next, cmd = m.Update(keys["Y"])
@@ -290,7 +290,7 @@ func TestAnOldNoticeTickDoesNotClearANewerNotice(t *testing.T) {
 	m := press(t, start(t, draftSpecs(3), 120, 20), "y")
 	old := m.noticeGen
 	m = press(t, m, "y")
-	if got := send(t, m, noticeMsg{old}); got.notice != "copied spec-00" {
+	if got := send(t, m, noticeMsg{old}); got.notice != "copied proj/spec-00" {
 		t.Errorf("an old tick cleared the notice: %q", got.notice)
 	}
 }
@@ -305,6 +305,17 @@ func TestEditAndCopyDoNothingWithAnEmptyList(t *testing.T) {
 	}
 }
 
+func TestYCopiesTheSelectedSpecsOwnProject(t *testing.T) {
+	specs := draftSpecs(2)
+	specs[1].Project = "other"
+	specs[1].Status = "approved"
+	m := start(t, specs, 120, 20)
+	m = press(t, m, "j")
+	if got := press(t, m, "y"); got.notice != "copied other/spec-01" {
+		t.Errorf("y notice %q, want copied other/spec-01", got.notice)
+	}
+}
+
 func TestEditAndCopyWorkInNarrowListAndDetail(t *testing.T) {
 	specs := draftSpecs(2)
 	specs[0].Status = "approved"
@@ -312,7 +323,7 @@ func TestEditAndCopyWorkInNarrowListAndDetail(t *testing.T) {
 	if got := press(t, m, "e"); got.notice != "only drafts can be edited (approved)" {
 		t.Errorf("narrow list: e notice %q", got.notice)
 	}
-	if got := press(t, m, "y"); got.notice != "copied spec-00" {
+	if got := press(t, m, "y"); got.notice != "copied proj/spec-00" {
 		t.Errorf("narrow list: y notice %q", got.notice)
 	}
 	m = press(t, m, "enter")
@@ -380,7 +391,7 @@ func TestCopiedNoticeDropsControlCharacters(t *testing.T) {
 	specs := draftSpecs(1)
 	specs[0].Slug = "a\x1b[31mb"
 	m := press(t, start(t, specs, 120, 20), "y")
-	if strings.ContainsRune(m.notice, '\x1b') || m.notice != "copied a[31mb" {
+	if strings.ContainsRune(m.notice, '\x1b') || m.notice != "copied proj/a[31mb" {
 		t.Errorf("notice %q, want the control character dropped", m.notice)
 	}
 }
