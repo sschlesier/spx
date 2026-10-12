@@ -70,6 +70,27 @@ func TestNewSuffixesACollidingSlugAcrossAllStatusFolders(t *testing.T) {
 	}
 }
 
+func TestNewSuffixesWhenTheStorePathHasGlobCharacters(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "st[o]re*")
+	if err := os.Mkdir(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	gitIn(t, root, "init", "-q", "-b", "main")
+	gitIn(t, root, "config", "user.name", "Test")
+	gitIn(t, root, "config", "user.email", "test@example.com")
+	gitIn(t, root, "config", "commit.gpgsign", "false")
+	write(t, filepath.Join(root, "p/draft/one.md"), "---\ntitle: One\n---\n")
+	gitIn(t, root, "add", "-A")
+	gitIn(t, root, "commit", "-q", "-m", "seed")
+	slug, err := New(root, "p", []byte("---\ntitle: One\n---\nnew\n"))
+	if err != nil || slug != "one-2" {
+		t.Fatalf("slug = %q, %v", slug, err)
+	}
+	if got, _ := os.ReadFile(filepath.Join(root, "p/draft/one.md")); string(got) != "---\ntitle: One\n---\n" {
+		t.Errorf("existing spec overwritten:\n%s", got)
+	}
+}
+
 func TestNewCreatesAProjectFolder(t *testing.T) {
 	root := newStore(t)
 	h := head(t, root)

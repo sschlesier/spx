@@ -76,8 +76,13 @@ func New(root, project string, data []byte) (string, error) {
 
 // taken reports whether <project>/*/<slug>.md exists in any status folder.
 func taken(root, project, slug string) bool {
-	matches, _ := filepath.Glob(filepath.Join(root, project, "*", slug+".md"))
-	return len(matches) > 0
+	folders, _ := os.ReadDir(filepath.Join(root, project))
+	for _, f := range folders {
+		if _, err := os.Lstat(filepath.Join(root, project, f.Name(), slug+".md")); err == nil {
+			return true
+		}
+	}
+	return false
 }
 
 // fillTemplate appends the missing template fields after the last frontmatter line, in
