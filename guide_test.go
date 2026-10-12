@@ -60,6 +60,15 @@ func TestGuideWorksWithoutReadingTheStore(t *testing.T) {
 	}
 }
 
+func TestGuideFallsBackToTheDefaultRootWithoutAHomeDirectory(t *testing.T) {
+	t.Setenv("AGENT_SPECS_DIR", "")
+	t.Setenv("HOME", "")
+	r := runCLI(t, t.TempDir(), "help", "--skill", "--body")
+	if r.code != 0 || !strings.Contains(r.stdout, "Its root on this machine is `~/src/specs`") {
+		t.Errorf("code=%d stdout=%q", r.code, r.stdout)
+	}
+}
+
 func TestGuideIsPlainTextEndingInNewline(t *testing.T) {
 	got := guideOutput(t, "--skill")
 	if strings.Contains(got, "\x1b") {
