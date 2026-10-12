@@ -29,13 +29,13 @@ func Approve(root string, spec store.Spec, line, coldRead string, now time.Time)
 	if spec.Status != "draft" {
 		return statusError(spec, "approve", []string{"draft"})
 	}
-	name, err := approver(root)
-	if err != nil {
-		return err
-	}
 	date := now.Format("2006-01-02")
-	text := fmt.Sprintf("%s, %s: %s. Cold read: %s", name, date, line, strings.TrimSpace(coldRead))
 	return transition(root, spec, "approved", spec.Project+": approve "+spec.Slug, func(data []byte) ([]byte, error) {
+		name, err := approver(root)
+		if err != nil {
+			return nil, err
+		}
+		text := fmt.Sprintf("%s, %s: %s. Cold read: %s", name, date, line, strings.TrimSpace(coldRead))
 		out, err := SetField(data, "approved", text)
 		if err != nil {
 			return nil, fail(CodeWrongStatus, "%s/%s: %v", spec.Project, spec.Slug, err)

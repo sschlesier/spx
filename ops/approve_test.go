@@ -112,6 +112,21 @@ func TestApproveUsageErrors(t *testing.T) {
 	untouched(t, root, h)
 }
 
+func TestApproveOnAConflictedStoreIsExitFourEvenWithoutUserName(t *testing.T) {
+	root := newStore(t)
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+	t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
+	gitIn(t, root, "config", "--unset", "user.name")
+	t.Setenv("GIT_AUTHOR_NAME", "Env")
+	t.Setenv("GIT_COMMITTER_NAME", "Env")
+	gitIn(t, root, "switch", "-q", "-c", "other")
+	h := head(t, root)
+	wantCode(t, Approve(root, specAt(root, "draft", "one"), "ok", "pass", now), CodeConflict)
+	untouched(t, root, h)
+}
+
 func TestApproveWithoutUserNameIsExitFive(t *testing.T) {
 	root := newStore(t)
 	t.Setenv("HOME", t.TempDir())
