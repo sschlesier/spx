@@ -90,10 +90,31 @@ func Unresolved(all []store.Spec, project string, data []byte) []string {
 	return missing
 }
 
-// Slugify is the kebab-case slug of title: apostrophes dropped, ASCII letters lowercased,
-// digits kept, and every other run of characters one hyphen.
+// latinSpellings maps each ASCII spelling to the lowercase Latin-1 and Latin Extended-A letters
+// it transliterates.
+var latinSpellings = map[string]string{
+	"a": "àáâãäåāăą", "c": "çćĉċč", "d": "ďđð", "e": "èéêëēĕėęě", "g": "ĝğġģ", "h": "ĥħ",
+	"i": "ìíîïĩīĭįı", "j": "ĵ", "k": "ķĸ", "l": "ĺļľŀł", "n": "ñńņňŉŋ", "o": "òóôõöøōŏő",
+	"r": "ŕŗř", "s": "śŝşšſ", "t": "ţťŧ", "u": "ùúûüũūŭůűų", "w": "ŵ", "y": "ýÿŷ", "z": "źżž",
+	"ae": "æ", "oe": "œ", "ss": "ß", "th": "þ", "ij": "ĳ",
+}
+
+// transliterate spells the Latin letters of latinSpellings in ASCII.
+var transliterate = func() *strings.Replacer {
+	var pairs []string
+	for ascii, letters := range latinSpellings {
+		for _, r := range letters {
+			pairs = append(pairs, string(r), ascii)
+		}
+	}
+	return strings.NewReplacer(pairs...)
+}()
+
+// Slugify is the kebab-case slug of title: Latin letters spelled in ASCII, apostrophes dropped,
+// letters lowercased, digits kept, and every other run of characters one hyphen.
 func Slugify(title string) string {
 	title = strings.NewReplacer("'", "", "’", "").Replace(strings.ToLower(title))
+	title = transliterate.Replace(title)
 	var b strings.Builder
 	gap := false
 	for _, r := range title {
