@@ -203,6 +203,10 @@ func TestEditCommandWarnsOnUnresolvedReferences(t *testing.T) {
 	if r.code != 0 || r.stderr != "spx: warning: nowhere matches no spec in the store\n" {
 		t.Fatalf("code=%d stderr=%q", r.code, r.stderr)
 	}
+	r = runCLI(t, dir, "edit", "p/one", name)
+	if r.code != 0 || r.stderr != "spx: no change to p/one; nothing committed\n" {
+		t.Fatalf("unchanged: code=%d stderr=%q", r.code, r.stderr)
+	}
 }
 
 func TestSendBackAndDropCommandExitCodes(t *testing.T) {

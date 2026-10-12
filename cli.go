@@ -284,10 +284,11 @@ func runEdit(c command, args []string, e env) int {
 	if err != nil {
 		return report(e, err)
 	}
-	switch {
-	case res.Unchanged:
+	if res.Unchanged {
 		fmt.Fprintf(e.stderr, "spx: no change to %s/%s; nothing committed\n", spec.Project, spec.Slug)
-	case res.Demoted:
+		return ops.CodeOK
+	}
+	if res.Demoted {
 		fmt.Fprintln(e.stdout, "approval cleared; moved to draft")
 	}
 	warnUnresolved(e, v, spec.Project, data)
