@@ -91,6 +91,18 @@ func TestNewSuffixesWhenTheStorePathHasGlobCharacters(t *testing.T) {
 	}
 }
 
+func TestNewRefusesAConflictedStore(t *testing.T) {
+	root := newStore(t)
+	gitIn(t, root, "switch", "-q", "-c", "other")
+	h := head(t, root)
+	_, err := New(root, "fresh", []byte("---\ntitle: X\n---\n"))
+	wantCode(t, err, CodeConflict)
+	untouched(t, root, h)
+	if _, statErr := os.Stat(filepath.Join(root, "fresh")); !os.IsNotExist(statErr) {
+		t.Error("project folder created")
+	}
+}
+
 func TestNewCreatesAProjectFolder(t *testing.T) {
 	root := newStore(t)
 	h := head(t, root)
