@@ -226,6 +226,15 @@ func TestTreeDetailFollowsTheSelectedChild(t *testing.T) {
 	}
 }
 
+func TestTreeEnterOpensTheSelectedChild(t *testing.T) {
+	specs := family()
+	specs[2].Body = "Kid one body.\n"
+	m := press(t, start(t, specs, 80, 20), "t", "j", "enter")
+	if !m.detailOpen || !strings.Contains(screen(m), "Kid one body.") {
+		t.Errorf("enter on an indented row:\n%s", screen(m))
+	}
+}
+
 func TestRowsWithoutPrefixesMatchTheSharedRows(t *testing.T) {
 	specs := family()
 	if got, want := rows(specs, nil), Rows(specs); !reflect.DeepEqual(got, want) {
