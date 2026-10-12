@@ -267,9 +267,30 @@ func TestLogToolFailuresAreExitFive(t *testing.T) {
 		t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
 		t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
 		gitIn(t, root, "config", "--unset", "user.name")
+		gitIn(t, root, "config", "user.useConfigOnly", "true")
 		h := head(t, root)
 		wantCode(t, Log(root, specAt(root, "draft", "one"), "x", now), CodeTool)
 		untouched(t, root, h)
+	})
+	t.Run("identity from the environment is enough", func(t *testing.T) {
+		root := newStore(t)
+		t.Setenv("HOME", t.TempDir())
+		t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+		t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+		t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
+		gitIn(t, root, "config", "--unset", "user.name")
+		gitIn(t, root, "config", "--unset", "user.email")
+		gitIn(t, root, "config", "user.useConfigOnly", "true")
+		t.Setenv("GIT_AUTHOR_NAME", "Env")
+		t.Setenv("GIT_AUTHOR_EMAIL", "env@example.com")
+		t.Setenv("GIT_COMMITTER_NAME", "Env")
+		t.Setenv("GIT_COMMITTER_EMAIL", "env@example.com")
+		if err := Log(root, specAt(root, "draft", "one"), "x", now); err != nil {
+			t.Fatal(err)
+		}
+		if author := gitIn(t, root, "log", "-1", "--format=%an"); author != "Env" {
+			t.Errorf("author = %q", author)
+		}
 	})
 }
 

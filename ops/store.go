@@ -54,9 +54,9 @@ func (s Store) Check(paths ...string) error {
 	if _, err := os.Stat(lock); err == nil {
 		return fail(CodeConflict, "store has an index lock: %s", lock)
 	}
-	for _, key := range []string{"user.name", "user.email"} {
-		if v, _ := s.git("config", key); v == "" {
-			return fail(CodeTool, "git config %s is not set", key)
+	for _, ident := range []string{"GIT_AUTHOR_IDENT", "GIT_COMMITTER_IDENT"} {
+		if _, err := s.git("var", ident); err != nil {
+			return fail(CodeTool, "git has no identity to commit with (set user.name and user.email): %v", err)
 		}
 	}
 	status, err := s.git(append([]string{"status", "--porcelain", "--untracked-files=all", "--"}, paths...)...)
