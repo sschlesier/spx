@@ -53,6 +53,21 @@ var commands = []command{
 			"<file> is the finished draft, with a title: in its frontmatter. Prints the new spec's slug.",
 		Run: runNew,
 	},
+	{
+		Name:     "edit",
+		Synopsis: `spx edit <slug> <file>`,
+		Effect:   "Replace a draft or approved spec's content with <file> and commit it.",
+		Rule: "Refine a spec by editing a copy outside the store and passing it here. Keep every existing Log " +
+			"line unchanged and in order (append only) and leave `approved`, `status`, `accepted`, `pr` and " +
+			"`path` as stored, or it exits 3. The slug never changes. On an approved spec, a change to the " +
+			"Outcome paragraph, Acceptance criteria, Design or Boundaries clears the approval, moves it to " +
+			"draft/ and prints `approval cleared; moved to draft`. Unresolved `depends-on` or `parent` slugs " +
+			"warn on stderr.",
+		Usage: "usage: spx edit <slug> <file>\n" +
+			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.\n" +
+			"<file> is the spec's full new content.",
+		Run: runEdit,
+	},
 }
 
 // commandNames are the names in the command table, for handlers that can't refer to it.
@@ -213,5 +228,31 @@ func runNew(c command, args []string, e env) int {
 	}
 	fmt.Fprintln(e.stdout, slug)
 	warnUnresolved(e, v, project, data)
+	return ops.CodeOK
+}
+
+func runEdit(c command, args []string, e env) int {
+	if len(args) != 2 || args[0] == "" || args[1] == "" {
+		return usageError(c, e)
+	}
+	v, spec, err := resolve(e, args[0])
+	if err != nil {
+		return report(e, err)
+	}
+	data, err := ops.ReadInput(inputPath(e, args[1]))
+	if err != nil {
+		return report(e, err)
+	}
+	res, err := ops.Edit(v.root, spec, data)
+	if err != nil {
+		return report(e, err)
+	}
+	switch {
+	case res.Unchanged:
+		fmt.Fprintf(e.stderr, "spx: no change to %s/%s; nothing committed\n", spec.Project, spec.Slug)
+	case res.Demoted:
+		fmt.Fprintln(e.stdout, "approval cleared; moved to draft")
+	}
+	warnUnresolved(e, v, spec.Project, data)
 	return ops.CodeOK
 }
