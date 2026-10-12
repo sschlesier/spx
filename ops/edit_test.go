@@ -136,6 +136,27 @@ func TestAppendLog(t *testing.T) {
 	}
 }
 
+func TestSetFieldKeepsCommentsAfterQuotedValues(t *testing.T) {
+	tests := []struct{ old, want string }{
+		{`title: "A: b"   # c`, `title: New   # c`},
+		{`title: "a # b"  # note`, `title: New  # note`},
+		{`title: "say \"hi\""  # note`, `title: New  # note`},
+		{`title: 'it''s'  # note`, `title: New  # note`},
+		{`title: 'x' # note`, `title: New # note`},
+		{`title: "no comment"`, `title: New`},
+		{`title:   # only a comment`, `title: New # only a comment`},
+	}
+	for _, tt := range tests {
+		got, err := SetField([]byte("---\n"+tt.old+"\n---\nBody\n"), "title", "New")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if want := "---\n" + tt.want + "\n---\nBody\n"; string(got) != want {
+			t.Errorf("%s:\ngot  %q\nwant %q", tt.old, got, want)
+		}
+	}
+}
+
 func TestExitCodesAreComplete(t *testing.T) {
 	for i, c := range ExitCodes {
 		if c.Code != i || c.Name == "" || c.Meaning == "" {
