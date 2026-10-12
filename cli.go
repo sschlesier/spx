@@ -57,7 +57,8 @@ var commands = []command{
 		Name:     "edit",
 		Synopsis: `spx edit <slug> <file>`,
 		Effect:   "Replace a draft or approved spec's content with <file> and commit it.",
-		Rule: "Refine a spec by editing a copy outside the store and passing it here. Keep every existing Log " +
+		Rule: "Refine a spec by editing a copy outside the store and passing it here. The file is the whole " +
+			"spec, frontmatter and a usable `title:` included (exit 2 otherwise). Keep every existing Log " +
 			"line unchanged and in order (append only) and leave `approved`, `status`, `accepted`, `pr` and " +
 			"`path` as stored, or it exits 3. The slug never changes. On an approved spec, a change to the " +
 			"Outcome paragraph, Acceptance criteria, Design or Boundaries clears the approval, moves it to " +

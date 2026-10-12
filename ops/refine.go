@@ -21,14 +21,14 @@ type EditResult struct {
 }
 
 // Edit replaces spec's content with data and commits it as "<project>: refine <slug>". data
-// must keep the stored Log entries in order and the spx-owned fields as stored. On an approved
+// must have frontmatter with a usable title, keep the stored Log entries in order and the spx-owned fields as stored. On an approved
 // spec, a change to the Outcome paragraph or an approval section clears approved: and moves it
 // to draft/.
 func Edit(root string, spec store.Spec, data []byte) (EditResult, error) {
 	if !slices.Contains(EditStatuses, spec.Status) {
 		return EditResult{}, statusError(spec, "edit", EditStatuses)
 	}
-	newFM, err := frontmatter(data)
+	newFM, _, err := checkContent(data)
 	if err != nil {
 		return EditResult{}, err
 	}

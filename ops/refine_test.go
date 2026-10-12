@@ -165,6 +165,22 @@ func TestEditRefusesALogRewrite(t *testing.T) {
 	}
 }
 
+func TestEditRefusesContentWithoutFrontmatterOrTitle(t *testing.T) {
+	root := newStore(t)
+	h := head(t, root)
+	for name, in := range map[string]string{
+		"body only":      "Body\n\n## Log\n\n- 2026-10-01: first\n",
+		"no title":       "---\ntype: bug\n---\n\nBody\n",
+		"unusable title": "---\ntitle: \"!!!\"\n---\n\nBody\n",
+	} {
+		_, err := Edit(root, specAt(root, "draft", "two"), []byte(in))
+		if CodeOf(err) != CodeUsage {
+			t.Errorf("%s: code %d (%v), want 2", name, CodeOf(err), err)
+		}
+	}
+	untouched(t, root, h)
+}
+
 func TestEditOwnedFields(t *testing.T) {
 	for _, key := range OwnedFields {
 		t.Run(key, func(t *testing.T) {

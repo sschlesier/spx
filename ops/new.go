@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 // templateFields are the fields new fills when a draft lacks them, in template order.
@@ -24,23 +26,33 @@ var projectName = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 // digits and hyphens, not starting with a hyphen.
 func ValidProjectName(name string) bool { return projectName.MatchString(name) }
 
-// CheckDraft checks content coming in as a new draft: it must have a title that makes a slug,
-// and leave every spx-owned field empty. It returns the slug.
-func CheckDraft(data []byte) (string, error) {
+// checkContent checks content coming in through new or edit: it must have frontmatter with a
+// title that makes a slug. It returns the frontmatter and that slug.
+func checkContent(data []byte) (map[string]yaml.Node, string, error) {
 	if closingFence(strings.Split(string(data), "\n")) < 0 {
 		msg := "the file has no frontmatter: it must start with a --- line and close it with another"
 		if strings.Contains(string(data), "\r\n") {
 			msg += " (CRLF line endings are not supported)"
 		}
-		return "", fail(CodeUsage, "%s", msg)
+		return nil, "", fail(CodeUsage, "%s", msg)
 	}
 	fm, err := frontmatter(data)
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
 	slug := Slugify(fieldText(fm["title"]))
 	if slug == "" {
-		return "", fail(CodeUsage, "the file has no usable title: (it must have letters or digits)")
+		return nil, "", fail(CodeUsage, "the file has no usable title: (it must have letters or digits)")
+	}
+	return fm, slug, nil
+}
+
+// CheckDraft checks content coming in as a new draft: it must have a title that makes a slug,
+// and leave every spx-owned field empty. It returns the slug.
+func CheckDraft(data []byte) (string, error) {
+	fm, slug, err := checkContent(data)
+	if err != nil {
+		return "", err
 	}
 	for _, key := range OwnedFields {
 		if fieldText(fm[key]) != "" {
