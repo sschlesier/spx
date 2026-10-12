@@ -1,16 +1,19 @@
 package ui
 
 import (
+	"slices"
 	"strings"
 
 	"spx/store"
 )
 
 // treeNode is where a row sits in tree mode: its depth (0 for a top-level row) and whether it
-// is the last child of its parent.
+// is the last child of its parent. above holds, for each ancestor below the top level, whether
+// it is the last child of its own parent.
 type treeNode struct {
 	depth int
 	last  bool
+	above []bool
 }
 
 // parentKey is the project and slug of the spec s names as its parent: a bare slug is in s's
@@ -72,32 +75,48 @@ func treeLayout(rows []store.Spec) ([]store.Spec, []treeNode) {
 	out := make([]store.Spec, 0, len(rows))
 	nodes := make([]treeNode, 0, len(rows))
 	seen := make([]bool, len(rows))
-	var walk func(i, depth int, last bool)
-	walk = func(i, depth int, last bool) {
+	var walk func(i, depth int, last bool, above []bool)
+	walk = func(i, depth int, last bool, above []bool) {
 		if seen[i] {
 			return
 		}
 		seen[i] = true
 		out = append(out, rows[i])
-		nodes = append(nodes, treeNode{depth, last})
+		nodes = append(nodes, treeNode{depth, last, above})
+		// Below a top-level row, each ancestor adds a column that is a guide while it has more
+		// children to come.
+		childAbove := above
+		if depth > 0 {
+			childAbove = append(slices.Clip(above), last)
+		}
 		for n, c := range children[i] {
-			walk(c, depth+1, n == len(children[i])-1)
+			walk(c, depth+1, n == len(children[i])-1, childAbove)
 		}
 	}
 	for _, r := range roots {
-		walk(r, 0, false)
+		walk(r, 0, false, nil)
 	}
 	return out, nodes
 }
 
-// treePrefix is the indent and branch glyph that start a row's title.
+// treePrefix is the guides, indent and branch glyph that start a row's title: two cells per
+// level.
 func treePrefix(n treeNode) string {
 	if n.depth == 0 {
 		return ""
 	}
-	glyph := "├─ "
-	if n.last {
-		glyph = "└─ "
+	var b strings.Builder
+	for _, last := range n.above {
+		if last {
+			b.WriteString("  ")
+		} else {
+			b.WriteString("│ ")
+		}
 	}
-	return strings.Repeat("  ", n.depth-1) + glyph
+	if n.last {
+		b.WriteString("└─ ")
+	} else {
+		b.WriteString("├─ ")
+	}
+	return b.String()
 }

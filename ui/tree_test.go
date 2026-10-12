@@ -23,7 +23,10 @@ func slugsOf(m Model) []string {
 // titleCol is the title column of a slug's list row: its text after the type column, up to
 // the detail pane.
 func titleCol(m Model, slug string) string {
-	l, _, _ := strings.Cut(rowOf(m, "T "+slug), "│")
+	l := rowOf(m, "T "+slug)
+	if i := strings.LastIndex(l, "│"); i >= 0 {
+		l = l[:i] // the divider; the guides in a title come before it
+	}
 	_, title, _ := strings.Cut(l, "feature  ")
 	return strings.TrimRight(title, " ")
 }
@@ -63,16 +66,38 @@ func TestTreeIndentsAndDrawsGlyphs(t *testing.T) {
 	for slug, want := range map[string]string{
 		"epic":  "T epic",
 		"kid1":  "├─ T kid1",
-		"grand": "└─ T grand",
+		"grand": "│ └─ T grand",
 		"kid2":  "└─ T kid2",
 		"solo":  "T solo",
 	} {
 		got := titleCol(m, slug)
-		if slug == "grand" {
-			want = "  " + want
-		}
 		if got != want {
 			t.Errorf("%s: title column %q, want %q", slug, got, want)
+		}
+	}
+}
+
+func TestTreeGuidesRunOnlyWhileAnAncestorHasMoreChildren(t *testing.T) {
+	specs := []store.Spec{
+		node("p", "draft", "a", ""),
+		node("p", "draft", "b", "a"),
+		node("p", "draft", "c", "b"),
+		node("p", "draft", "d", "c"),
+		node("p", "draft", "e", "b"),
+		node("p", "draft", "f", "a"),
+		node("p", "draft", "g", "f"),
+	}
+	m := press(t, start(t, specs, 120, 20), "t")
+	for slug, want := range map[string]string{
+		"b": "├─ T b",
+		"c": "│ ├─ T c",
+		"d": "│ │ └─ T d",
+		"e": "│ └─ T e",
+		"f": "└─ T f",
+		"g": "  └─ T g",
+	} {
+		if got := titleCol(m, slug); got != want {
+			t.Errorf("%s: %q, want %q", slug, got, want)
 		}
 	}
 }
