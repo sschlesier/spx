@@ -5,7 +5,7 @@ priority: 2
 depends-on: [run-store-operations-as-spx-commands]
 parent:
 approved: "Scott Schlesier, 2026-10-11: five draft-side commands on the shared machinery; spx-owned fields refused, dependency warnings. Cold read: pass"
-status: in-review
+status: done
 ---
 
 An agent creates a draft, refines it, records the user's approval, sends it back or drops it with one `spx` command each, run from any directory, so it writes only spec content and never moves, edits or commits files in the store.
@@ -75,3 +75,5 @@ Don't touch: the TUI, the skills (chezmoi), existing specs in the store.
 - 2026-10-12: Implemented. Choices where the spec was silent: slugs drop apostrophes (`spec's` → `specs`, matching existing slugs) and turn other non-alphanumerics into one hyphen; a new project name may not start with a hyphen; `edit` with a file identical to the stored spec commits nothing, says so on stderr and exits 0; `approve` drops one trailing period from the line so the text never reads `..`; `drop` logs `Dropped: <why>`; send-back and edit-demotion clear `approved:` only when the field exists, and never add it. Shared helpers: `log` now moves through the same `transition` as the other commands, and an empty slug is a usage error for it too. Manual walk in a scratch store: six commits with the expected messages, the file in `dropped/` with six Log steps, `git status` clean.
 - 2026-10-12: Review started
 - 2026-10-12: Review round 1: dismissed the surviving mutant that drops `|| name == ""` in `approver`; it is equivalent, since an empty user.name also fails `git var GIT_AUTHOR_IDENT` and exits 5 with another message.
+- 2026-10-12: Review round 1 decisions (Scott Schlesier): 1. `edit` refuses content without frontmatter or a usable title, exit 2. 2. A stored spec that can't take the field change exits 2, not 3. 3. Slugs transliterate Latin letters (`Café crème` → `cafe-creme`), by table rather than x/text, which has an open vulnerability (GO-2026-5970). Kept as built: the trailing-period trim in `approve`, the `Dropped:` prefix, a no-op `edit` exiting 0 without a commit, clearing `approved:` only when present, owned fields compared by value, and exit 2 for an empty `log` slug. The clearing of "demotion adds no Log entry" was confirmed.
+- 2026-10-12: Done: Reviewed round 1: all eight criteria verified by tests that fail on revert; two cold-verify passes, 13 findings fixed, 1 dismissed; the three decision fixes are covered by new tests but came after the last cold verify.
