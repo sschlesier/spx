@@ -3,6 +3,7 @@ package ops
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -133,6 +134,19 @@ func TestNewRefusesBadContent(t *testing.T) {
 		}
 	}
 	untouched(t, root, h)
+}
+
+func TestNewSaysWhenFrontmatterIsMissing(t *testing.T) {
+	root := newStore(t)
+	for in, want := range map[string]string{
+		"Just text\n":                        "no frontmatter",
+		"---\r\ntitle: T\r\n---\r\nBody\r\n": "CRLF",
+	} {
+		_, err := New(root, "p", []byte(in))
+		if CodeOf(err) != CodeUsage || !strings.Contains(err.Error(), want) {
+			t.Errorf("%q: %v", in, err)
+		}
+	}
 }
 
 func TestNewAcceptsEmptyOwnedFields(t *testing.T) {

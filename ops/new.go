@@ -27,6 +27,13 @@ func ValidProjectName(name string) bool { return projectName.MatchString(name) }
 // CheckDraft checks content coming in as a new draft: it must have a title that makes a slug,
 // and leave every spx-owned field empty. It returns the slug.
 func CheckDraft(data []byte) (string, error) {
+	if closingFence(strings.Split(string(data), "\n")) < 0 {
+		msg := "the file has no frontmatter: it must start with a --- line and close it with another"
+		if strings.Contains(string(data), "\r\n") {
+			msg += " (CRLF line endings are not supported)"
+		}
+		return "", fail(CodeUsage, "%s", msg)
+	}
 	fm, err := frontmatter(data)
 	if err != nil {
 		return "", err
