@@ -5,7 +5,7 @@ priority: 3
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-10-12: y copies <project>/<slug>; footer hints unchanged. Cold read: not run"
-status: in-review
+status: done
 ---
 
 In `spx`, `y` copies the selected spec's qualified `<project>/<slug>` name instead of the bare slug, so I can paste a reference that is unambiguous across projects.
@@ -41,3 +41,8 @@ Out of scope:
 - 2026-10-12: Approved: Scott Schlesier, 2026-10-12: y copies <project>/<slug>; footer hints unchanged. Cold read: not run
 - 2026-10-12: Started on branch copy-the-qualified-name-with-y
 - 2026-10-12: Review started
+- 2026-10-12: Review round 1, pass 1: criteria 1, 3, 4 verified; criterion 2 had a surviving
+  mutant (hardcoded project). Fixed: added a test with a spec from another project. Dismissed: the
+  footer says "copy slug" (kept by Design). Decisions (Scott): clipboard text stays unsanitized as
+  before; the manual paste check is accepted as unproven.
+- 2026-10-12: Done: Reviewed round 1: `y` copies `<project>/<slug>`; automated checks pass; manual paste check not run.
