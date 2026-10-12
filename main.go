@@ -69,8 +69,13 @@ func parseArgs(args []string) (project string, named bool, statuses []string, ok
 // starting the UI.
 func run(args []string, stdout, stderr io.Writer, dir string, start func(tea.Model) error) int {
 	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
-		fmt.Fprintf(stdout, "%s\n%s\n", usage, description)
+		fmt.Fprintf(stdout, "%s\n%s\n%s\n", usage, description, commandList())
 		return 0
+	}
+	if len(args) > 0 {
+		if c, ok := findCommand(args[0]); ok {
+			return runCommand(c, args[1:], env{stdout: stdout, stderr: stderr, dir: dir})
+		}
 	}
 	if len(args) == 1 && args[0] == "--version" {
 		fmt.Fprintf(stdout, "spx %s\n", version)
