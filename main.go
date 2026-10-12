@@ -20,7 +20,7 @@ const (
 	usage       = "usage: spx [-d] [-a] [-s] [project]"
 	description = "Browse the spec store in the terminal, limited to one project if named.\n" +
 		"-d, -a and -s print the draft, approved or started specs instead, one per line.\n" +
-		"--version prints the version."
+		"--version prints the version. spx help --skill prints a guide to the store for agents."
 )
 
 // version is the release tag, set at build time with -ldflags "-X main.version=<tag>".
@@ -34,6 +34,11 @@ func main() {
 		_, err := tea.NewProgram(m).Run()
 		return err
 	}))
+}
+
+// helpText is the top-level help, as printed by spx -h and spx help.
+func helpText() string {
+	return fmt.Sprintf("%s\n%s\n%s\n", usage, description, commandList())
 }
 
 // parseArgs splits args into the project argument and the statuses named by the -d, -a and -s
@@ -69,7 +74,7 @@ func parseArgs(args []string) (project string, named bool, statuses []string, ok
 // starting the UI.
 func run(args []string, stdout, stderr io.Writer, dir string, start func(tea.Model) error) int {
 	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
-		fmt.Fprintf(stdout, "%s\n%s\n%s\n", usage, description, commandList())
+		fmt.Fprint(stdout, helpText())
 		return 0
 	}
 	if len(args) > 0 {
