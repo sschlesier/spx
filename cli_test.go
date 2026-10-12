@@ -136,6 +136,14 @@ func TestLogCommandWrongStatusAndConflict(t *testing.T) {
 	}
 }
 
+func TestLogCommandWithoutGitIsExitFive(t *testing.T) {
+	gitStore(t)
+	t.Setenv("PATH", "")
+	if r := runCLI(t, t.TempDir(), "log", "p/one", "x"); r.code != 5 || !strings.Contains(r.stderr, "git") {
+		t.Fatalf("code=%d stderr=%q", r.code, r.stderr)
+	}
+}
+
 func TestCommandNamesAreNotProjects(t *testing.T) {
 	makeStore(t, "log")
 	if r := runCLI(t, t.TempDir(), "log"); r.code != 2 || r.model != nil {

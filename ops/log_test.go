@@ -120,6 +120,35 @@ func TestLogLeavesADirtyUnrelatedFileAlone(t *testing.T) {
 	}
 }
 
+func TestLogCommitsOnlyTheSpecWhenAnotherPathIsStaged(t *testing.T) {
+	root := newStore(t)
+	write(t, filepath.Join(root, "p/draft/two.md"), "staged edit\n")
+	gitIn(t, root, "add", "p/draft/two.md")
+	if err := Log(root, specAt(root, "draft", "one"), "x", now); err != nil {
+		t.Fatal(err)
+	}
+	if files := gitIn(t, root, "show", "--name-only", "--format=", "HEAD"); files != "p/draft/one.md" {
+		t.Errorf("committed %q", files)
+	}
+	if staged := gitIn(t, root, "diff", "--cached", "--name-only"); staged != "p/draft/two.md" {
+		t.Errorf("staged after the log = %q, want the unrelated path still staged", staged)
+	}
+	if got, _ := os.ReadFile(filepath.Join(root, "p/draft/two.md")); string(got) != "staged edit\n" {
+		t.Errorf("unrelated file changed: %q", got)
+	}
+}
+
+func TestLogTrimsTheText(t *testing.T) {
+	root := newStore(t)
+	if err := Log(root, specAt(root, "draft", "one"), "  padded \t", now); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := os.ReadFile(filepath.Join(root, "p/draft/one.md"))
+	if !strings.HasSuffix(string(got), "- 2026-10-12: padded\n") {
+		t.Errorf("file:\n%s", got)
+	}
+}
+
 func TestLogWrongStatusIsExitThree(t *testing.T) {
 	root := newStore(t)
 	h := head(t, root)
@@ -166,6 +195,11 @@ func TestLogStoreConflictsAreExitFour(t *testing.T) {
 	for name, setup := range tests {
 		t.Run(name, func(t *testing.T) {
 			root := setup(t, newStore(t))
+			_, isRepo := os.Stat(filepath.Join(root, ".git"))
+			var headBefore string
+			if isRepo == nil {
+				headBefore = head(t, root)
+			}
 			before, _ := os.ReadFile(spec(root).Path)
 			err := Log(root, spec(root), "x", now)
 			wantCode(t, err, CodeConflict)
@@ -173,11 +207,8 @@ func TestLogStoreConflictsAreExitFour(t *testing.T) {
 			if string(before) != string(after) {
 				t.Error("the file changed")
 			}
-			if _, statErr := os.Stat(filepath.Join(root, ".git")); statErr == nil && name != "dirty touched path" && name != "index lock" {
-				// repo cases: HEAD must not have moved past the seed commit
-				if n := commitCount(t, root); n != "1" {
-					t.Errorf("commit count = %s", n)
-				}
+			if isRepo == nil && head(t, root) != headBefore {
+				t.Error("HEAD moved")
 			}
 		})
 	}
