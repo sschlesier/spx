@@ -305,6 +305,17 @@ func TestEditAndCopyDoNothingWithAnEmptyList(t *testing.T) {
 	}
 }
 
+func TestYCopiesTheSelectedSpecsOwnProject(t *testing.T) {
+	specs := draftSpecs(2)
+	specs[1].Project = "other"
+	specs[1].Status = "approved"
+	m := start(t, specs, 120, 20)
+	m = press(t, m, "j")
+	if got := press(t, m, "y"); got.notice != "copied other/spec-01" {
+		t.Errorf("y notice %q, want copied other/spec-01", got.notice)
+	}
+}
+
 func TestEditAndCopyWorkInNarrowListAndDetail(t *testing.T) {
 	specs := draftSpecs(2)
 	specs[0].Status = "approved"
