@@ -90,8 +90,13 @@ func TestHelpPrintsUsageWithoutReadingTheStore(t *testing.T) {
 			t.Errorf("%s: code=%d started=%v stderr=%q", flag, r.code, r.model != nil, r.stderr)
 		}
 		lines := strings.Split(strings.TrimRight(r.stdout, "\n"), "\n")
-		if len(lines) != 4 || lines[0] != "usage: spx [-d] [-a] [-s] [project]" || lines[1] == "" {
+		if len(lines) < 4 || lines[0] != "usage: spx [-d] [-a] [-s] [project]" || lines[1] == "" {
 			t.Errorf("%s: stdout = %q", flag, r.stdout)
+		}
+		for _, c := range commands {
+			if !strings.Contains(r.stdout, c.Synopsis) {
+				t.Errorf("%s: stdout does not list %q", flag, c.Name)
+			}
 		}
 	}
 }
