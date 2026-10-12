@@ -114,15 +114,20 @@ func TestTreeParentsNotShownLeaveTheChildAtTopLevel(t *testing.T) {
 
 func TestTreeQualifiedParentCrossesProjects(t *testing.T) {
 	specs := []store.Spec{
-		node("p", "draft", "epic", ""),
 		node("q", "draft", "kid", "p/epic"),
 		node("q", "draft", "same-slug", "epic"),
+		node("p", "draft", "epic", ""),
 		node("q", "draft", "epic", ""),
 	}
 	m := press(t, start(t, specs, 120, 20), "t")
 	want := []string{"p/epic", "q/kid", "q/epic", "q/same-slug"}
 	if got := slugsOf(m); !reflect.DeepEqual(got, want) {
 		t.Errorf("order %v, want %v", got, want)
+	}
+	for _, slug := range []string{"kid", "same-slug"} {
+		if got := titleCol(m, slug); !strings.HasSuffix(got, "─ T "+slug) {
+			t.Errorf("%s: %q, want nested", slug, got)
+		}
 	}
 }
 
@@ -205,6 +210,12 @@ func TestTreeShownInFooter(t *testing.T) {
 	m = press(t, m, "t")
 	if f := footer(m); !strings.Contains(f, "all projects · tree") {
 		t.Errorf("footer on: %q", f)
+	}
+}
+
+func TestTreeHintShownInTheNarrowListFooter(t *testing.T) {
+	if f := footer(start(t, family(), 80, 20)); !strings.Contains(f, "t tree") {
+		t.Errorf("narrow footer %q lacks the tree hint", f)
 	}
 }
 
