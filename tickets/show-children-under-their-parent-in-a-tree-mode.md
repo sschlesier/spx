@@ -5,7 +5,7 @@ priority: 3
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-10-12: Tree mode grouped by parent:, reviewed against the code. Cold read: not run"
-status: in-progress
+status: in-review
 ---
 
 `t` toggles a tree mode in the list that shows each spec indented under the spec named by its `parent:` field, so an epic and its children read as one group.
@@ -64,3 +64,5 @@ Don't touch: any write path, the flat list's behaviour with `t` off.
 - 2026-10-12: Review: corrected the parent-resolution criterion (depends-on is same-project only) and fixed the tree-mode indicator to the footer lead.
 - 2026-10-12: Approved: Scott Schlesier, 2026-10-12: Tree mode grouped by parent:, reviewed against the code. Cold read: not run
 - 2026-10-12: Started on branch show-children-in-tree-mode
+- 2026-10-12: Assumption: the narrow-layout footer test moved from width 90 to 99, since the added `t tree` hint pushes `e edit · y/Y copy` out of the footer at 90.
+- 2026-10-12: Review started
