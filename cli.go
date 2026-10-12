@@ -68,6 +68,20 @@ var commands = []command{
 			"<file> is the spec's full new content.",
 		Run: runEdit,
 	},
+	{
+		Name:     "approve",
+		Synopsis: `spx approve <slug> "<one line>" [--cold-read <result>]`,
+		Effect:   "Record the user's approval of a draft, move it to approved/ and commit it.",
+		Rule: "Run only after the user said yes; spx records the approval, it never decides one. The one line " +
+			"says what was approved; pass the cold read's result with --cold-read (default `not run`). " +
+			"`approved:` becomes `<git user.name>, <date>: <one line>. Cold read: <result>` and the Log gets " +
+			"`Approved: ` plus that text. Works on drafts only: an approved spec exits 3. An unset " +
+			"git user.name exits 5.",
+		Usage: "usage: spx approve <slug> \"<one line>\" [--cold-read <result>]\n" +
+			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.\n" +
+			"<result> is one line and defaults to \"not run\".",
+		Run: runApprove,
+	},
 }
 
 // commandNames are the names in the command table, for handlers that can't refer to it.
@@ -254,5 +268,44 @@ func runEdit(c command, args []string, e env) int {
 		fmt.Fprintln(e.stdout, "approval cleared; moved to draft")
 	}
 	warnUnresolved(e, v, spec.Project, data)
+	return ops.CodeOK
+}
+
+func runApprove(c command, args []string, e env) int {
+	var pos []string
+	coldRead, coldReadSet := "not run", false
+	for i := 0; i < len(args); i++ {
+		switch a := args[i]; {
+		case a == "--cold-read":
+			if i+1 >= len(args) || coldReadSet {
+				return usageError(c, e)
+			}
+			i++
+			coldRead, coldReadSet = args[i], true
+		case strings.HasPrefix(a, "--cold-read="):
+			if coldReadSet {
+				return usageError(c, e)
+			}
+			coldRead, coldReadSet = strings.TrimPrefix(a, "--cold-read="), true
+		default:
+			pos = append(pos, a)
+		}
+	}
+	if len(pos) != 2 || pos[0] == "" {
+		return usageError(c, e)
+	}
+	if err := ops.CheckLogText(pos[1]); err != nil {
+		return textArgError(c, e, err)
+	}
+	if err := ops.CheckLogText(coldRead); err != nil {
+		return textArgError(c, e, fmt.Errorf("cold read result: %v", err))
+	}
+	v, spec, err := resolve(e, pos[0])
+	if err != nil {
+		return report(e, err)
+	}
+	if err := ops.Approve(v.root, spec, pos[1], coldRead, time.Now()); err != nil {
+		return report(e, err)
+	}
 	return ops.CodeOK
 }

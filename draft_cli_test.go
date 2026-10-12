@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // draftFile writes content to a file in a fresh directory and returns the directory and file name.
@@ -190,5 +191,79 @@ func TestEditCommandWarnsOnUnresolvedReferences(t *testing.T) {
 	r := runCLI(t, dir, "edit", "p/one", name)
 	if r.code != 0 || r.stderr != "spx: warning: nowhere matches no spec in the store\n" {
 		t.Fatalf("code=%d stderr=%q", r.code, r.stderr)
+	}
+}
+
+// approvedField is the approved: line of the spec at rel under root.
+func approvedField(t *testing.T, root, rel string) string {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(root, rel))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		if strings.HasPrefix(line, "approved:") {
+			return line
+		}
+	}
+	return ""
+}
+
+func TestApproveCommandColdRead(t *testing.T) {
+	date := time.Now().Format("2006-01-02")
+	for _, tt := range []struct {
+		args []string
+		want string
+	}{
+		{[]string{"p/one", "ok"}, "not run"},
+		{[]string{"p/one", "ok", "--cold-read", "pass"}, "pass"},
+		{[]string{"--cold-read", "two questions", "p/one", "ok"}, "two questions"},
+		{[]string{"p/one", "--cold-read=pass: none blocking", "ok"}, "pass: none blocking"},
+	} {
+		root := gitStore(t)
+		r := runCLI(t, t.TempDir(), append([]string{"approve"}, tt.args...)...)
+		if r.code != 0 || r.stdout != "" || r.stderr != "" {
+			t.Fatalf("%q: code=%d stdout=%q stderr=%q", tt.args, r.code, r.stdout, r.stderr)
+		}
+		want := `approved: "Test, ` + date + `: ok. Cold read: ` + tt.want + `"`
+		if got := approvedField(t, root, "p/approved/one.md"); got != want {
+			t.Errorf("%q: %s, want %s", tt.args, got, want)
+		}
+		if msg := gitOut(t, root, "log", "-1", "--format=%s"); msg != "p: approve one" {
+			t.Errorf("commit message = %q", msg)
+		}
+	}
+}
+
+func TestApproveCommandExitCodes(t *testing.T) {
+	root := gitStore(t)
+	commitFile(t, root, "p/approved/a.md", approvedOne)
+	h := gitOut(t, root, "rev-parse", "HEAD")
+	tests := []struct {
+		args []string
+		code int
+		msg  string
+	}{
+		{[]string{"approve"}, 2, "usage: spx approve"},
+		{[]string{"approve", "p/one"}, 2, "usage: spx approve"},
+		{[]string{"approve", "", "ok"}, 2, "usage: spx approve"},
+		{[]string{"approve", "p/one", ""}, 2, "usage: spx approve"},
+		{[]string{"approve", "p/one", "a\nb"}, 2, "one line"},
+		{[]string{"approve", "p/one", "ok", "extra"}, 2, "usage: spx approve"},
+		{[]string{"approve", "p/one", "ok", "--cold-read"}, 2, "usage: spx approve"},
+		{[]string{"approve", "p/one", "ok", "--cold-read", ""}, 2, "cold read"},
+		{[]string{"approve", "p/one", "ok", "--cold-read=a\nb"}, 2, "cold read"},
+		{[]string{"approve", "p/one", "ok", "--cold-read", "a", "--cold-read", "b"}, 2, "usage: spx approve"},
+		{[]string{"approve", "p/nope", "ok"}, 1, "unknown spec"},
+		{[]string{"approve", "p/a", "ok"}, 3, "already approved"},
+	}
+	for _, tt := range tests {
+		r := runCLI(t, t.TempDir(), tt.args...)
+		if r.code != tt.code || !strings.Contains(r.stderr, tt.msg) || r.stdout != "" {
+			t.Errorf("%q: code=%d stderr=%q", tt.args, r.code, r.stderr)
+		}
+	}
+	if gitOut(t, root, "rev-parse", "HEAD") != h {
+		t.Error("HEAD moved")
 	}
 }
