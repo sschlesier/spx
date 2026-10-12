@@ -23,8 +23,8 @@ A spec is markdown with a YAML frontmatter block, then the body.
 Frontmatter you write: `title`, `type`, `priority`, `depends-on` (a list of slugs, or
 `<project>/<slug>` for another project) and `parent`. The title makes the slug.
 
-Frontmatter spx fills; leave these empty in content you hand to a command: `approved` (who approved,
-when, and what), `status`, `accepted`, `pr` and `path`.
+Frontmatter spx fills: `approved` (who approved, when, and what), `status`, `accepted`, `pr` and `path`.
+Leave them empty in a new spec; in an edit, copy them unchanged from the stored spec.
 
 Body, written by you: an Outcome paragraph first, then `## Acceptance criteria`, `## Verification`,
 `## Design`, `## Boundaries`, and a `## Log` of dated lines (`- YYYY-MM-DD: text`). The Log is
@@ -32,7 +32,7 @@ append only; spx adds to it.
 
 ## Lifecycle
 
-draft → approved → started → done, or dropped from any live status. Each step has a command; a step needing the user's yes is never taken on the agent's own judgment.
+draft → approved → started → done, or dropped from any live status. The steps with a command are listed below; a step needing the user's yes is never taken on the agent's own judgment.
 
 - `spx new`: a finished draft written outside the store becomes a spec in draft/. Decided by the agent.
 - `spx edit`: a draft or approved spec is refined. Decided by the agent.
