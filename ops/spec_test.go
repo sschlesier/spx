@@ -145,12 +145,12 @@ func TestTransitionRefusesAnExistingDestination(t *testing.T) {
 
 func TestClearApproved(t *testing.T) {
 	in := "---\ntitle: T\napproved: \"x: y\" # note\n---\n"
-	got, err := clearApproved([]byte(in))
+	got, err := clearApproved(store.Spec{}, []byte(in))
 	if err != nil || string(got) != "---\ntitle: T\napproved: # note\n---\n" {
 		t.Errorf("got %q, %v", got, err)
 	}
 	none := "---\ntitle: T\n---\n"
-	if got, err := clearApproved([]byte(none)); err != nil || string(got) != none {
+	if got, err := clearApproved(store.Spec{}, []byte(none)); err != nil || string(got) != none {
 		t.Errorf("without the field: %q, %v", got, err)
 	}
 }

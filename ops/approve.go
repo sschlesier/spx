@@ -38,7 +38,7 @@ func Approve(root string, spec store.Spec, line, coldRead string, now time.Time)
 		text := fmt.Sprintf("%s, %s: %s. Cold read: %s", name, date, line, strings.TrimSpace(coldRead))
 		out, err := SetField(data, "approved", text)
 		if err != nil {
-			return nil, fail(CodeWrongStatus, "%s/%s: %v", spec.Project, spec.Slug, err)
+			return nil, malformed(spec, err)
 		}
 		return AppendLog(out, date, "Approved: "+text), nil
 	})

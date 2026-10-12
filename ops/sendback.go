@@ -21,9 +21,9 @@ func SendBack(root string, spec store.Spec, questions string, now time.Time) err
 		return statusError(spec, "send-back", SendBackStatuses)
 	}
 	return transition(root, spec, "draft", spec.Project+": send back "+spec.Slug, func(data []byte) ([]byte, error) {
-		out, err := clearApproved(data)
+		out, err := clearApproved(spec, data)
 		if err != nil {
-			return nil, fail(CodeWrongStatus, "%s/%s: %v", spec.Project, spec.Slug, err)
+			return nil, err
 		}
 		return AppendLog(out, now.Format("2006-01-02"), "Needs clarification: "+strings.TrimSpace(questions)), nil
 	})

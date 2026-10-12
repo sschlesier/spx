@@ -60,7 +60,7 @@ func Edit(root string, spec store.Spec, data []byte) (EditResult, error) {
 	}
 	err = transition(root, spec, to, spec.Project+": refine "+spec.Slug, func([]byte) ([]byte, error) {
 		if res.Demoted {
-			return clearApproved(data)
+			return clearApproved(spec, data)
 		}
 		return data, nil
 	})

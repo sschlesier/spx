@@ -237,14 +237,23 @@ func transition(root string, spec store.Spec, to, msg string, change func([]byte
 	})
 }
 
+// malformed is the usage failure for a stored spec whose frontmatter can't take a field change.
+func malformed(spec store.Spec, err error) error {
+	return fail(CodeUsage, "%s/%s is malformed (%v); fix the stored file first", spec.Project, spec.Slug, err)
+}
+
 // clearApproved clears the approved field when the file has one, leaving a file without it as is.
-func clearApproved(data []byte) ([]byte, error) {
+func clearApproved(spec store.Spec, data []byte) ([]byte, error) {
 	lines := strings.Split(string(data), "\n")
 	end := closingFence(lines)
 	if end < 0 || fieldLine(lines, end, "approved") < 0 {
 		return data, nil
 	}
-	return SetField(data, "approved", "")
+	out, err := SetField(data, "approved", "")
+	if err != nil {
+		return nil, malformed(spec, err)
+	}
+	return out, nil
 }
 
 // ReadInput reads an input file named on the command line: a missing one is not found.

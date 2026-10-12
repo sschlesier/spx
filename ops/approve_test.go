@@ -103,6 +103,25 @@ func TestApproveWrongStatus(t *testing.T) {
 	untouched(t, root, h)
 }
 
+func TestMalformedStoredSpecsAreExitTwo(t *testing.T) {
+	root := newStore(t)
+	write(t, filepath.Join(root, "p/draft/bare.md"), "No frontmatter\n")
+	write(t, filepath.Join(root, "p/approved/multi.md"), "---\ntitle: M\napproved:\n  - a\n  - b\n---\n")
+	gitIn(t, root, "add", "-A")
+	gitIn(t, root, "commit", "-q", "-m", "malformed")
+	h := head(t, root)
+	for name, err := range map[string]error{
+		"approve, no frontmatter": Approve(root, specAt(root, "draft", "bare"), "ok", "pass", now),
+		"send-back, list field":   SendBack(root, specAt(root, "approved", "multi"), "why?", now),
+	} {
+		wantCode(t, err, CodeUsage)
+		if !strings.Contains(err.Error(), "malformed") {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	untouched(t, root, h)
+}
+
 func TestApproveUsageErrors(t *testing.T) {
 	root := newStore(t)
 	h := head(t, root)
