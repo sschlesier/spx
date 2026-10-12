@@ -37,9 +37,9 @@ Staleness: Changes under the store show within about a second (fsnotify, 100 ms 
 
 Invariants:
 - spx writes, moves or deletes under the store root only through the CLI commands (`spx log`,
-  `new`, `edit`, `approve`, `send-back`, `drop`), each of which commits just the paths it touched as `<project>: <verb> <slug>`, never stashes
-  or pushes, and restores the tree on failure. The TUI never writes; only an editor the user
-  opens with `e` may.
+  `new`, `edit`, `approve`, `send-back`, `drop`), each of which commits just the paths it
+  touched as `<project>: <verb> <slug>`, never stashes or pushes, and restores the tree on
+  failure. The TUI never writes; only an editor the user opens with `e` may.
 - Only <root>/<project>/{draft,approved,started}/*.md are listed, and dropped/*.md only
   under the `x` filter; nothing under a dot entry is ever listed. <project>/done/*.md is read
   only to resolve `depends-on` slugs in the detail pane (watched, never listed).
