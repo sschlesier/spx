@@ -11,12 +11,15 @@ import (
 // fieldOrder is the frontmatter field order of a new spec.
 var fieldOrder = []string{"title", "type", "priority", "depends-on", "parent", "approved"}
 
-var plainValue = regexp.MustCompile(`^[A-Za-z0-9_./][A-Za-z0-9_./ -]*$`)
+// nullWords are the plain scalars YAML reads as null, which the store reads as no value.
+var nullWords = map[string]bool{"null": true, "Null": true, "NULL": true}
+
+var plainValue =regexp.MustCompile(`^[A-Za-z0-9_./][A-Za-z0-9_./ -]*$`)
 
 // yamlScalar writes value as a YAML scalar that parses back to the same text: plain when that
 // is safe, otherwise double-quoted with escapes.
 func yamlScalar(value string) string {
-	if plainValue.MatchString(value) && !strings.HasSuffix(value, " ") {
+	if plainValue.MatchString(value) && !strings.HasSuffix(value, " ") && !nullWords[value] {
 		return value
 	}
 	return strconv.Quote(value)

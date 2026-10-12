@@ -49,7 +49,11 @@ func CodeOf(err error) int {
 		return CodeOK
 	}
 	if e, ok := err.(*Error); ok {
-		return e.Code
+		for _, c := range ExitCodes {
+			if c.Code == e.Code {
+				return c.Code
+			}
+		}
 	}
 	return CodeTool
 }

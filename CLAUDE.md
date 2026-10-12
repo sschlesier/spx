@@ -53,4 +53,5 @@ Invariants:
   the UI. Usage paths and `--version` never read the store. The only processes spx starts are
   `git rev-parse` at startup, to scope to the current repo's project; `git` in the store root
   for the commands; the editor on `e`; and one clipboard tool (pbcopy, wl-copy or xclip) on
-  `y`/`Y`. A command never runs git in a project repo.
+  `y`/`Y`. In a project repo a command runs only that read-only `git rev-parse`, never a git
+  command that writes.

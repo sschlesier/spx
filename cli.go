@@ -93,7 +93,7 @@ func runLog(c command, args []string, e env) int {
 	}
 	root, err := store.Root()
 	if err != nil {
-		return report(e, err)
+		return report(e, ops.NotFound(err))
 	}
 	specs, err := store.Load(root)
 	if err != nil {

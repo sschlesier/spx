@@ -80,13 +80,17 @@ type snapshot struct {
 
 func takeSnapshot(path string) (snapshot, error) {
 	snap := snapshot{path: path}
-	if info, err := os.Stat(path); err == nil {
+	info, err := os.Stat(path)
+	if err == nil {
 		data, err := os.ReadFile(path)
 		if err != nil {
 			return snap, err
 		}
 		snap.existed, snap.data, snap.mode = true, data, info.Mode().Perm()
 		return snap, nil
+	}
+	if !os.IsNotExist(err) {
+		return snap, err
 	}
 	for dir := filepath.Dir(path); ; dir = filepath.Dir(dir) {
 		if _, err := os.Stat(dir); err == nil {
@@ -145,7 +149,7 @@ func (s Store) Apply(msg string, paths []string, change func() error) error {
 // relPath is path relative to the store root.
 func (s Store) relPath(path string) (string, error) {
 	rel, err := filepath.Rel(s.Root, path)
-	if err != nil {
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		return "", fmt.Errorf("%s is outside the store", path)
 	}
 	return rel, nil

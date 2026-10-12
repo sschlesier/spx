@@ -15,6 +15,8 @@ func Resolve(specs []store.Spec, arg, scope string) (store.Spec, error) {
 	project, slug, explicit := strings.Cut(arg, "/")
 	if !explicit {
 		project, slug = scope, arg
+	} else if project == "" || slug == "" || strings.Contains(slug, "/") {
+		return store.Spec{}, fail(CodeNotFound, "unknown spec: %s (use <project>/<slug>)", arg)
 	}
 	var hits, others []store.Spec
 	for _, s := range specs {
