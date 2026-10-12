@@ -57,6 +57,17 @@ func TestNewCommandPrintsTheSlugAndCommits(t *testing.T) {
 	}
 }
 
+func TestNewCommandTakesAnAbsoluteFilePath(t *testing.T) {
+	root := gitStore(t)
+	dir, name := draftFile(t, "---\ntitle: Abs\n---\n")
+	if r := runCLI(t, t.TempDir(), "new", "p", filepath.Join(dir, name)); r.code != 0 || r.stdout != "abs\n" {
+		t.Fatalf("code=%d stdout=%q stderr=%q", r.code, r.stdout, r.stderr)
+	}
+	if _, err := os.Stat(filepath.Join(root, "p", "draft", "abs.md")); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestNewCommandProjectNames(t *testing.T) {
 	root := gitStore(t)
 	if err := os.MkdirAll(filepath.Join(root, "Odd_Name", "draft"), 0o755); err != nil {
@@ -337,6 +348,7 @@ func TestApproveCommandExitCodes(t *testing.T) {
 		{[]string{"approve", "p/one", "ok", "--cold-read", ""}, 2, "cold read"},
 		{[]string{"approve", "p/one", "ok", "--cold-read=a\nb"}, 2, "cold read"},
 		{[]string{"approve", "p/one", "ok", "--cold-read", "a", "--cold-read", "b"}, 2, "usage: spx approve"},
+		{[]string{"approve", "p/one", "ok", "--cold-read=a", "--cold-read=b"}, 2, "usage: spx approve"},
 		{[]string{"approve", "p/nope", "ok"}, 1, "unknown spec"},
 		{[]string{"approve", "p/a", "ok"}, 3, "already approved"},
 	}
