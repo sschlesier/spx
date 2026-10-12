@@ -39,10 +39,10 @@ func TestSplitBody(t *testing.T) {
 	if got := norm(b.outcome); got != "The outcome,\nwrapped." {
 		t.Errorf("outcome = %q", got)
 	}
-	if got := norm(b.sections["## Acceptance criteria"]); got != "- [ ] a\n\n```md\n## Design\nnot a heading\n```" {
+	if got := norm(b.sections["## Acceptance criteria"]); got != "\n- [ ] a\n\n```md\n## Design\nnot a heading\n```" {
 		t.Errorf("criteria = %q", got)
 	}
-	if got := norm(b.sections["## Design"]); got != "d" {
+	if got := norm(b.sections["## Design"]); got != "\nd" {
 		t.Errorf("design = %q", got)
 	}
 	if got := norm(b.sections["## Boundaries"]); got != "" {

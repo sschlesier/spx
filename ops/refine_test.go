@@ -63,6 +63,7 @@ func TestEditDemotesOnAnApprovalChange(t *testing.T) {
 		"design":              {"- a decision", "- another decision"},
 		"boundaries":          {"Stop and ask if: lost.", "Stop and ask if: found."},
 		"design removed":      {"## Design\n\n- a decision\n\n", ""},
+		"leading blank line":  {"## Design\n\n", "## Design\n\n\n"},
 	}
 	for name, c := range changes {
 		t.Run(name, func(t *testing.T) {

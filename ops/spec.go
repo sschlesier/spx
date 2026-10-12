@@ -135,7 +135,6 @@ func splitBody(data []byte) body {
 			}
 		} else if fence == "" && strings.HasPrefix(line, "## ") {
 			heading = strings.TrimRight(line, " \t")
-			b.sections[heading] = append(b.sections[heading], "")
 			continue
 		}
 		if heading == "" {
@@ -156,13 +155,14 @@ func splitBody(data []byte) body {
 	return b
 }
 
-// norm is lines as text for comparison: trailing whitespace and surrounding blank lines ignored.
+// norm is lines as text for comparison, ignoring trailing whitespace: at the end of each line
+// and at the end of the whole.
 func norm(lines []string) string {
 	out := make([]string, len(lines))
 	for i, l := range lines {
 		out[i] = strings.TrimRight(l, " \t\r")
 	}
-	return strings.Trim(strings.Join(out, "\n"), "\n")
+	return strings.TrimRight(strings.Join(out, "\n"), "\n")
 }
 
 // logEntries are the non-blank lines of the Log section, trailing whitespace trimmed.
