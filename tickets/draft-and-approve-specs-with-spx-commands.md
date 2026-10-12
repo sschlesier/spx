@@ -5,7 +5,7 @@ priority: 2
 depends-on: [run-store-operations-as-spx-commands]
 parent:
 approved: "Scott Schlesier, 2026-10-11: five draft-side commands on the shared machinery; spx-owned fields refused, dependency warnings. Cold read: pass"
-status: in-progress
+status: in-review
 ---
 
 An agent creates a draft, refines it, records the user's approval, sends it back or drops it with one `spx` command each, run from any directory, so it writes only spec content and never moves, edits or commits files in the store.
