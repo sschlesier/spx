@@ -16,6 +16,10 @@ func Approve(root string, spec store.Spec, line, coldRead string, now time.Time)
 	if err := CheckLogText(line); err != nil {
 		return err
 	}
+	line = strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(line), "."))
+	if line == "" {
+		return fail(CodeUsage, "the approval line is empty")
+	}
 	if err := CheckLogText(coldRead); err != nil {
 		return fail(CodeUsage, "cold read result: %v", err)
 	}
@@ -30,8 +34,7 @@ func Approve(root string, spec store.Spec, line, coldRead string, now time.Time)
 		return err
 	}
 	date := now.Format("2006-01-02")
-	text := fmt.Sprintf("%s, %s: %s. Cold read: %s", name, date,
-		strings.TrimSuffix(strings.TrimSpace(line), "."), strings.TrimSpace(coldRead))
+	text := fmt.Sprintf("%s, %s: %s. Cold read: %s", name, date, line, strings.TrimSpace(coldRead))
 	return transition(root, spec, "approved", spec.Project+": approve "+spec.Slug, func(data []byte) ([]byte, error) {
 		out, err := SetField(data, "approved", text)
 		if err != nil {

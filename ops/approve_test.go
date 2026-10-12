@@ -106,7 +106,7 @@ func TestApproveWrongStatus(t *testing.T) {
 func TestApproveUsageErrors(t *testing.T) {
 	root := newStore(t)
 	h := head(t, root)
-	for _, args := range [][2]string{{"", "pass"}, {"a\nb", "pass"}, {"ok", ""}, {"ok", "a\nb"}} {
+	for _, args := range [][2]string{{"", "pass"}, {".", "pass"}, {" . ", "pass"}, {"a\nb", "pass"}, {"ok", ""}, {"ok", "a\nb"}} {
 		wantCode(t, Approve(root, specAt(root, "draft", "one"), args[0], args[1], now), CodeUsage)
 	}
 	untouched(t, root, h)
