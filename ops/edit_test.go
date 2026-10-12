@@ -1,6 +1,7 @@
 package ops
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -154,6 +155,60 @@ func TestSetFieldKeepsCommentsAfterQuotedValues(t *testing.T) {
 		if want := "---\n" + tt.want + "\n---\nBody\n"; string(got) != want {
 			t.Errorf("%s:\ngot  %q\nwant %q", tt.old, got, want)
 		}
+	}
+}
+
+func TestSetFieldWritesNullWordsAsStrings(t *testing.T) {
+	for _, value := range []string{"null", "Null", "NULL"} {
+		out, err := SetField([]byte(sample), "title", value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		front := strings.SplitN(string(out), "---\n", 3)[1]
+		var fm map[string]yaml.Node
+		if err := yaml.Unmarshal([]byte(front), &fm); err != nil {
+			t.Fatal(err)
+		}
+		if n := fm["title"]; n.Tag != "!!str" || n.Value != value {
+			t.Errorf("%q read back as tag %s, value %q", value, n.Tag, n.Value)
+		}
+	}
+}
+
+func TestSetFieldInsertsAfterAnUnindentedList(t *testing.T) {
+	in := "---\ntitle: T\ndepends-on:\n- a\n- b\napproved:\n---\nBody\n"
+	got, err := SetField([]byte(in), "parent", "p")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "---\ntitle: T\ndepends-on:\n- a\n- b\nparent: p\napproved:\n---\nBody\n"; string(got) != want {
+		t.Fatalf("got:\n%s", got)
+	}
+}
+
+func TestSetFieldMatchesTheWholeKey(t *testing.T) {
+	got, err := SetField([]byte("---\ntitle-extra: x\n---\nBody\n"), "title", "T")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "---\ntitle: T\ntitle-extra: x\n---\nBody\n"; string(got) != want {
+		t.Fatalf("got:\n%s", got)
+	}
+}
+
+func TestAppendLogMatchesAHeadingWithTrailingSpaces(t *testing.T) {
+	got := string(AppendLog([]byte("# T\n\n## Log  \n\n- a\n"), "2026-10-12", "new"))
+	if want := "# T\n\n## Log  \n\n- a\n- 2026-10-12: new\n"; got != want {
+		t.Fatalf("got:\n%s", got)
+	}
+}
+
+func TestCodeOfMapsThroughTheExitCodeList(t *testing.T) {
+	if CodeOf(nil) != CodeOK || CodeOf(fail(CodeConflict, "x")) != CodeConflict {
+		t.Error("known codes not kept")
+	}
+	if CodeOf(fmt.Errorf("plain")) != CodeTool || CodeOf(&Error{Code: 42, Msg: "x"}) != CodeTool {
+		t.Error("unknown errors and codes should map to tool failure")
 	}
 }
 

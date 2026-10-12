@@ -149,6 +149,46 @@ func TestLogTrimsTheText(t *testing.T) {
 	}
 }
 
+func TestLogWorksOnApprovedAndStartedSpecs(t *testing.T) {
+	root := newStore(t)
+	write(t, filepath.Join(root, "p/approved/a.md"), "---\ntitle: A\n---\n")
+	write(t, filepath.Join(root, "p/started/s.md"), "---\ntitle: S\n---\n")
+	gitIn(t, root, "add", "-A")
+	gitIn(t, root, "commit", "-q", "-m", "more")
+	for _, spec := range []store.Spec{specAt(root, "approved", "a"), specAt(root, "started", "s")} {
+		if err := Log(root, spec, "x", now); err != nil {
+			t.Fatalf("%s: %v", spec.Status, err)
+		}
+		if msg := gitIn(t, root, "log", "-1", "--format=%s"); msg != "p: log "+spec.Slug {
+			t.Errorf("message = %q", msg)
+		}
+	}
+}
+
+func TestLogRefusesAnUntrackedTouchedPath(t *testing.T) {
+	root := newStore(t)
+	write(t, filepath.Join(root, "p/draft/fresh.md"), "---\ntitle: Fresh\n---\n")
+	h := head(t, root)
+	wantCode(t, Log(root, specAt(root, "draft", "fresh"), "x", now), CodeConflict)
+	if head(t, root) != h {
+		t.Error("HEAD moved")
+	}
+}
+
+func TestApplyRemovesAFileItCreatedInAnExistingFolder(t *testing.T) {
+	root := newStore(t)
+	h := head(t, root)
+	err := Store{Root: root}.Apply("p: new y", []string{"p/draft/y.md"}, func() error {
+		write(t, filepath.Join(root, "p/draft/y.md"), "y\n")
+		return fail(CodeTool, "boom")
+	})
+	wantCode(t, err, CodeTool)
+	if _, statErr := os.Stat(filepath.Join(root, "p/draft/y.md")); !os.IsNotExist(statErr) {
+		t.Error("created file left behind")
+	}
+	untouched(t, root, h)
+}
+
 func TestLogWrongStatusIsExitThree(t *testing.T) {
 	root := newStore(t)
 	h := head(t, root)
@@ -305,6 +345,9 @@ func TestResolve(t *testing.T) {
 		{"nope", "a", "", "unknown spec: nope"},
 		{"only-a", "b", "", "found in: a/only-a"},
 		{"c/x", "", "", "unknown spec: c/x"},
+		{"/x", "a", "", "unknown spec: /x"},
+		{"a/x/y", "", "", "unknown spec: a/x/y"},
+		{"a/", "", "", "unknown spec: a/"},
 	}
 	for _, tt := range tests {
 		got, err := Resolve(specs, tt.arg, tt.scope)

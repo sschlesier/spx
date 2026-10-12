@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -8,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"spx/ops"
 )
 
 func TestCommandTableEntriesAreComplete(t *testing.T) {
@@ -133,6 +136,73 @@ func TestLogCommandWrongStatusAndConflict(t *testing.T) {
 	}
 	if r := runCLI(t, t.TempDir(), "log", "p/one", "x"); r.code != 4 {
 		t.Errorf("dirty path: code=%d stderr=%q", r.code, r.stderr)
+	}
+}
+
+func TestLogCommandScopesABareSlugToTheCheckoutsProject(t *testing.T) {
+	root := gitStore(t)
+	other := filepath.Join(root, "q", "draft")
+	if err := os.MkdirAll(other, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(other, "one.md"), []byte("---\ntitle: Q one\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := exec.Command("git", "-C", root, "add", "-A").CombinedOutput(); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if out, err := exec.Command("git", "-C", root, "commit", "-q", "-m", "q").CombinedOutput(); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if r := runCLI(t, t.TempDir(), "log", "one", "x"); r.code != 1 || !strings.Contains(r.stderr, "ambiguous") {
+		t.Fatalf("outside a repo: code=%d stderr=%q", r.code, r.stderr)
+	}
+	checkout := filepath.Join(t.TempDir(), "q")
+	if err := os.Mkdir(checkout, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := exec.Command("git", "-C", checkout, "init", "-q").CombinedOutput(); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if r := runCLI(t, checkout, "log", "one", "x"); r.code != 0 {
+		t.Fatalf("in checkout q: code=%d stderr=%q", r.code, r.stderr)
+	}
+	if got, _ := os.ReadFile(filepath.Join(other, "one.md")); !strings.Contains(string(got), ": x\n") {
+		t.Errorf("q/one not logged:\n%s", got)
+	}
+	if got, _ := os.ReadFile(filepath.Join(root, "p", "draft", "one.md")); strings.Contains(string(got), ": x\n") {
+		t.Errorf("p/one logged:\n%s", got)
+	}
+}
+
+func TestLogCommandOnADoneSpecIsExitThree(t *testing.T) {
+	root := gitStore(t)
+	done := filepath.Join(root, "p", "done")
+	if err := os.MkdirAll(done, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(done, "old.md"), []byte("---\ntitle: Old\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if r := runCLI(t, t.TempDir(), "log", "p/old", "x"); r.code != 3 || !strings.Contains(r.stderr, "done") {
+		t.Fatalf("code=%d stderr=%q", r.code, r.stderr)
+	}
+}
+
+func TestLogCommandWithNoStoreLocationIsExitOne(t *testing.T) {
+	t.Setenv("AGENT_SPECS_DIR", "")
+	t.Setenv("HOME", "")
+	if r := runCLI(t, t.TempDir(), "log", "p/one", "x"); r.code != 1 {
+		t.Fatalf("code=%d stderr=%q", r.code, r.stderr)
+	}
+}
+
+func TestTopLevelHelpListsTheExitCodes(t *testing.T) {
+	r := runCLI(t, t.TempDir(), "-h")
+	for _, c := range ops.ExitCodes {
+		if line := fmt.Sprintf("  %d  %s: %s", c.Code, c.Name, c.Meaning); !strings.Contains(r.stdout, line) {
+			t.Errorf("help is missing %q", line)
+		}
 	}
 }
 
