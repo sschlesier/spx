@@ -360,7 +360,7 @@ func TestFooterHintsListEditAndCopy(t *testing.T) {
 	if f := footer(start(t, draftSpecs(2), 200, 20)); !strings.Contains(f, "e edit · y/Y copy slug/path") {
 		t.Errorf("wide footer %q lacks the edit and copy hints", f)
 	}
-	if f := footer(start(t, draftSpecs(2), 90, 20)); !strings.Contains(f, "e edit · y/Y copy ·") {
+	if f := footer(start(t, draftSpecs(2), 99, 20)); !strings.Contains(f, "e edit · y/Y copy ·") {
 		t.Errorf("narrow footer %q lacks the edit and copy hints", f)
 	}
 	m := press(t, start(t, draftSpecs(2), 99, 20), "enter")

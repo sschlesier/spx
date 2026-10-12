@@ -30,7 +30,7 @@ const (
 	pollInterval = time.Second            // reload interval while the watcher is down
 )
 
-const footerHelp = "j/k move · g/G top/bottom · ctrl+d/u scroll · d/a/s/x status · / filter · ]/[ deps · e edit · y/Y copy slug/path · p project · q quit"
+const footerHelp = "j/k move · g/G top/bottom · ctrl+d/u scroll · d/a/s/x status · t tree · / filter · ]/[ deps · e edit · y/Y copy slug/path · p project · q quit"
 
 // filterKeys maps each status filter key to the status it lists.
 var filterKeys = map[string]string{"d": "draft", "a": "approved", "s": "started", "x": store.Dropped}
@@ -65,6 +65,7 @@ type Model struct {
 
 	width, height int
 	detailOpen    bool // narrow layout only: detail shown full-width
+	tree          bool // list each spec under its parent
 
 	detail   viewport.Model
 	style    string // glamour standard style name
@@ -316,9 +317,18 @@ func (m Model) WithDone(done []store.Spec) Model {
 	return m
 }
 
-// visible is the listed rows: the scope's project, then the filter's status, or every live
-// status without one, then the specs matching the query, best first.
+// visible is the listed rows: flat, or with each spec under its parent in tree mode.
 func (m Model) visible() []store.Spec {
+	rows := m.flat()
+	if m.tree {
+		rows, _ = treeLayout(rows)
+	}
+	return rows
+}
+
+// flat is the rows the scope's project, the filter's status (or every live status without
+// one) and the query leave, the matches best first.
+func (m Model) flat() []store.Spec {
 	var out []store.Spec
 	for _, s := range m.all {
 		if m.scope != "" && s.Project != m.scope {
@@ -486,6 +496,9 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.pickOff = m.pickScroll(len(m.pickerEntries()))
 		cmd := m.pickIn.Focus()
 		return m, cmd
+	case "t":
+		m.tree = !m.tree
+		m.show(m.visible(), m.cursor)
 	case "/":
 		m.typing = true
 		m.input.SetValue(m.query)
@@ -787,7 +800,7 @@ func (m Model) render() string {
 	if m.detailOpen {
 		help = "esc back · j/k scroll · ]/[ deps · ctrl+d/u scroll · e edit · y/Y copy · q quit"
 	} else if !m.split() {
-		help = "enter open · d/a/s/x · / filter · e edit · y/Y copy · p project · q quit"
+		help = "enter open · d/a/s/x · t tree · / filter · e edit · y/Y copy · p project · q quit"
 	}
 	if m.picking {
 		help = "type to filter · ctrl+j/k move · enter apply · esc clear/cancel · ctrl+c quit"
@@ -797,6 +810,9 @@ func (m Model) render() string {
 		lead = append(lead, "store unreadable: "+m.root)
 	}
 	lead = append(lead, m.scopeLabel())
+	if m.tree {
+		lead = append(lead, "tree")
+	}
 	if m.filter != "" {
 		active = append(active, m.filter)
 	}
@@ -920,6 +936,14 @@ func (m Model) listView() string {
 		return m.emptyMessage()
 	}
 	all := Rows(m.specs)
+	if m.tree {
+		_, nodes := treeLayout(m.specs)
+		prefixes := make([]string, len(nodes))
+		for i, n := range nodes {
+			prefixes[i] = treePrefix(n)
+		}
+		all = rows(m.specs, prefixes)
+	}
 	w := m.listWidth()
 	end := min(len(m.specs), m.offset+m.bodyHeight())
 	rows := make([]string, 0, end-m.offset)
@@ -935,7 +959,10 @@ func (m Model) listView() string {
 
 // Rows formats shown as list rows, one per spec, without the terminal-width cut or any styling.
 // Column widths come from shown.
-func Rows(shown []store.Spec) []string {
+func Rows(shown []store.Spec) []string { return rows(shown, nil) }
+
+// rows is Rows with prefixes[i], when given, starting row i's title.
+func rows(shown []store.Spec, prefixes []string) []string {
 	projectW, typeW := 0, len("feature")
 	projects, types := make([]string, len(shown)), make([]string, len(shown))
 	for i, s := range shown {
@@ -946,9 +973,16 @@ func Rows(shown []store.Spec) []string {
 	rows := make([]string, len(shown))
 	for i, s := range shown {
 		rows[i] = fmt.Sprintf("%-*s  %-8s %-2s  %-*s  %s",
-			projectW, projects[i], s.Status, priority(s.Priority), typeW, orDash(types[i]), printable(s.Title))
+			projectW, projects[i], s.Status, priority(s.Priority), typeW, orDash(types[i]), prefixAt(prefixes, i)+printable(s.Title))
 	}
 	return rows
+}
+
+func prefixAt(prefixes []string, i int) string {
+	if i < len(prefixes) {
+		return prefixes[i]
+	}
+	return ""
 }
 
 // fit pads or cuts s to exactly width x height cells, so panes line up when joined.
