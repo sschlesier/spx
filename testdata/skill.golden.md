@@ -14,7 +14,7 @@ The spec store is a git repository of markdown files. Its root on this machine i
 `<project>/<status>/<slug>.md`: the folder is the status (draft, approved, started, done or dropped), so
 a status change moves the file. The slug comes from the spec's title and never changes. Name a spec
 in a command by its slug, or `<project>/<slug>` from anywhere; a bare slug means the project of the
-current git checkout.
+current git checkout, or any project when the session is not in one.
 
 ## The spec file
 
