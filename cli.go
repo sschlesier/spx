@@ -38,7 +38,7 @@ var commands = []command{
 			"and committed as `<project>: log <slug>`. Done and dropped specs exit 3.",
 		Usage: "usage: spx log <slug> \"<text>\"\n" +
 			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.",
-		Run: runLog,
+		Run: runTextCommand(ops.Log),
 	},
 	{
 		Name:     "new",
@@ -81,6 +81,16 @@ var commands = []command{
 			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.\n" +
 			"<result> is one line and defaults to \"not run\".",
 		Run: runApprove,
+	},
+	{
+		Name:     "send-back",
+		Synopsis: `spx send-back <slug> "<questions>"`,
+		Effect:   "Clear a draft or approved spec's approval, log the open questions, move it to draft/ and commit it.",
+		Rule: "Use when a spec needs the user's answers before it can be approved. Pass the questions as one " +
+			"line; the Log gets `Needs clarification: <questions>`. Started, done and dropped specs exit 3.",
+		Usage: "usage: spx send-back <slug> \"<questions>\"\n" +
+			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.",
+		Run: runTextCommand(ops.SendBack),
 	},
 }
 
@@ -199,21 +209,24 @@ func warnUnresolved(e env, v storeView, project string, data []byte) {
 	}
 }
 
-func runLog(c command, args []string, e env) int {
-	if len(args) != 2 {
-		return usageError(c, e)
+// runTextCommand is the handler of a command that takes a slug and one line of text.
+func runTextCommand(op func(root string, spec store.Spec, text string, now time.Time) error) func(command, []string, env) int {
+	return func(c command, args []string, e env) int {
+		if len(args) != 2 || args[0] == "" {
+			return usageError(c, e)
+		}
+		if err := ops.CheckLogText(args[1]); err != nil {
+			return textArgError(c, e, err)
+		}
+		v, spec, err := resolve(e, args[0])
+		if err != nil {
+			return report(e, err)
+		}
+		if err := op(v.root, spec, args[1], time.Now()); err != nil {
+			return report(e, err)
+		}
+		return ops.CodeOK
 	}
-	if err := ops.CheckLogText(args[1]); err != nil {
-		return textArgError(c, e, err)
-	}
-	v, spec, err := resolve(e, args[0])
-	if err != nil {
-		return report(e, err)
-	}
-	if err := ops.Log(v.root, spec, args[1], time.Now()); err != nil {
-		return report(e, err)
-	}
-	return ops.CodeOK
 }
 
 func runNew(c command, args []string, e env) int {
