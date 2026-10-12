@@ -194,6 +194,89 @@ func TestEditCommandWarnsOnUnresolvedReferences(t *testing.T) {
 	}
 }
 
+func TestSendBackAndDropCommandExitCodes(t *testing.T) {
+	root := gitStore(t)
+	commitFile(t, root, "p/done/old.md", "---\ntitle: Old\n---\n")
+	commitFile(t, root, "p/started/s.md", "---\ntitle: S\n---\n")
+	h := gitOut(t, root, "rev-parse", "HEAD")
+	for _, name := range []string{"send-back", "drop"} {
+		tests := []struct {
+			args []string
+			code int
+			msg  string
+		}{
+			{[]string{name}, 2, "usage: spx " + name},
+			{[]string{name, "p/one"}, 2, "usage: spx " + name},
+			{[]string{name, "", "x"}, 2, "usage: spx " + name},
+			{[]string{name, "p/one", ""}, 2, "usage: spx " + name},
+			{[]string{name, "p/one", "a\nb"}, 2, "one line"},
+			{[]string{name, "p/one", "x", "y"}, 2, "usage: spx " + name},
+			{[]string{name, "p/nope", "x"}, 1, "unknown spec"},
+			{[]string{name, "p/old", "x"}, 3, "is done"},
+		}
+		for _, tt := range tests {
+			r := runCLI(t, t.TempDir(), tt.args...)
+			if r.code != tt.code || !strings.Contains(r.stderr, tt.msg) || r.stdout != "" {
+				t.Errorf("%q: code=%d stderr=%q", tt.args, r.code, r.stderr)
+			}
+		}
+	}
+	if r := runCLI(t, t.TempDir(), "send-back", "p/s", "x"); r.code != 3 || !strings.Contains(r.stderr, "is started") {
+		t.Errorf("send-back started: code=%d stderr=%q", r.code, r.stderr)
+	}
+	if gitOut(t, root, "rev-parse", "HEAD") != h {
+		t.Error("HEAD moved")
+	}
+}
+
+func TestDraftSideWalk(t *testing.T) {
+	root := gitStore(t)
+	start := gitOut(t, root, "rev-parse", "HEAD")
+	date := time.Now().Format("2006-01-02")
+	draft := "---\ntitle: Walk the line\n---\n\nIt walks.\n\n## Log\n\n- " + date + ": Drafted.\n"
+	dir, name := draftFile(t, draft)
+	steps := [][]string{{"new", "p", name}}
+	refined := strings.Replace(draft, "It walks.", "It walks the line.", 1) + "- " + date + ": Refined.\n"
+	if err := os.WriteFile(filepath.Join(dir, "refined.md"), []byte(refined), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	steps = append(steps,
+		[]string{"edit", "p/walk-the-line", "refined.md"},
+		[]string{"approve", "p/walk-the-line", "walks", "--cold-read", "pass"},
+		[]string{"send-back", "p/walk-the-line", "which line?"},
+		[]string{"approve", "p/walk-the-line", "walks the right line"},
+		[]string{"drop", "p/walk-the-line", "no longer needed"},
+	)
+	for _, args := range steps {
+		if r := runCLI(t, dir, args...); r.code != 0 {
+			t.Fatalf("%q: code=%d stderr=%q", args, r.code, r.stderr)
+		}
+	}
+	got := gitOut(t, root, "log", "--format=%s", start+"..HEAD")
+	want := "p: drop walk-the-line\np: approve walk-the-line\np: send back walk-the-line\n" +
+		"p: approve walk-the-line\np: refine walk-the-line\np: draft walk-the-line"
+	if got != want {
+		t.Errorf("commits:\n%s", got)
+	}
+	if status := gitOut(t, root, "status", "--porcelain", "--untracked-files=all"); status != "" {
+		t.Errorf("tree not clean:\n%s", status)
+	}
+	data, err := os.ReadFile(filepath.Join(root, "p", "dropped", "walk-the-line.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	logWant := "## Log\n\n" +
+		"- " + date + ": Drafted.\n" +
+		"- " + date + ": Refined.\n" +
+		"- " + date + ": Approved: Test, " + date + ": walks. Cold read: pass\n" +
+		"- " + date + ": Needs clarification: which line?\n" +
+		"- " + date + ": Approved: Test, " + date + ": walks the right line. Cold read: not run\n" +
+		"- " + date + ": Dropped: no longer needed\n"
+	if !strings.HasSuffix(string(data), logWant) {
+		t.Errorf("file:\n%s", data)
+	}
+}
+
 // approvedField is the approved: line of the spec at rel under root.
 func approvedField(t *testing.T, root, rel string) string {
 	t.Helper()

@@ -92,6 +92,16 @@ var commands = []command{
 			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.",
 		Run: runTextCommand(ops.SendBack),
 	},
+	{
+		Name:     "drop",
+		Synopsis: `spx drop <slug> "<why>"`,
+		Effect:   "Log why a draft, approved or started spec is abandoned, move it to dropped/ and commit it.",
+		Rule: "Use when the user abandons a spec. Pass the reason as one line; the Log gets `Dropped: <why>`. " +
+			"Done and dropped specs exit 3.",
+		Usage: "usage: spx drop <slug> \"<why>\"\n" +
+			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.",
+		Run: runTextCommand(ops.Drop),
+	},
 }
 
 // commandNames are the names in the command table, for handlers that can't refer to it.
