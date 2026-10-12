@@ -48,9 +48,9 @@ Invariants:
   quitting exits 0 and restores the terminal.
 - The CLI is `spx [-d] [-a] [-s] [project]` (`spx --version` alone prints `spx <version>`) and
   the commands `spx log <slug> "<text>"`, `spx new <project> <file>`, `spx edit <slug> <file>`,
-  `spx approve <slug> "<one line>" [--cold-read <result>]`, `spx send-back <slug> "<questions>"`
-  `spx drop <slug> "<why>"` and `spx help [--skill [--body]]`; a command name is not usable as a project name. Exit codes
-  (listed once in `ops.ExitCodes`): 0 success or `-h`/`--help`/`--version`; 1 not found (store,
+  `spx approve <slug> "<one line>" [--cold-read <result>]`, `spx send-back <slug> "<questions>"`,
+  `spx drop <slug> "<why>"` and `spx help [--skill [--body]]`; a command name is not usable as a
+  project name. Exit codes (listed once in `ops.ExitCodes`): 0 success or `-h`/`--help`/`--version`; 1 not found (store,
   project, slug, input file); 2 usage error; 3 wrong status; 4 store conflict (not a git repo,
   not on main, index lock, uncommitted change on a touched path); 5 tool failure (git missing,
   failing or unconfigured). Status flags print the matching specs to stdout instead of starting
