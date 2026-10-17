@@ -105,8 +105,8 @@ var commands = []command{
 		Name:     "start",
 		Synopsis: "spx start <slug> --branch <name>",
 		Effect:   "Start an approved spec: set its status to in-progress, log the branch, move it to started/ and commit it.",
-		Rule: "Run when work on an approved spec begins, with the branch you work on. It first runs the sweep " +
-			"(a gh failure only warns), then needs the spec in approved/ and every `depends-on` in done/ " +
+		Rule: "Run when work on an approved spec begins, with the branch you work on. Once the slug resolves it runs " +
+			"the sweep (a gh failure only warns), then needs the spec in approved/ and every `depends-on` in done/ " +
 			"(exit 3 otherwise). `status:` becomes `in-progress`, the Log gets `Started on branch <name>`, and " +
 			"the spec moves to started/, committed as `<project>: start <slug>`. Run from the project's main " +
 			"checkout or a worktree of it, it also records `<project>/.repo` in the same commit when missing. " +
@@ -438,11 +438,12 @@ func runStart(c command, args []string, e env) int {
 	if err := ops.CheckBranch(branch); err != nil {
 		return textArgError(c, e, err)
 	}
-	v, err := openStore(e)
+	// An unknown slug exits before the sweep, so it has no side effects.
+	v, _, err := resolve(e, pos[0])
 	if err != nil {
 		return report(e, err)
 	}
-	// The sweep runs first so depends-on sees specs whose pull requests just merged.
+	// The sweep runs before the depends-on check so it sees specs whose pull requests just merged.
 	if err := sweep(e, v, "", ops.SweepImplicit); err != nil {
 		return report(e, err)
 	}

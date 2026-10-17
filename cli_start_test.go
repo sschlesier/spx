@@ -214,3 +214,23 @@ func TestStartFromAnotherProjectsCheckoutWritesNoRepo(t *testing.T) {
 		t.Errorf("paths %v", files)
 	}
 }
+
+func TestStartUnknownSlugExitsBeforeTheSweep(t *testing.T) {
+	root := gitStore(t)
+	addAccepted(t, root, "p", "dep", "https://github.com/o/r/pull/merged1")
+	addApproved(t, root, "p", "work", "[dep]")
+	calls := filepath.Join(t.TempDir(), "gh-calls")
+	standIn(t, "gh", "echo called >> "+calls+"\n"+ghScript)
+	head := git(t, root, "rev-parse", "HEAD")
+
+	r := runCLI(t, t.TempDir(), "start", "p/nope", "--branch", "b")
+	if r.code != 1 {
+		t.Fatalf("%+v", r)
+	}
+	if git(t, root, "rev-parse", "HEAD") != head || git(t, root, "status", "--porcelain") != "" {
+		t.Error("store changed")
+	}
+	if _, err := os.Stat(calls); err == nil {
+		t.Error("gh was called")
+	}
+}
