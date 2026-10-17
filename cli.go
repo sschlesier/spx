@@ -378,6 +378,9 @@ func runRepo(c command, args []string, e env) int {
 	} else if project == "" {
 		return usageError(c, e)
 	}
+	if !slices.Contains(v.projects, project) {
+		return report(e, ops.NotFound(fmt.Errorf("repo not found for %s", project)))
+	}
 	home, _ := os.UserHomeDir()
 	path, err := ops.Repo(v.root, project, home)
 	if err != nil {

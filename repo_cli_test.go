@@ -228,3 +228,38 @@ func TestRepoIsNotUsableAsAProjectName(t *testing.T) {
 		t.Errorf("%+v", r)
 	}
 }
+
+func TestRepoIgnoresNonProjectDirectoriesEvenWithAHomeSrcMatch(t *testing.T) {
+	root := gitStore(t)
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	os.MkdirAll(filepath.Join(home, "src", "nope"), 0o755)
+	os.MkdirAll(filepath.Join(root, "empty"), 0o755)
+	for _, name := range []string{"nope", "empty", ".."} {
+		if r := runCLI(t, t.TempDir(), "repo", name); r.code != 1 || r.stdout != "" || !strings.Contains(r.stderr, "repo not found for "+name) {
+			t.Errorf("%s: %+v", name, r)
+		}
+	}
+}
+
+func TestRepoRelativeRecordedLineIsMissing(t *testing.T) {
+	root := gitStore(t)
+	t.Setenv("HOME", t.TempDir())
+	cwd := t.TempDir()
+	os.MkdirAll(filepath.Join(cwd, "rel"), 0o755)
+	os.WriteFile(filepath.Join(root, "p", ".repo"), []byte("rel\n"), 0o644)
+	if r := runCLI(t, cwd, "repo", "p"); r.code != 1 || r.stderr != "spx: repo path missing: rel\n" {
+		t.Errorf("relative: %+v", r)
+	}
+}
+
+func TestRepoSetEmptyPathIsUsage(t *testing.T) {
+	root := gitStore(t)
+	before := gitCount(t, root)
+	if r := runCLI(t, t.TempDir(), "repo", "--set", "p", ""); r.code != 2 {
+		t.Errorf("empty path: %+v", r)
+	}
+	if gitCount(t, root) != before {
+		t.Error("committed")
+	}
+}
