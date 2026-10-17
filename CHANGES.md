@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0
+
+- Add spec lifecycle commands: `spx new`, `edit`, `approve`, `send-back`, `drop`, `log`, `place`, `accept`, `close`, `start`, `amend`, `sweep`
+- Add `spx repo`, `status` and `check` commands, and map each project to its repo
+- Serialize store writes with a store write lock
+- Fix `repo ..` handling
+- Update `spx help --skill` to document the full store guide
+- Show children in tree mode
+- Bump golang.org/x/text and goldmark to fix known vulnerabilities
+
 ## 0.2.0
 
 - Stop showing spec ids: drop the id column and id filtering, and no longer read `id:` from spec files
