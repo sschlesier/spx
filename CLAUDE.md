@@ -3,7 +3,7 @@
 A terminal browser for the spec store (`$AGENT_SPECS_DIR`, or `~/src/specs`): a list of
 specs beside the selected spec's rendered markdown. The UI is read-only; the only writes are by
 the editor you open with `e`, by the store-writing CLI commands (`spx log`, `new`, `edit`,
-`approve`, `send-back`, `drop`, `status`, `check`, `amend`, `repo --set`, `accept`, `close`,
+`approve`, `start`, `send-back`, `drop`, `status`, `check`, `amend`, `repo --set`, `accept`, `close`,
 `sweep`) and by `spx place`, which writes one file into a project repo.
 
 ## Project Structure
@@ -42,12 +42,12 @@ Staleness: Changes under the store show within about a second (fsnotify, 100 ms 
 
 Invariants:
 - spx writes, moves or deletes under the store root only through the CLI commands (`spx log`,
-  `new`, `edit`, `approve`, `send-back`, `drop`, `status`, `check`, `amend`, `repo --set`, `accept`,
+  `new`, `edit`, `approve`, `start`, `send-back`, `drop`, `status`, `check`, `amend`, `repo --set`, `accept`,
   `close`, `sweep`), each of which commits just the paths it touched as `<project>: <verb> <slug>`
   (`<project>: map repo` for `repo --set`, `<project>: done <slug>` for `close`, which `sweep` runs
   for each merged pull request), never stashes or pushes, and restores the tree on failure. The TUI never writes; only an
   editor the user opens with `e` may. `<project>/.repo` (one line: the project's main checkout
-  path, written by `repo --set` and by `new`, which commits it with the draft) is the one
+  path, written by `repo --set` and by `new` and `start`, which commit it with the draft or the start) is the one
   non-spec file spx writes under the store root; it is never listed. The one write outside the
   store root is `spx place <slug> [--dir <repo>]`: it overwrites `<repo>/<ticket folder>/<slug>.md`
   (`tickets/`, or `Ticket folder:` from the repo's AGENTS.md or CLAUDE.md) with the started
@@ -59,7 +59,7 @@ Invariants:
   quitting exits 0 and restores the terminal.
 - The CLI is `spx [-d] [-a] [-s] [project]` (`spx --version` alone prints `spx <version>`) and
   the commands `spx log <slug> "<text>"`, `spx new <project> <file>`, `spx edit <slug> <file>`,
-  `spx approve <slug> "<one line>" [--cold-read <result>]`, `spx send-back <slug> "<questions>"`,
+  `spx approve <slug> "<one line>" [--cold-read <result>]`, `spx start <slug> --branch <name>`, `spx send-back <slug> "<questions>"`,
   `spx drop <slug> "<why>"`, `spx status <slug> <in-progress|in-review|done> ["<note>"]`,
   `spx check <slug> <n>... [--uncheck]`, `spx amend <slug> <file> "<reason>"`, `spx repo [project]`,
   `spx repo --set <project> <path>`, `spx place <slug> [--dir <repo>]`,
@@ -71,7 +71,8 @@ Invariants:
   failing or unconfigured). Status flags print the matching specs to stdout instead of starting
   the UI. Usage paths and `--version` never read the store. The only processes spx starts are
   `git rev-parse` at startup, to scope to the current repo's project; `git` in the store root
-  for the commands; `gh pr view <url> --json state` (read-only) for `spx sweep`; the editor on
+  for the commands; `gh pr view <url> --json state` (read-only) for `spx sweep`, which `spx start` also
+  runs first (a gh failure only warns there); the editor on
   `e`; and one clipboard tool (pbcopy, wl-copy or xclip) on `y`/`Y`. In a project repo a command
   runs only read-only `git rev-parse` (`place` and `accept` to find the checkout's top-level),
   never a git command that writes; `place --dir` runs no git in the repo. `accept` also reads the

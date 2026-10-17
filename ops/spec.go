@@ -213,6 +213,12 @@ func orList(items []string) string {
 // transition rewrites spec with change, moves it to the status folder to when that differs from
 // its own, and commits the touched paths as msg. On any failure the tree and HEAD are as before.
 func transition(root string, spec store.Spec, to, msg string, change func([]byte) ([]byte, error)) error {
+	return transitionWith(root, spec, to, msg, "", "", change)
+}
+
+// transitionWith is transition that also creates extraRel (relative to the root) with extra in the
+// same commit, when extraRel is not empty; the caller checked that it doesn't exist.
+func transitionWith(root string, spec store.Spec, to, msg, extraRel, extra string, change func([]byte) ([]byte, error)) error {
 	s := Store{Root: root}
 	defer s.lock()()
 	rel, err := s.relPath(spec.Path)
@@ -232,10 +238,18 @@ func transition(root string, spec store.Spec, to, msg string, change func([]byte
 		}
 		paths = append(paths, relDest)
 	}
+	if extraRel != "" {
+		paths = append(paths, extraRel)
+	}
 	if err := s.Check(paths...); err != nil {
 		return err
 	}
 	return s.Apply(msg, paths, func() error {
+		if extraRel != "" {
+			if err := os.WriteFile(filepath.Join(root, extraRel), []byte(extra), 0o644); err != nil {
+				return fail(CodeTool, "writing %s: %v", extraRel, err)
+			}
+		}
 		data, err := os.ReadFile(spec.Path)
 		if err != nil {
 			return fail(CodeTool, "reading %s: %v", rel, err)
