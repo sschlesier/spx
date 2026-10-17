@@ -103,6 +103,19 @@ var commands = []command{
 			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.",
 		Run: runTextCommand(ops.Drop),
 	},
+	{
+		Name:     "status",
+		Synopsis: `spx status <slug> <in-progress|in-review|done> ["<note>"]`,
+		Effect:   "Set a started spec's status and log it, then commit it.",
+		Rule: "Use any time while the spec is started, to say where the work is; the store copy is the live " +
+			"one, so run it from wherever the session is. The Log gets `Status: <value>`, followed by `: <note>` " +
+			"when you pass a note. Any other value, or a spec that is not started, exits 3. Any of the three " +
+			"values can follow any other. `status done` with unticked acceptance criteria still sets the " +
+			"status and lists them on stderr; tick them first, or leave one open with a Log note.",
+		Usage: "usage: spx status <slug> <in-progress|in-review|done> [\"<note>\"]\n" +
+			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.",
+		Run: runStatus,
+	},
 }
 
 // commandNames are the names in the command table, for handlers that can't refer to it.
