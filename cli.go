@@ -102,6 +102,21 @@ var commands = []command{
 		Run: runApprove,
 	},
 	{
+		Name:     "start",
+		Synopsis: "spx start <slug> --branch <name>",
+		Effect:   "Start an approved spec: set its status to in-progress, log the branch, move it to started/ and commit it.",
+		Rule: "Run when work on an approved spec begins, with the branch you work on. It first runs the sweep " +
+			"(a gh failure only warns), then needs the spec in approved/ and every `depends-on` in done/ " +
+			"(exit 3 otherwise). `status:` becomes `in-progress`, the Log gets `Started on branch <name>`, and " +
+			"the spec moves to started/, committed as `<project>: start <slug>`. Run from the project's main " +
+			"checkout or a worktree of it, it also records `<project>/.repo` in the same commit when missing. " +
+			"The repo gets no copy yet: `spx place` writes it when the PR opens.",
+		Usage: "usage: spx start <slug> --branch <name>\n" +
+			"<slug> is an approved spec in the current checkout's project, or <project>/<slug> from anywhere.\n" +
+			"<name> is the work branch, one word.",
+		Run: runStart,
+	},
+	{
 		Name:     "send-back",
 		Synopsis: `spx send-back <slug> "<questions>"`,
 		Effect:   "Clear a draft or approved spec's approval, log the open questions, move it to draft/ and commit it.",
@@ -409,6 +424,37 @@ func runRepoSet(e env, project, path string) int {
 		return report(e, ops.NotFound(fmt.Errorf("not a directory: %s", path)))
 	}
 	if err := ops.SetRepo(v.root, project, path); err != nil {
+		return report(e, err)
+	}
+	return ops.CodeOK
+}
+
+func runStart(c command, args []string, e env) int {
+	pos, flags, ok := splitFlags(args, "--branch")
+	if !ok || len(pos) != 1 || pos[0] == "" || flags["--branch"] == "" {
+		return usageError(c, e)
+	}
+	branch := flags["--branch"]
+	if err := ops.CheckBranch(branch); err != nil {
+		return textArgError(c, e, err)
+	}
+	v, err := openStore(e)
+	if err != nil {
+		return report(e, err)
+	}
+	// The sweep runs first so depends-on sees specs whose pull requests just merged.
+	if err := sweep(e, v, "", ops.SweepImplicit); err != nil {
+		return report(e, err)
+	}
+	v, spec, err := resolve(e, pos[0])
+	if err != nil {
+		return report(e, err)
+	}
+	checkout := ""
+	if main, ok := mainCheckout(e.dir); ok && filepath.Base(main) == spec.Project {
+		checkout = main
+	}
+	if err := ops.Start(v.root, v.all, spec, branch, checkout, time.Now()); err != nil {
 		return report(e, err)
 	}
 	return ops.CodeOK
