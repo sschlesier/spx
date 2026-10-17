@@ -38,6 +38,8 @@ draft → approved → started → done, or dropped from any live status. The st
 - `spx edit`: a draft or approved spec is refined. Decided by the agent.
 - `spx approve`: draft → approved. Decided by the user's explicit yes.
 - `spx send-back`: a spec that needs the user's answers goes back to draft/. Decided by the agent.
+- `spx accept`: started → done: the user accepts the work. Decided by the user's explicit yes.
+- `spx close`: the accepted, merged spec is moved to done/. Decided by the agent.
 - `spx drop`: an abandoned spec moves to dropped/. Decided by the user's explicit yes.
 
 ## Rules
@@ -55,6 +57,10 @@ draft → approved → started → done, or dropped from any live status. The st
 - `spx status`: Use any time while the spec is started, to say where the work is; the store copy is the live one, so run it from wherever the session is. The Log gets `Status: <value>`, followed by `: <note>` when you pass a note. Any other value, or a spec that is not started, exits 3. Any of the three values can follow any other. `status done` with unticked acceptance criteria still sets the status and lists them on stderr; tick them first with `spx check`, or leave one open with a Log note.
 - `spx check`: Use as each acceptance criterion is met, any time while the spec is started; the numbers are 1-based positions in the `## Acceptance criteria` list. Only top-level items directly under that heading count; nested bullets, fenced code and other sections are ignored. A number out of range exits 3 and changes nothing. Naming criteria already in the wanted state commits nothing.
 - `spx amend`: Run only after the user said yes to changing the Outcome, criteria, Design or Boundaries of a started spec; spx records the change, it never decides one. Edit a copy outside the store and pass it here with the reason as one line; the Log gets `Amended: <reason>`. The file is the whole spec with a usable `title:` (exit 2 otherwise). Keep every existing Log line unchanged and in order, and leave `approved`, `status`, `accepted`, `pr` and `path` as stored, or it exits 3. A spec that is not started exits 3. Unresolved `depends-on` or `parent` slugs warn on stderr.
+- `spx place`: Run whenever the branch needs the spec's current text: when the PR opens, after ticking criteria, and last, after the spec's status is set to done. It writes the started spec as it is now (status, ticked criteria and Log included) to `<repo>/<ticket folder>/<slug>.md` and prints that path; you commit and push it, `spx place` runs no git. The repo is `--dir`, else the git checkout (or worktree) you run it in when its project is the spec's; anything else exits 3 and names `--dir`. The ticket folder is `tickets/`, or the `Ticket folder:` line of the repo's AGENTS.md or CLAUDE.md. Only started specs (exit 3 otherwise). It works from inside a worktree.
+- `spx accept`: Run only after the user said yes to the finished work, and after the spec's status is done and its final `spx place` is committed and pushed. The Log gets `Accepted: <git user.name>, <date>, round <n>: <note>` (round defaults to 1) and the frontmatter gets `pr:` and `path:`. A spec that is not `done`, or already accepted, exits 3. When the repo copy resolves from the current checkout and differs from the store copy, it exits 3: run `spx place` again. When no repo resolves it warns and records `tickets/<slug>.md`. An unset git user.name exits 5.
+- `spx close`: Normally not run by hand: `spx sweep` does it after the PR merges. The receipt keeps `title`, `type`, `priority`, `depends-on`, `parent`, `approved`, `accepted`, `pr`, `path` and the Outcome paragraph, and drops `status`, any `id`, the other sections and the Log. Exits 3 without an `Accepted:` Log entry, a `pr:` and a `path:`.
+- `spx sweep`: Run before listing specs or checking readiness, and after a merge: it asks `gh pr view <url> --json state` for each started spec with a `pr:` and runs `close` on MERGED ones, printing `closed <project>/<slug>`. A CLOSED pull request is reported on stderr and left alone. A gh failure exits 5. Without a project it covers every project.
 - `spx help`: Run `spx help --skill` at the start of any work on the store: it describes exactly the installed spx. `--body` leaves out the frontmatter, for a skill that injects the guide into its own text. It never reads the store.
 
 ## Commands
@@ -69,6 +75,10 @@ draft → approved → started → done, or dropped from any live status. The st
 - `spx status <slug> <in-progress|in-review|done> ["<note>"]`: Set a started spec's status and log it, then commit it.
 - `spx check <slug> <n>... [--uncheck]`: Tick (or with --uncheck, untick) acceptance criteria of a started spec by number and commit it.
 - `spx amend <slug> <file> "<reason>"`: Replace a started spec's content with <file>, log why, and commit it.
+- `spx place <slug> [--dir <repo>]`: Write a started spec's current text to the repo's ticket folder, overwriting its copy there.
+- `spx accept <slug> --pr <url> "<note>" [--round <n>]`: Record the user's acceptance of a started spec whose status is done, with its PR and repo path, and commit it.
+- `spx close <slug>`: Move an accepted started spec to done/ trimmed to a receipt and commit it.
+- `spx sweep [project]`: Close every started spec whose pull request has merged, and print one line per spec closed.
 - `spx help [--skill [--body]]`: Print the top-level help, or with --skill a guide to the spec store as an Agent Skills SKILL.md.
 
 ## Refusals and exit codes
