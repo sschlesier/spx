@@ -71,10 +71,33 @@ func Place(spec store.Spec, repo string) (string, error) {
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return "", fail(CodeTool, "creating %s: %v", filepath.Dir(dest), err)
 	}
+	if err := insideRepo(repo, dest); err != nil {
+		return "", err
+	}
 	if err := os.WriteFile(dest, data, 0o644); err != nil {
 		return "", fail(CodeTool, "writing %s: %v", dest, err)
 	}
 	return dest, nil
+}
+
+// insideRepo refuses a destination that a symlink would send outside repo: the folder it sits
+// in resolving elsewhere, or the file itself being a symlink.
+func insideRepo(repo, dest string) error {
+	root, err := filepath.EvalSymlinks(repo)
+	if err != nil {
+		return fail(CodeTool, "resolving %s: %v", repo, err)
+	}
+	dir, err := filepath.EvalSymlinks(filepath.Dir(dest))
+	if err != nil {
+		return fail(CodeTool, "resolving %s: %v", filepath.Dir(dest), err)
+	}
+	if rel, err := filepath.Rel(root, dir); err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return fail(CodeWrongStatus, "%s resolves outside the repo %s through a symlink", filepath.Dir(dest), repo)
+	}
+	if fi, err := os.Lstat(dest); err == nil && fi.Mode()&os.ModeSymlink != 0 {
+		return fail(CodeWrongStatus, "%s is a symlink; place will not write through it", dest)
+	}
+	return nil
 }
 
 // repoCopyMatches reports whether the repo's copy of the spec holds exactly data. A missing
