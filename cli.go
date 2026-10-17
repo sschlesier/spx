@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -52,6 +53,23 @@ var commands = []command{
 		Usage: "usage: spx new <project> <file>\n" +
 			"<file> is the finished draft, with a title: in its frontmatter. Prints the new spec's slug.",
 		Run: runNew,
+	},
+	{
+		Name:     "repo",
+		Synopsis: "spx repo [project] | spx repo --set <project> <path>",
+		Effect:   "Print the path of a project's main checkout, or with --set record it in the store and commit it.",
+		Rule: "Use to find the directory to start work in instead of guessing `~/src/<project>`. Without a " +
+			"project it uses the current checkout's project (exit 2 outside one, or when the store lacks it). " +
+			"The path is the one recorded in `<project>/.repo`, else `~/src/<project>` when that exists; " +
+			"otherwise it exits 1 with `repo not found for <project>`, or `repo path missing: <path>` when " +
+			"the recorded directory is gone. `spx repo --set <project> <path>` records an existing directory " +
+			"(`~` and relative paths are resolved), replacing a stale one, and commits `<project>: map repo`; " +
+			"`new` records it automatically from the project's main checkout.",
+		Usage: "usage: spx repo [project]\n" +
+			"       spx repo --set <project> <path>\n" +
+			"Prints the project's main checkout; without a project, the current checkout's project.\n" +
+			"--set records <path>, an existing directory, as the project's main checkout.",
+		Run: runRepo,
 	},
 	{
 		Name:     "edit",
@@ -302,7 +320,11 @@ func runNew(c command, args []string, e env) int {
 	if err != nil {
 		return report(e, err)
 	}
-	slug, err := ops.New(v.root, project, data)
+	checkout := ""
+	if main, ok := mainCheckout(e.dir); ok && filepath.Base(main) == project {
+		checkout = main
+	}
+	slug, err := ops.NewRegistering(v.root, project, data, checkout)
 	if err != nil {
 		return report(e, err)
 	}
@@ -372,6 +394,61 @@ func runApprove(c command, args []string, e env) int {
 		return report(e, err)
 	}
 	if err := ops.Approve(v.root, spec, pos[1], coldRead, time.Now()); err != nil {
+		return report(e, err)
+	}
+	return ops.CodeOK
+}
+
+func runRepo(c command, args []string, e env) int {
+	if len(args) > 0 && args[0] == "--set" {
+		if len(args) != 3 || args[1] == "" || args[2] == "" {
+			return usageError(c, e)
+		}
+		return runRepoSet(e, args[1], args[2])
+	}
+	if len(args) > 1 || (len(args) == 1 && (args[0] == "" || strings.HasPrefix(args[0], "-"))) {
+		return usageError(c, e)
+	}
+	v, err := openStore(e)
+	if err != nil {
+		return report(e, err)
+	}
+	project := v.scope
+	if len(args) == 1 {
+		project = args[0]
+	} else if project == "" {
+		return usageError(c, e)
+	}
+	if !slices.Contains(v.projects, project) {
+		return report(e, ops.NotFound(fmt.Errorf("repo not found for %s", project)))
+	}
+	home, _ := os.UserHomeDir()
+	path, err := ops.Repo(v.root, project, home)
+	if err != nil {
+		return report(e, err)
+	}
+	fmt.Fprintln(e.stdout, path)
+	return ops.CodeOK
+}
+
+func runRepoSet(e env, project, path string) int {
+	v, err := openStore(e)
+	if err != nil {
+		return report(e, err)
+	}
+	if !slices.Contains(v.projects, project) {
+		return report(e, ops.NotFound(fmt.Errorf("no project %s in the store", project)))
+	}
+	home, _ := os.UserHomeDir()
+	path = ops.ExpandHome(path, home)
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(e.dir, path)
+	}
+	path = filepath.Clean(path)
+	if info, err := os.Stat(path); err != nil || !info.IsDir() {
+		return report(e, ops.NotFound(fmt.Errorf("not a directory: %s", path)))
+	}
+	if err := ops.SetRepo(v.root, project, path); err != nil {
 		return report(e, err)
 	}
 	return ops.CodeOK

@@ -67,6 +67,12 @@ func CheckDraft(data []byte) (string, error) {
 // commits it as "<project>: draft <slug>". It returns the slug. The project folder is created
 // when missing; the caller checks its name.
 func New(root, project string, data []byte) (string, error) {
+	return NewRegistering(root, project, data, "")
+}
+
+// NewRegistering is New that also writes <project>/.repo with repo in the same commit, when
+// repo is not empty and the project has no .repo yet. An existing .repo is never overwritten.
+func NewRegistering(root, project string, data []byte, repo string) (string, error) {
 	base, err := CheckDraft(data)
 	if err != nil {
 		return "", err
@@ -76,12 +82,25 @@ func New(root, project string, data []byte) (string, error) {
 		slug = fmt.Sprintf("%s-%d", base, n)
 	}
 	rel := filepath.Join(project, "draft", slug+".md")
+	paths := []string{rel}
+	repoRel := filepath.Join(project, RepoFile)
+	if _, statErr := os.Lstat(filepath.Join(root, repoRel)); repo != "" && os.IsNotExist(statErr) {
+		paths = append(paths, repoRel)
+	}
 	s := Store{Root: root}
-	if err := s.Check(rel); err != nil {
+	if err := s.Check(paths...); err != nil {
 		return "", err
 	}
 	path := filepath.Join(root, rel)
-	err = s.Apply(project+": draft "+slug, []string{rel}, func() error {
+	err = s.Apply(project+": draft "+slug, paths, func() error {
+		if len(paths) > 1 {
+			if err := os.MkdirAll(filepath.Join(root, project), 0o755); err != nil {
+				return fail(CodeTool, "creating %s: %v", project, err)
+			}
+			if err := os.WriteFile(filepath.Join(root, repoRel), []byte(repo+"\n"), 0o644); err != nil {
+				return fail(CodeTool, "writing %s: %v", repoRel, err)
+			}
+		}
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			return fail(CodeTool, "creating %s: %v", filepath.Dir(rel), err)
 		}
