@@ -4,7 +4,7 @@ type: chore
 priority: 2
 depends-on: []
 approved: "Scott Schlesier, 2026-10-17: Bump x/text and goldmark to the fixed versions. Cold read: skipped"
-status: in-progress
+status: in-review
 ---
 
 `govulncheck ./...` reports no reachable vulnerabilities in spx, after `golang.org/x/text` and `github.com/yuin/goldmark` are raised to their fixed versions.
@@ -24,11 +24,11 @@ Out of scope:
 
 ## Acceptance criteria
 
-- [ ] `go.mod` requires `golang.org/x/text` at v0.39.0 or later and `github.com/yuin/goldmark` at v1.7.17 or later.
-- [ ] `govulncheck ./...` no longer lists GO-2026-5970 or GO-2026-5320.
-- [ ] `go mod tidy` leaves `go.mod` and `go.sum` unchanged.
-- [ ] `go vet ./...` and `go test ./...` pass.
-- [ ] `go run .` against the real store renders a spec's markdown (headings, links, lists, code blocks) as before, and the list, filter and editor keys still work.
+- [x] `go.mod` requires `golang.org/x/text` at v0.39.0 or later and `github.com/yuin/goldmark` at v1.7.17 or later.
+- [x] `govulncheck ./...` no longer lists GO-2026-5970 or GO-2026-5320.
+- [x] `go mod tidy` leaves `go.mod` and `go.sum` unchanged.
+- [x] `go vet ./...` and `go test ./...` pass.
+- [x] `go run .` against the real store renders a spec's markdown (headings, links, lists, code blocks) as before, and the list, filter and editor keys still work.
 
 ## Verification
 
@@ -56,3 +56,6 @@ Stop and ask if: the bump raises the `go` directive in `go.mod`, or forces a new
 - 2026-10-12: Drafted from a `govulncheck ./...` run.
 - 2026-10-17: Approved. Scott Schlesier, 2026-10-17: Bump x/text and goldmark to the fixed versions. Cold read: skipped
 - 2026-10-17: Started on branch fix-vulnerabilities-x-text-goldmark
+- 2026-10-17: Bumped x/text v0.24.0 => v0.39.0 and goldmark v1.7.8 => v1.7.17; `go get` and `go mod tidy` changed no other module. `govulncheck ./...` before: "Your code is affected by 2 vulnerabilities from 2 modules"; after: "No vulnerabilities found". `go vet` and `go test ./...` pass. Rendering a sample with headings, emphasis, links, nested and ordered lists, a code block, a quote, a table and raw HTML through `glamour` gives byte-identical output under the old and new `go.mod`.
+- 2026-10-17: Assumption: the list, filter and editor keys are covered by the existing `ui` tests, which pass; no interactive session was run.
+- 2026-10-17: Review started
