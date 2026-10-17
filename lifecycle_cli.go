@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"spx/ops"
@@ -31,6 +32,45 @@ func runStatus(c command, args []string, e env) int {
 		for _, o := range open {
 			fmt.Fprintf(e.stderr, "  - [ ] %s\n", o)
 		}
+	}
+	return ops.CodeOK
+}
+
+func runCheck(c command, args []string, e env) int {
+	var pos []string
+	uncheck := false
+	for _, a := range args {
+		if a == "--uncheck" {
+			if uncheck {
+				return usageError(c, e)
+			}
+			uncheck = true
+		} else {
+			pos = append(pos, a)
+		}
+	}
+	if len(pos) < 2 || pos[0] == "" {
+		return usageError(c, e)
+	}
+	var indexes []int
+	for _, a := range pos[1:] {
+		n, err := strconv.Atoi(a)
+		if err != nil {
+			fmt.Fprintf(e.stderr, "spx: %q is not a criterion number\n", a)
+			return usageError(c, e)
+		}
+		indexes = append(indexes, n)
+	}
+	v, spec, err := resolve(e, pos[0])
+	if err != nil {
+		return report(e, err)
+	}
+	res, err := ops.Check(v.root, spec, indexes, uncheck)
+	if err != nil {
+		return report(e, err)
+	}
+	if res.Unchanged {
+		fmt.Fprintf(e.stderr, "spx: no change to %s/%s; nothing committed\n", spec.Project, spec.Slug)
 	}
 	return ops.CodeOK
 }

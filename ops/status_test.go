@@ -144,3 +144,61 @@ func TestStatusRefusalsLeaveTheStoreAlone(t *testing.T) {
 	wantCode(t, err, CodeUsage)
 	untouched(t, root, headBefore)
 }
+
+func TestCheckTicksOnlyTopLevelCriteria(t *testing.T) {
+	root := startedStore(t)
+	if _, err := Check(root, specAt(root, "started", "s"), []int{1, 3}, false); err != nil {
+		t.Fatal(err)
+	}
+	want := strings.Replace(startedSpec, "- [ ] first", "- [x] first", 1)
+	want = strings.Replace(want, "- [ ] third", "- [x] third", 1)
+	if got := readSpec(t, root); got != want {
+		t.Fatalf("file:\n%s", got)
+	}
+	onlyCommitted(t, root, "p: check s")
+}
+
+func TestCheckUncheck(t *testing.T) {
+	root := startedStore(t)
+	if _, err := Check(root, specAt(root, "started", "s"), []int{2}, true); err != nil {
+		t.Fatal(err)
+	}
+	if want := strings.Replace(startedSpec, "- [x] second", "- [ ] second", 1); readSpec(t, root) != want {
+		t.Fatalf("file:\n%s", readSpec(t, root))
+	}
+}
+
+func TestCheckCountsOnlyTheListNotNestedFencedOrOtherSections(t *testing.T) {
+	root := startedStore(t)
+	// The list has 3 criteria; the nested, fenced and Verification items are the 4th to 6th "[ ]" lines.
+	headBefore := head(t, root)
+	for _, n := range []int{0, -1, 4, 5, 6} {
+		_, err := Check(root, specAt(root, "started", "s"), []int{n}, false)
+		wantCode(t, err, CodeWrongStatus)
+	}
+	untouched(t, root, headBefore)
+}
+
+func TestCheckOutOfRangeAmongValidIndexesChangesNothing(t *testing.T) {
+	root := startedStore(t)
+	headBefore := head(t, root)
+	_, err := Check(root, specAt(root, "started", "s"), []int{1, 9}, false)
+	wantCode(t, err, CodeWrongStatus)
+	untouched(t, root, headBefore)
+}
+
+func TestCheckNoChangeCommitsNothing(t *testing.T) {
+	root := startedStore(t)
+	headBefore := head(t, root)
+	res, err := Check(root, specAt(root, "started", "s"), []int{2}, false)
+	if err != nil || !res.Unchanged {
+		t.Fatalf("res=%+v err=%v", res, err)
+	}
+	untouched(t, root, headBefore)
+}
+
+func TestCheckNeedsAStartedSpec(t *testing.T) {
+	root := startedStore(t)
+	_, err := Check(root, specAt(root, "draft", "one"), []int{1}, false)
+	wantCode(t, err, CodeWrongStatus)
+}

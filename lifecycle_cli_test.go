@@ -99,3 +99,36 @@ func TestStatusCommandRefusals(t *testing.T) {
 		t.Error("a refused command changed the store")
 	}
 }
+
+func TestCheckCommand(t *testing.T) {
+	root := startedStore(t)
+	r := runCLI(t, t.TempDir(), "check", "p/s", "1", "--uncheck", "2")
+	if r.code != 0 || r.stdout != "" || r.stderr != "" {
+		t.Fatalf("code=%d stdout=%q stderr=%q", r.code, r.stdout, r.stderr)
+	}
+	if got := readStarted(t, root); !strings.Contains(got, "- [ ] first\n- [ ] second\n- [ ] third\n") {
+		t.Errorf("file:\n%s", got)
+	}
+	if msg := gitOut(t, root, "log", "-1", "--format=%s"); msg != "p: check s" {
+		t.Errorf("message = %q", msg)
+	}
+	before := gitOut(t, root, "rev-parse", "HEAD")
+	if r := runCLI(t, t.TempDir(), "check", "p/s", "1", "--uncheck"); r.code != 0 || !strings.Contains(r.stderr, "nothing committed") {
+		t.Errorf("no-op: code=%d stderr=%q", r.code, r.stderr)
+	}
+	if r := runCLI(t, t.TempDir(), "check", "p/s", "7"); r.code != 3 || !strings.Contains(r.stderr, "no criterion 7") {
+		t.Errorf("range: code=%d stderr=%q", r.code, r.stderr)
+	}
+	if gitOut(t, root, "rev-parse", "HEAD") != before {
+		t.Error("HEAD moved")
+	}
+}
+
+func TestCheckCommandUsage(t *testing.T) {
+	startedStore(t)
+	for _, args := range [][]string{{"check"}, {"check", "p/s"}, {"check", "p/s", "--uncheck"}, {"check", "p/s", "x"}, {"check", "p/s", "1", "--uncheck", "--uncheck"}} {
+		if r := runCLI(t, t.TempDir(), args...); r.code != 2 || !strings.Contains(r.stderr, "usage: spx check") {
+			t.Errorf("%q: code=%d stderr=%q", args, r.code, r.stderr)
+		}
+	}
+}

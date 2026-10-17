@@ -111,10 +111,23 @@ var commands = []command{
 			"one, so run it from wherever the session is. The Log gets `Status: <value>`, followed by `: <note>` " +
 			"when you pass a note. Any other value, or a spec that is not started, exits 3. Any of the three " +
 			"values can follow any other. `status done` with unticked acceptance criteria still sets the " +
-			"status and lists them on stderr; tick them first, or leave one open with a Log note.",
+			"status and lists them on stderr; tick them first with `spx check`, or leave one open with a Log note.",
 		Usage: "usage: spx status <slug> <in-progress|in-review|done> [\"<note>\"]\n" +
 			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.",
 		Run: runStatus,
+	},
+	{
+		Name:     "check",
+		Synopsis: "spx check <slug> <n>... [--uncheck]",
+		Effect:   "Tick (or with --uncheck, untick) acceptance criteria of a started spec by number and commit it.",
+		Rule: "Use as each acceptance criterion is met, any time while the spec is started; the numbers are " +
+			"1-based positions in the `## Acceptance criteria` list. Only top-level items directly under that " +
+			"heading count; nested bullets, fenced code and other sections are ignored. A number out of range " +
+			"exits 3 and changes nothing. Naming criteria already in the wanted state commits nothing.",
+		Usage: "usage: spx check <slug> <n>... [--uncheck]\n" +
+			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.\n" +
+			"<n> is the 1-based position of a criterion in the Acceptance criteria list.",
+		Run: runCheck,
 	},
 }
 
