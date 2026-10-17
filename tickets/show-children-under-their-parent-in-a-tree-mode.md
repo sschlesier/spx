@@ -5,7 +5,7 @@ priority: 3
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-10-12: Tree mode grouped by parent:, reviewed against the code. Cold read: not run"
-status: in-review
+status: done
 ---
 
 `t` toggles a tree mode in the list that shows each spec indented under the spec named by its `parent:` field, so an epic and its children read as one group.
@@ -22,16 +22,16 @@ Out of scope:
 
 ## Acceptance criteria
 
-- [ ] `t` in the list toggles tree mode; the list starts with it off, and with it off the list is exactly as today. `t` does nothing while the query input or project popup has the keys.
-- [ ] In tree mode a spec whose `parent:` resolves to a spec in the visible rows appears directly under that parent, indented two cells per level, with a branch glyph (`├─` for a non-last child, `└─` for the last) and a `│ ` guide in the column of each ancestor that has more children below (a blank column for a last one). Children keep the order they have in the flat list. Nesting works to any depth.
-- [ ] A spec with no `parent:`, or whose parent is not in the visible rows (another status or project filtered out, hidden by the query, dropped, in `done/`, or missing), stays at the top level without indent, so nothing disappears.
-- [ ] `parent:` is a bare slug, naming a spec in the child's own project, or `<project>/<slug>`, naming one in that project. (`depends-on` resolves within the project only; the cross-project form is new here, as the store format defines it for `parent`.)
-- [ ] Each spec is shown once. A parent cycle, or a spec naming itself, shows its members at the top level.
-- [ ] The project scope, the `d`/`a`/`s`/`x` status filter and the `/` query apply as in the flat list; tree mode only re-orders and indents the rows they leave. Under a query, a child whose parent doesn't match is a top-level row.
-- [ ] Moving the cursor, `enter`, the detail pane, `e`, `y`/`Y` and `]`/`[` act on the selected spec as in the flat list, whatever its indent.
-- [ ] Toggling `t` and reloading the store keep the same spec selected, by project and slug.
-- [ ] Rows stay aligned: the indent and glyph sit at the start of the title column, and the other columns are unchanged. A row too long for the pane is cut with `…` as today.
-- [ ] The footer help lists `t tree` in the list view, and while tree mode is on the footer's lead segment shows `tree`.
+- [x] `t` in the list toggles tree mode; the list starts with it off, and with it off the list is exactly as today. `t` does nothing while the query input or project popup has the keys.
+- [x] In tree mode a spec whose `parent:` resolves to a spec in the visible rows appears directly under that parent, indented two cells per level, with a branch glyph (`├─` for a non-last child, `└─` for the last) and a `│ ` guide in the column of each ancestor that has more children below (a blank column for a last one). Children keep the order they have in the flat list. Nesting works to any depth.
+- [x] A spec with no `parent:`, or whose parent is not in the visible rows (another status or project filtered out, hidden by the query, dropped, in `done/`, or missing), stays at the top level without indent, so nothing disappears.
+- [x] `parent:` is a bare slug, naming a spec in the child's own project, or `<project>/<slug>`, naming one in that project. (`depends-on` resolves within the project only; the cross-project form is new here, as the store format defines it for `parent`.)
+- [x] Each spec is shown once. A parent cycle, or a spec naming itself, shows its members at the top level.
+- [x] The project scope, the `d`/`a`/`s`/`x` status filter and the `/` query apply as in the flat list; tree mode only re-orders and indents the rows they leave. Under a query, a child whose parent doesn't match is a top-level row.
+- [x] Moving the cursor, `enter`, the detail pane, `e`, `y`/`Y` and `]`/`[` act on the selected spec as in the flat list, whatever its indent.
+- [x] Toggling `t` and reloading the store keep the same spec selected, by project and slug.
+- [x] Rows stay aligned: the indent and glyph sit at the start of the title column, and the other columns are unchanged. A row too long for the pane is cut with `…` as today.
+- [x] The footer help lists `t tree` in the list view, and while tree mode is on the footer's lead segment shows `tree`.
 
 ## Verification
 
@@ -69,3 +69,5 @@ Don't touch: any write path, the flat list's behaviour with `t` off.
 - 2026-10-12: Dismissed: the `seen` guard in `walk` is unreachable after cycle removal and kept as a defensive guard; the duplicate project/slug guard is an equivalent mutant (the store holds no duplicates).
 - 2026-10-12: Needs fixes (round 1): 1. Draw `│ ` guides under non-last ancestors (Scott Schlesier chose this over keeping bare indent; criterion 2 changed to say so). 2. Run the manual step in a real terminal.
 - 2026-10-12: Round 1 fixes: 1.1 guides added and tested; 1.2 manual run done in tmux against a scratch store (tree, grandchild guides, cross-project parent, `/` on a child, `d` then `a`, `t` off): rendering and footer as the criteria say; `git -C ~/src/specs status` clean.
+- 2026-10-17: Decisions (round 2): the `t tree` footer hint may push `e edit · y/Y copy` out below about 99 columns (accepted); a `parent:` with spaces around the slash or an empty half stays top level, untrimmed (accepted).
+- 2026-10-17: Done: Reviewed round 2: all 10 criteria verified by tests and mutation, plus a tmux run against a scratch store; no open decisions or unproven risks left.
