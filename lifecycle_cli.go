@@ -74,3 +74,30 @@ func runCheck(c command, args []string, e env) int {
 	}
 	return ops.CodeOK
 }
+
+func runAmend(c command, args []string, e env) int {
+	if len(args) != 3 || args[0] == "" || args[1] == "" {
+		return usageError(c, e)
+	}
+	if err := ops.CheckLogText(args[2]); err != nil {
+		return textArgError(c, e, err)
+	}
+	v, spec, err := resolve(e, args[0])
+	if err != nil {
+		return report(e, err)
+	}
+	data, err := ops.ReadInput(inputPath(e, args[1]))
+	if err != nil {
+		return report(e, err)
+	}
+	res, err := ops.Amend(v.root, spec, data, args[2], time.Now())
+	if err != nil {
+		return report(e, err)
+	}
+	if res.Unchanged {
+		fmt.Fprintf(e.stderr, "spx: no change to %s/%s; nothing committed\n", spec.Project, spec.Slug)
+		return ops.CodeOK
+	}
+	warnUnresolved(e, v, spec.Project, data)
+	return ops.CodeOK
+}

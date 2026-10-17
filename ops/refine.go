@@ -28,28 +28,14 @@ func Edit(root string, spec store.Spec, data []byte) (EditResult, error) {
 	if !slices.Contains(EditStatuses, spec.Status) {
 		return EditResult{}, statusError(spec, "edit", EditStatuses)
 	}
-	newFM, _, err := checkContent(data)
-	if err != nil {
-		return EditResult{}, err
-	}
 	stored, err := os.ReadFile(spec.Path)
 	if err != nil {
 		return EditResult{}, fail(CodeTool, "reading %s: %v", spec.Path, err)
 	}
-	oldFM, err := frontmatter(stored)
-	if err != nil {
-		oldFM = nil
-	}
-	for _, key := range OwnedFields {
-		if fieldText(newFM[key]) != fieldText(oldFM[key]) {
-			return EditResult{}, fail(CodeWrongStatus, "the file changes %s:, which only spx commands set; keep it as stored", key)
-		}
+	if err := checkReplacement(stored, data, OwnedFields); err != nil {
+		return EditResult{}, err
 	}
 	oldBody, newBody := splitBody(stored), splitBody(data)
-	oldLog, newLog := oldBody.logEntries(), newBody.logEntries()
-	if len(newLog) < len(oldLog) || !slices.Equal(newLog[:len(oldLog)], oldLog) {
-		return EditResult{}, fail(CodeWrongStatus, "the file changes or drops existing Log entries; the Log is append-only")
-	}
 	if bytes.Equal(stored, data) {
 		return EditResult{Unchanged: true}, nil
 	}
@@ -65,6 +51,29 @@ func Edit(root string, spec store.Spec, data []byte) (EditResult, error) {
 		return data, nil
 	})
 	return res, err
+}
+
+// checkReplacement checks data as the new content of the stored spec: frontmatter with a usable
+// title, the fields in kept as stored, and every stored Log entry unchanged and in order.
+func checkReplacement(stored, data []byte, kept []string) error {
+	newFM, _, err := checkContent(data)
+	if err != nil {
+		return err
+	}
+	oldFM, err := frontmatter(stored)
+	if err != nil {
+		oldFM = nil
+	}
+	for _, key := range kept {
+		if fieldText(newFM[key]) != fieldText(oldFM[key]) {
+			return fail(CodeWrongStatus, "the file changes %s:, which only spx commands set; keep it as stored", key)
+		}
+	}
+	oldLog, newLog := splitBody(stored).logEntries(), splitBody(data).logEntries()
+	if len(newLog) < len(oldLog) || !slices.Equal(newLog[:len(oldLog)], oldLog) {
+		return fail(CodeWrongStatus, "the file changes or drops existing Log entries; the Log is append-only")
+	}
+	return nil
 }
 
 // changesApproval reports whether the Outcome paragraph or an approval section differs.

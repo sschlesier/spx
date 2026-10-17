@@ -11,7 +11,7 @@ const startedSpec = `---
 title: Started one
 type: feature
 priority: 2
-approved: Someone, 2026-10-01: ok
+approved: "Someone, 2026-10-01: ok"
 status: in-progress
 ---
 
@@ -104,7 +104,7 @@ func TestStatusAddsMissingField(t *testing.T) {
 	if _, err := Status(root, specAt(root, "started", "s"), "in-review", "", now); err != nil {
 		t.Fatal(err)
 	}
-	if got := readSpec(t, root); !strings.Contains(got, "approved: Someone, 2026-10-01: ok\nstatus: in-review\n---") {
+	if got := readSpec(t, root); !strings.Contains(got, "approved: \"Someone, 2026-10-01: ok\"\nstatus: in-review\n---") {
 		t.Fatalf("file:\n%s", got)
 	}
 }
@@ -201,4 +201,66 @@ func TestCheckNeedsAStartedSpec(t *testing.T) {
 	root := startedStore(t)
 	_, err := Check(root, specAt(root, "draft", "one"), []int{1}, false)
 	wantCode(t, err, CodeWrongStatus)
+}
+
+func TestAmendReplacesContentLogsAndCommits(t *testing.T) {
+	root := startedStore(t)
+	in := strings.Replace(startedSpec, "Outcome here.", "A better outcome.", 1)
+	res, err := Amend(root, specAt(root, "started", "s"), []byte(in), "user agreed", now)
+	if err != nil || res.Unchanged {
+		t.Fatalf("res=%+v err=%v", res, err)
+	}
+	if want := in + "- 2026-10-12: Amended: user agreed\n"; readSpec(t, root) != want {
+		t.Fatalf("file:\n%s", readSpec(t, root))
+	}
+	onlyCommitted(t, root, "p: amend s")
+}
+
+func TestAmendKeepsLogAppendsAndNewLogLinesSurvive(t *testing.T) {
+	root := startedStore(t)
+	in := startedSpec + "- 2026-10-02: a note\n"
+	if _, err := Amend(root, specAt(root, "started", "s"), []byte(in), "r", now); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasSuffix(readSpec(t, root), "- 2026-10-02: a note\n- 2026-10-12: Amended: r\n") {
+		t.Fatalf("file:\n%s", readSpec(t, root))
+	}
+}
+
+func TestAmendRefusals(t *testing.T) {
+	root := startedStore(t)
+	headBefore := head(t, root)
+	s := specAt(root, "started", "s")
+	for name, tt := range map[string]struct {
+		in   string
+		code int
+	}{
+		"approved changed": {strings.Replace(startedSpec, "ok\"\n", "changed\"\n", 1), CodeWrongStatus},
+		"approved cleared": {strings.Replace(startedSpec, "approved: \"Someone, 2026-10-01: ok\"\n", "approved:\n", 1), CodeWrongStatus},
+		"status changed":   {strings.Replace(startedSpec, "status: in-progress", "status: done", 1), CodeWrongStatus},
+		"pr added":         {strings.Replace(startedSpec, "status: in-progress\n", "status: in-progress\npr: http://x\n", 1), CodeWrongStatus},
+		"log line changed": {strings.Replace(startedSpec, "Started on branch b", "Started elsewhere", 1), CodeWrongStatus},
+		"log line dropped": {strings.Replace(startedSpec, "- 2026-10-01: Started on branch b\n", "", 1), CodeWrongStatus},
+		"no title":         {strings.Replace(startedSpec, "title: Started one", "title:", 1), CodeUsage},
+		"no frontmatter":   {"just text\n", CodeUsage},
+	} {
+		if _, err := Amend(root, s, []byte(tt.in), "r", now); CodeOf(err) != tt.code {
+			t.Errorf("%s: err=%v, want code %d", name, err, tt.code)
+		}
+	}
+	_, err := Amend(root, s, []byte(startedSpec), "a\nb", now)
+	wantCode(t, err, CodeUsage)
+	_, err = Amend(root, specAt(root, "draft", "one"), []byte(sample), "r", now)
+	wantCode(t, err, CodeWrongStatus)
+	untouched(t, root, headBefore)
+}
+
+func TestAmendUnchangedCommitsNothing(t *testing.T) {
+	root := startedStore(t)
+	headBefore := head(t, root)
+	res, err := Amend(root, specAt(root, "started", "s"), []byte(startedSpec), "r", now)
+	if err != nil || !res.Unchanged {
+		t.Fatalf("res=%+v err=%v", res, err)
+	}
+	untouched(t, root, headBefore)
 }

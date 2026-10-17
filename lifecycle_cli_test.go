@@ -11,7 +11,7 @@ import (
 const startedFixture = `---
 title: Started one
 type: feature
-approved: Someone, 2026-10-01: ok
+approved: "Someone, 2026-10-01: ok"
 status: in-progress
 ---
 
@@ -130,5 +130,47 @@ func TestCheckCommandUsage(t *testing.T) {
 		if r := runCLI(t, t.TempDir(), args...); r.code != 2 || !strings.Contains(r.stderr, "usage: spx check") {
 			t.Errorf("%q: code=%d stderr=%q", args, r.code, r.stderr)
 		}
+	}
+}
+
+func TestAmendCommand(t *testing.T) {
+	root := startedStore(t)
+	dir := t.TempDir()
+	in := strings.Replace(startedFixture, "Outcome.", "New outcome.", 1)
+	if err := os.WriteFile(filepath.Join(dir, "new.md"), []byte(in), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	r := runCLI(t, dir, "amend", "p/s", "new.md", "user agreed")
+	if r.code != 0 || r.stdout != "" || r.stderr != "" {
+		t.Fatalf("code=%d stdout=%q stderr=%q", r.code, r.stdout, r.stderr)
+	}
+	if got := readStarted(t, root); !strings.Contains(got, "New outcome.") || !strings.HasSuffix(got, ": Amended: user agreed\n") {
+		t.Errorf("file:\n%s", got)
+	}
+	if msg := gitOut(t, root, "log", "-1", "--format=%s"); msg != "p: amend s" {
+		t.Errorf("message = %q", msg)
+	}
+	before := gitOut(t, root, "rev-parse", "HEAD")
+	bad := strings.Replace(in, "status: in-progress", "status: done", 1)
+	if err := os.WriteFile(filepath.Join(dir, "bad.md"), []byte(bad), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, tt := range []struct {
+		args []string
+		code int
+		msg  string
+	}{
+		{[]string{"amend", "p/s", "bad.md", "r"}, 3, "status:"},
+		{[]string{"amend", "p/s", "missing.md", "r"}, 1, "file not found"},
+		{[]string{"amend", "p/s", "new.md"}, 2, "usage: spx amend"},
+		{[]string{"amend", "p/s", "new.md", "a\nb"}, 2, "one line"},
+		{[]string{"amend", "p/one", "new.md", "r"}, 3, "needs a spec that is started"},
+	} {
+		if r := runCLI(t, dir, tt.args...); r.code != tt.code || !strings.Contains(r.stderr, tt.msg) {
+			t.Errorf("%q: code=%d stderr=%q", tt.args, r.code, r.stderr)
+		}
+	}
+	if gitOut(t, root, "rev-parse", "HEAD") != before || gitOut(t, root, "status", "--porcelain") != "" {
+		t.Error("a refused command changed the store")
 	}
 }

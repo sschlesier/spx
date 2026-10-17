@@ -129,6 +129,21 @@ var commands = []command{
 			"<n> is the 1-based position of a criterion in the Acceptance criteria list.",
 		Run: runCheck,
 	},
+	{
+		Name:     "amend",
+		Synopsis: `spx amend <slug> <file> "<reason>"`,
+		Effect:   "Replace a started spec's content with <file>, log why, and commit it.",
+		Rule: "Run only after the user said yes to changing the Outcome, criteria, Design or Boundaries of a " +
+			"started spec; spx records the change, it never decides one. Edit a copy outside the store and " +
+			"pass it here with the reason as one line; the Log gets `Amended: <reason>`. The file is the whole " +
+			"spec with a usable `title:` (exit 2 otherwise). Keep every existing Log line unchanged and in " +
+			"order, and leave `approved`, `status`, `accepted`, `pr` and `path` as stored, or it exits 3. A " +
+			"spec that is not started exits 3. Unresolved `depends-on` or `parent` slugs warn on stderr.",
+		Usage: "usage: spx amend <slug> <file> \"<reason>\"\n" +
+			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.\n" +
+			"<file> is the spec's full new content; <reason> is one line.",
+		Run: runAmend,
+	},
 }
 
 // commandNames are the names in the command table, for handlers that can't refer to it.
