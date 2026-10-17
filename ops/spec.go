@@ -220,6 +220,7 @@ func transition(root string, spec store.Spec, to, msg string, change func([]byte
 // same commit, when extraRel is not empty; the caller checked that it doesn't exist.
 func transitionWith(root string, spec store.Spec, to, msg, extraRel, extra string, change func([]byte) ([]byte, error)) error {
 	s := Store{Root: root}
+	defer s.lock()()
 	rel, err := s.relPath(spec.Path)
 	if err != nil {
 		return fail(CodeTool, "%v", err)

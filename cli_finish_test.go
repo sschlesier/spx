@@ -41,8 +41,8 @@ func git(t *testing.T, dir string, args ...string) string {
 	return strings.TrimSpace(string(out))
 }
 
-// startedStore is a committed git store with p/started/one.md at status st, pointed at by spx.
-func startedStore(t *testing.T, st string) string {
+// finishStore is a committed git store with p/started/one.md at status st, pointed at by spx.
+func finishStore(t *testing.T, st string) string {
 	t.Helper()
 	root := gitStore(t)
 	os.Remove(filepath.Join(root, "p", "draft", "one.md"))
@@ -111,7 +111,7 @@ func storeClean(t *testing.T, root, head string) {
 }
 
 func TestPlaceWritesTheStoreCopyFromTheMatchingCheckout(t *testing.T) {
-	root := startedStore(t, "in-progress")
+	root := finishStore(t, "in-progress")
 	head := git(t, root, "rev-parse", "HEAD")
 	repo := repoNamed(t, "p")
 	r := runCLI(t, repo, "place", "one")
@@ -146,7 +146,7 @@ func mustEval(t *testing.T, p string) string {
 }
 
 func TestPlaceDirAndTicketFolder(t *testing.T) {
-	root := startedStore(t, "in-progress")
+	root := finishStore(t, "in-progress")
 	head := git(t, root, "rev-parse", "HEAD")
 	other := t.TempDir()
 	repo := filepath.Join(t.TempDir(), "anything")
@@ -182,7 +182,7 @@ func TestPlaceDirAndTicketFolder(t *testing.T) {
 }
 
 func TestPlaceRefusals(t *testing.T) {
-	root := startedStore(t, "in-progress")
+	root := finishStore(t, "in-progress")
 	head := git(t, root, "rev-parse", "HEAD")
 	wrong := repoNamed(t, "q")
 	for name, c := range map[string]struct {
@@ -221,7 +221,7 @@ func TestPlaceRefusals(t *testing.T) {
 }
 
 func TestPlaceRefusesTicketFoldersOutsideTheRepoAndSymlinks(t *testing.T) {
-	startedStore(t, "in-progress")
+	finishStore(t, "in-progress")
 	for name, setup := range map[string]func(repo, outside string){
 		"absolute": func(repo, outside string) { write(t, filepath.Join(repo, "AGENTS.md"), "Ticket folder: "+outside+"\n") },
 		"parent":   func(repo, outside string) { write(t, filepath.Join(repo, "AGENTS.md"), "Ticket folder: ..\n") },
@@ -249,7 +249,7 @@ func TestPlaceRefusesTicketFoldersOutsideTheRepoAndSymlinks(t *testing.T) {
 }
 
 func TestPlaceRunsOnlyReadOnlyGit(t *testing.T) {
-	startedStore(t, "in-progress")
+	finishStore(t, "in-progress")
 	repo := repoNamed(t, "p")
 	realGit, err := exec.LookPath("git")
 	if err != nil {
@@ -284,7 +284,7 @@ func TestPlaceRunsOnlyReadOnlyGit(t *testing.T) {
 func read2(path string) string { b, _ := os.ReadFile(path); return string(b) }
 
 func TestPlaceWorksFromAWorktree(t *testing.T) {
-	root := startedStore(t, "in-progress")
+	root := finishStore(t, "in-progress")
 	head := git(t, root, "rev-parse", "HEAD")
 	repo := repoNamed(t, "p")
 	wt := filepath.Join(t.TempDir(), "p-feature")
@@ -317,7 +317,7 @@ func commitFiles(t *testing.T, root string) string {
 }
 
 func TestAcceptRecordsLogPrAndPathAfterCheckingTheRepoCopy(t *testing.T) {
-	root := startedStore(t, "done")
+	root := finishStore(t, "done")
 	repo := repoNamed(t, "p")
 	if r := runCLI(t, repo, "place", "one"); r.code != 0 {
 		t.Fatal(r.stderr)
@@ -355,7 +355,7 @@ func TestAcceptRecordsLogPrAndPathAfterCheckingTheRepoCopy(t *testing.T) {
 }
 
 func TestAcceptRoundDefaultsToOneAndUsesTicketFolder(t *testing.T) {
-	root := startedStore(t, "done")
+	root := finishStore(t, "done")
 	repo := repoNamed(t, "p")
 	write(t, filepath.Join(repo, "CLAUDE.md"), "Ticket folder: docs/t\n")
 	if r := runCLI(t, repo, "place", "one"); r.code != 0 {
@@ -371,7 +371,7 @@ func TestAcceptRoundDefaultsToOneAndUsesTicketFolder(t *testing.T) {
 }
 
 func TestAcceptRefusalsLeaveTheStoreUntouched(t *testing.T) {
-	root := startedStore(t, "in-review")
+	root := finishStore(t, "in-review")
 	repo := repoNamed(t, "p")
 	head := git(t, root, "rev-parse", "HEAD")
 	// status not done
@@ -409,7 +409,7 @@ func TestAcceptRefusalsLeaveTheStoreUntouched(t *testing.T) {
 }
 
 func TestAcceptTwiceRefusesWithoutARepo(t *testing.T) {
-	root := startedStore(t, "done")
+	root := finishStore(t, "done")
 	accepted(t, root)
 	head := git(t, root, "rev-parse", "HEAD")
 	if r := runCLI(t, t.TempDir(), "accept", "p/one", "--pr", "https://x/1", "again"); r.code != 3 {
@@ -419,7 +419,7 @@ func TestAcceptTwiceRefusesWithoutARepo(t *testing.T) {
 }
 
 func TestAcceptWithoutARepoWarnsAndRecordsTheDefaultPath(t *testing.T) {
-	root := startedStore(t, "done")
+	root := finishStore(t, "done")
 	r := runCLI(t, t.TempDir(), "accept", "p/one", "--pr", "https://x/1", "ok")
 	if r.code != 0 || !strings.Contains(r.stderr, "warning") || !strings.Contains(r.stderr, "tickets/one.md") {
 		t.Fatalf("code=%d stderr=%q", r.code, r.stderr)
@@ -437,7 +437,7 @@ func accepted(t *testing.T, root string) {
 }
 
 func TestCloseWritesTheReceipt(t *testing.T) {
-	root := startedStore(t, "done")
+	root := finishStore(t, "done")
 	accepted(t, root)
 	head := git(t, root, "rev-parse", "HEAD")
 	r := runCLI(t, t.TempDir(), "close", "p/one")
@@ -464,7 +464,7 @@ func TestCloseWritesTheReceipt(t *testing.T) {
 }
 
 func TestCloseRefusesWithoutAcceptance(t *testing.T) {
-	root := startedStore(t, "done")
+	root := finishStore(t, "done")
 	head := git(t, root, "rev-parse", "HEAD")
 	for name, args := range map[string][]string{
 		"not accepted": {"close", "p/one"},

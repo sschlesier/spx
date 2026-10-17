@@ -3,8 +3,8 @@
 A terminal browser for the spec store (`$AGENT_SPECS_DIR`, or `~/src/specs`): a list of
 specs beside the selected spec's rendered markdown. The UI is read-only; the only writes are by
 the editor you open with `e`, by the store-writing CLI commands (`spx log`, `new`, `edit`,
-`approve`, `start`, `send-back`, `drop`, `repo --set`, `accept`, `close`, `sweep`) and by `spx place`, which
-writes one file into a project repo.
+`approve`, `start`, `send-back`, `drop`, `status`, `check`, `amend`, `repo --set`, `accept`, `close`,
+`sweep`) and by `spx place`, which writes one file into a project repo.
 
 ## Project Structure
 
@@ -42,10 +42,10 @@ Staleness: Changes under the store show within about a second (fsnotify, 100 ms 
 
 Invariants:
 - spx writes, moves or deletes under the store root only through the CLI commands (`spx log`,
-  `new`, `edit`, `approve`, `start`, `send-back`, `drop`, `repo --set`, `accept`, `close`, `sweep`), each
-  of which commits just the paths it touched as `<project>: <verb> <slug>` (`<project>: map repo`
-  for `repo --set`, `<project>: done <slug>` for `close`, which `sweep` runs for each merged
-  pull request), never stashes or pushes, and restores the tree on failure. The TUI never writes; only an
+  `new`, `edit`, `approve`, `start`, `send-back`, `drop`, `status`, `check`, `amend`, `repo --set`, `accept`,
+  `close`, `sweep`), each of which commits just the paths it touched as `<project>: <verb> <slug>`
+  (`<project>: map repo` for `repo --set`, `<project>: done <slug>` for `close`, which `sweep` runs
+  for each merged pull request), never stashes or pushes, and restores the tree on failure. The TUI never writes; only an
   editor the user opens with `e` may. `<project>/.repo` (one line: the project's main checkout
   path, written by `repo --set` and by `new` and `start`, which commit it with the draft or the start) is the one
   non-spec file spx writes under the store root; it is never listed. The one write outside the
@@ -60,9 +60,11 @@ Invariants:
 - The CLI is `spx [-d] [-a] [-s] [project]` (`spx --version` alone prints `spx <version>`) and
   the commands `spx log <slug> "<text>"`, `spx new <project> <file>`, `spx edit <slug> <file>`,
   `spx approve <slug> "<one line>" [--cold-read <result>]`, `spx start <slug> --branch <name>`, `spx send-back <slug> "<questions>"`,
-  `spx drop <slug> "<why>"`, `spx repo [project]`, `spx repo --set <project> <path>`,
-  `spx place <slug> [--dir <repo>]`, `spx accept <slug> --pr <url> "<note>" [--round <n>]`,
-  `spx close <slug>`, `spx sweep [project]` and `spx help [--skill [--body]]`; a command name is
+  `spx drop <slug> "<why>"`, `spx status <slug> <in-progress|in-review|done> ["<note>"]`,
+  `spx check <slug> <n>... [--uncheck]`, `spx amend <slug> <file> "<reason>"`, `spx repo [project]`,
+  `spx repo --set <project> <path>`, `spx place <slug> [--dir <repo>]`,
+  `spx accept <slug> --pr <url> "<note>" [--round <n>]`, `spx close <slug>`,
+  `spx sweep [project]` and `spx help [--skill [--body]]`; a command name is
   not usable as a project name. Exit codes (listed once in `ops.ExitCodes`): 0 success or `-h`/`--help`/`--version`; 1 not found (store,
   project, slug, input file); 2 usage error; 3 wrong status; 4 store conflict (not a git repo,
   not on main, index lock, uncommitted change on a touched path); 5 tool failure (git missing,
