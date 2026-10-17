@@ -3,7 +3,7 @@
 A terminal browser for the spec store (`$AGENT_SPECS_DIR`, or `~/src/specs`): a list of
 specs beside the selected spec's rendered markdown. The UI is read-only; the only writes are by
 the editor you open with `e` and by the store-writing CLI commands (`spx log`, `new`, `edit`,
-`approve`, `send-back`, `drop`).
+`approve`, `send-back`, `drop`, `status`, `check`, `amend`).
 
 ## Project Structure
 
@@ -38,7 +38,7 @@ Staleness: Changes under the store show within about a second (fsnotify, 100 ms 
 
 Invariants:
 - spx writes, moves or deletes under the store root only through the CLI commands (`spx log`,
-  `new`, `edit`, `approve`, `send-back`, `drop`), each of which commits just the paths it
+  `new`, `edit`, `approve`, `send-back`, `drop`, `status`, `check`, `amend`), each of which commits just the paths it
   touched as `<project>: <verb> <slug>`, never stashes or pushes, and restores the tree on
   failure. The TUI never writes; only an editor the user opens with `e` may.
 - Only <root>/<project>/{draft,approved,started}/*.md are listed, and dropped/*.md only
@@ -49,7 +49,8 @@ Invariants:
 - The CLI is `spx [-d] [-a] [-s] [project]` (`spx --version` alone prints `spx <version>`) and
   the commands `spx log <slug> "<text>"`, `spx new <project> <file>`, `spx edit <slug> <file>`,
   `spx approve <slug> "<one line>" [--cold-read <result>]`, `spx send-back <slug> "<questions>"`,
-  `spx drop <slug> "<why>"` and `spx help [--skill [--body]]`; a command name is not usable as a
+  `spx drop <slug> "<why>"`, `spx status <slug> <in-progress|in-review|done> ["<note>"]`,
+  `spx check <slug> <n>... [--uncheck]`, `spx amend <slug> <file> "<reason>"` and `spx help [--skill [--body]]`; a command name is not usable as a
   project name. Exit codes (listed once in `ops.ExitCodes`): 0 success or `-h`/`--help`/`--version`; 1 not found (store,
   project, slug, input file); 2 usage error; 3 wrong status; 4 store conflict (not a git repo,
   not on main, index lock, uncommitted change on a touched path); 5 tool failure (git missing,
