@@ -72,7 +72,7 @@ Invariants:
   for the commands; `gh pr view <url> --json state` (read-only) for `spx sweep`; the editor on
   `e`; and one clipboard tool (pbcopy, wl-copy or xclip) on `y`/`Y`. In a project repo a command
   runs only read-only `git rev-parse` (`place` and `accept` to find the checkout's top-level),
-  never a git command that writes; `place --dir` starts no process. `accept` also reads the
+  never a git command that writes; `place --dir` runs no git in the repo. `accept` also reads the
   repo's copy of the spec (and AGENTS.md or CLAUDE.md for the ticket folder) without writing.
 
 Accepted risks:
