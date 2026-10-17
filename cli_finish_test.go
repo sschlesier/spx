@@ -220,6 +220,34 @@ func TestPlaceRefusals(t *testing.T) {
 	storeClean(t, root, head)
 }
 
+func TestPlaceRefusesTicketFoldersOutsideTheRepoAndSymlinks(t *testing.T) {
+	startedStore(t, "in-progress")
+	for name, setup := range map[string]func(repo, outside string){
+		"absolute": func(repo, outside string) { write(t, filepath.Join(repo, "AGENTS.md"), "Ticket folder: "+outside+"\n") },
+		"parent":   func(repo, outside string) { write(t, filepath.Join(repo, "AGENTS.md"), "Ticket folder: ..\n") },
+		"symlinked folder": func(repo, outside string) {
+			write(t, filepath.Join(repo, "AGENTS.md"), "Ticket folder: link\n")
+			os.Symlink(outside, filepath.Join(repo, "link"))
+		},
+		"symlinked file": func(repo, outside string) {
+			os.MkdirAll(filepath.Join(repo, "tickets"), 0o755)
+			os.Symlink(filepath.Join(outside, "target.md"), filepath.Join(repo, "tickets", "one.md"))
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			outside := t.TempDir()
+			repo := repoNamed(t, "p")
+			setup(repo, outside)
+			if r := runCLI(t, repo, "place", "one"); r.code != 3 {
+				t.Fatalf("code=%d stderr=%q", r.code, r.stderr)
+			}
+			if entries, _ := os.ReadDir(outside); len(entries) != 0 {
+				t.Errorf("wrote outside the repo: %v", entries)
+			}
+		})
+	}
+}
+
 func TestPlaceRunsOnlyReadOnlyGit(t *testing.T) {
 	startedStore(t, "in-progress")
 	repo := repoNamed(t, "p")
@@ -241,7 +269,7 @@ func TestPlaceRunsOnlyReadOnlyGit(t *testing.T) {
 			t.Errorf("place ran git %s", line)
 		}
 	}
-	// with --dir no process is started at all
+	// with --dir nothing runs in the repo; only the startup rev-parse that scopes the store
 	os.Remove(logFile)
 	if r := runCLI(t, t.TempDir(), "place", "p/one", "--dir", repo); r.code != 0 {
 		t.Fatal(r.stderr)
@@ -380,6 +408,16 @@ func TestAcceptRefusalsLeaveTheStoreUntouched(t *testing.T) {
 	storeClean(t, root, head)
 }
 
+func TestAcceptTwiceRefusesWithoutARepo(t *testing.T) {
+	root := startedStore(t, "done")
+	accepted(t, root)
+	head := git(t, root, "rev-parse", "HEAD")
+	if r := runCLI(t, t.TempDir(), "accept", "p/one", "--pr", "https://x/1", "again"); r.code != 3 {
+		t.Errorf("second accept: code=%d %q", r.code, r.stderr)
+	}
+	storeClean(t, root, head)
+}
+
 func TestAcceptWithoutARepoWarnsAndRecordsTheDefaultPath(t *testing.T) {
 	root := startedStore(t, "done")
 	r := runCLI(t, t.TempDir(), "accept", "p/one", "--pr", "https://x/1", "ok")
@@ -448,6 +486,20 @@ func TestCloseRefusesWithoutAcceptance(t *testing.T) {
 	if r := runCLI(t, t.TempDir(), "close", "p/one"); r.code != 3 {
 		t.Errorf("no pr/path: code=%d", r.code)
 	}
+	// each of Accepted:, pr: and path: alone is missing
+	body := strings.Replace(startedSpec, "%s", "done", 1)
+	acc := "- 2026-10-02: Accepted: T, 2026-10-02, round 1: ok\n"
+	for name, spec := range map[string]string{
+		"no accepted": strings.Replace(body, "status: done\n", "status: done\npr: https://x/1\npath: tickets/one.md\n", 1),
+		"no path":     strings.Replace(body, "status: done\n", "status: done\npr: https://x/1\n", 1) + acc,
+		"no pr":       strings.Replace(body, "status: done\n", "status: done\npath: tickets/one.md\n", 1) + acc,
+	} {
+		write(t, filepath.Join(root, "p/started/one.md"), spec)
+		git(t, root, "commit", "-qam", name)
+		if r := runCLI(t, t.TempDir(), "close", "p/one"); r.code != 3 {
+			t.Errorf("%s: code=%d", name, r.code)
+		}
+	}
 	// a draft is the wrong status
 	write(t, filepath.Join(root, "p/draft/two.md"), "---\ntitle: Two\n---\n\nx\n")
 	git(t, root, "add", "-A")
@@ -461,7 +513,8 @@ func TestCloseRefusesWithoutAcceptance(t *testing.T) {
 
 // The fixture is the pre-close version of a real done spec (from the store's history); closing
 // it, once accepted, gives the committed receipt apart from the accepted: line, which now
-// records the round.
+// records the round. That line is replaced in the committed text before comparing, so it is
+// not compared with the committed receipt.
 func TestReceiptMatchesARealDoneSpec(t *testing.T) {
 	root := gitStore(t)
 	started, err := os.ReadFile("testdata/receipt/copy-the-qualified-name-with-y.started.md")
