@@ -38,6 +38,8 @@ draft → approved → started → done, or dropped from any live status. The st
 - `spx edit`: a draft or approved spec is refined. Decided by the agent.
 - `spx approve`: draft → approved. Decided by the user's explicit yes.
 - `spx send-back`: a spec that needs the user's answers goes back to draft/. Decided by the agent.
+- `spx accept`: started → done: the user accepts the work. Decided by the user's explicit yes.
+- `spx close`: the accepted, merged spec is moved to done/. Decided by the agent.
 - `spx drop`: an abandoned spec moves to dropped/. Decided by the user's explicit yes.
 
 ## Rules
@@ -52,6 +54,10 @@ draft → approved → started → done, or dropped from any live status. The st
 - `spx approve`: Run only after the user said yes; spx records the approval, it never decides one. The one line says what was approved; pass the cold read's result with --cold-read (default `not run`). `approved:` becomes `<git user.name>, <date>: <one line>. Cold read: <result>` and the Log gets `Approved: ` plus that text. Works on drafts only: an approved spec exits 3. An unset git user.name exits 5.
 - `spx send-back`: Use when a spec needs the user's answers before it can be approved. Pass the questions as one line; the Log gets `Needs clarification: <questions>`. Started, done and dropped specs exit 3.
 - `spx drop`: Use when the user abandons a spec. Pass the reason as one line; the Log gets `Dropped: <why>`. Done and dropped specs exit 3.
+- `spx place`: Run whenever the branch needs the spec's current text: when the PR opens, after ticking criteria, and last, after the spec's status is set to done. It writes the started spec as it is now (status, ticked criteria and Log included) to `<repo>/<ticket folder>/<slug>.md` and prints that path; you commit and push it, `spx place` runs no git. The repo is `--dir`, else the git checkout (or worktree) you run it in when its project is the spec's; anything else exits 3 and names `--dir`. The ticket folder is `tickets/`, or the `Ticket folder:` line of the repo's AGENTS.md or CLAUDE.md. Only started specs (exit 3 otherwise). It works from inside a worktree.
+- `spx accept`: Run only after the user said yes to the finished work, and after the spec's status is done and its final `spx place` is committed and pushed. The Log gets `Accepted: <git user.name>, <date>, round <n>: <note>` (round defaults to 1) and the frontmatter gets `pr:` and `path:`. A spec that is not `done`, or already accepted, exits 3. When the repo copy resolves from the current checkout and differs from the store copy, it exits 3: run `spx place` again. When no repo resolves it warns and records `tickets/<slug>.md`. An unset git user.name exits 5.
+- `spx close`: Normally not run by hand: `spx sweep` does it after the PR merges. The receipt keeps `title`, `type`, `priority`, `depends-on`, `parent`, `approved`, `accepted`, `pr`, `path` and the Outcome paragraph, and drops `status`, any `id`, the other sections and the Log. Exits 3 without an `Accepted:` Log entry, a `pr:` and a `path:`.
+- `spx sweep`: Run before listing specs or checking readiness, and after a merge: it asks `gh pr view <url> --json state` for each started spec with a `pr:` and runs `close` on MERGED ones, printing `closed <project>/<slug>`. A CLOSED pull request is reported on stderr and left alone. A gh failure exits 5. Without a project it covers every project.
 - `spx help`: Run `spx help --skill` at the start of any work on the store: it describes exactly the installed spx. `--body` leaves out the frontmatter, for a skill that injects the guide into its own text. It never reads the store.
 
 ## Commands
@@ -63,6 +69,10 @@ draft → approved → started → done, or dropped from any live status. The st
 - `spx approve <slug> "<one line>" [--cold-read <result>]`: Record the user's approval of a draft, move it to approved/ and commit it.
 - `spx send-back <slug> "<questions>"`: Clear a draft or approved spec's approval, log the open questions, move it to draft/ and commit it.
 - `spx drop <slug> "<why>"`: Log why a draft, approved or started spec is abandoned, move it to dropped/ and commit it.
+- `spx place <slug> [--dir <repo>]`: Write a started spec's current text to the repo's ticket folder, overwriting its copy there.
+- `spx accept <slug> --pr <url> "<note>" [--round <n>]`: Record the user's acceptance of a started spec whose status is done, with its PR and repo path, and commit it.
+- `spx close <slug>`: Move an accepted started spec to done/ trimmed to a receipt and commit it.
+- `spx sweep [project]`: Close every started spec whose pull request has merged, and print one line per spec closed.
 - `spx help [--skill [--body]]`: Print the top-level help, or with --skill a guide to the spec store as an Agent Skills SKILL.md.
 
 ## Refusals and exit codes
