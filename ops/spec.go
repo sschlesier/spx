@@ -214,6 +214,7 @@ func orList(items []string) string {
 // its own, and commits the touched paths as msg. On any failure the tree and HEAD are as before.
 func transition(root string, spec store.Spec, to, msg string, change func([]byte) ([]byte, error)) error {
 	s := Store{Root: root}
+	defer s.lock()()
 	rel, err := s.relPath(spec.Path)
 	if err != nil {
 		return fail(CodeTool, "%v", err)
