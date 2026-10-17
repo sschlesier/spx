@@ -52,6 +52,9 @@ draft → approved → started → done, or dropped from any live status. The st
 - `spx approve`: Run only after the user said yes; spx records the approval, it never decides one. The one line says what was approved; pass the cold read's result with --cold-read (default `not run`). `approved:` becomes `<git user.name>, <date>: <one line>. Cold read: <result>` and the Log gets `Approved: ` plus that text. Works on drafts only: an approved spec exits 3. An unset git user.name exits 5.
 - `spx send-back`: Use when a spec needs the user's answers before it can be approved. Pass the questions as one line; the Log gets `Needs clarification: <questions>`. Started, done and dropped specs exit 3.
 - `spx drop`: Use when the user abandons a spec. Pass the reason as one line; the Log gets `Dropped: <why>`. Done and dropped specs exit 3.
+- `spx status`: Use any time while the spec is started, to say where the work is; the store copy is the live one, so run it from wherever the session is. The Log gets `Status: <value>`, followed by `: <note>` when you pass a note. Any other value, or a spec that is not started, exits 3. Any of the three values can follow any other. `status done` with unticked acceptance criteria still sets the status and lists them on stderr; tick them first with `spx check`, or leave one open with a Log note.
+- `spx check`: Use as each acceptance criterion is met, any time while the spec is started; the numbers are 1-based positions in the `## Acceptance criteria` list. Only top-level items directly under that heading count; nested bullets, fenced code and other sections are ignored. A number out of range exits 3 and changes nothing. Naming criteria already in the wanted state commits nothing.
+- `spx amend`: Run only after the user said yes to changing the Outcome, criteria, Design or Boundaries of a started spec; spx records the change, it never decides one. Edit a copy outside the store and pass it here with the reason as one line; the Log gets `Amended: <reason>`. The file is the whole spec with a usable `title:` (exit 2 otherwise). Keep every existing Log line unchanged and in order, and leave `approved`, `status`, `accepted`, `pr` and `path` as stored, or it exits 3. A spec that is not started exits 3. Unresolved `depends-on` or `parent` slugs warn on stderr.
 - `spx help`: Run `spx help --skill` at the start of any work on the store: it describes exactly the installed spx. `--body` leaves out the frontmatter, for a skill that injects the guide into its own text. It never reads the store.
 
 ## Commands
@@ -63,6 +66,9 @@ draft → approved → started → done, or dropped from any live status. The st
 - `spx approve <slug> "<one line>" [--cold-read <result>]`: Record the user's approval of a draft, move it to approved/ and commit it.
 - `spx send-back <slug> "<questions>"`: Clear a draft or approved spec's approval, log the open questions, move it to draft/ and commit it.
 - `spx drop <slug> "<why>"`: Log why a draft, approved or started spec is abandoned, move it to dropped/ and commit it.
+- `spx status <slug> <in-progress|in-review|done> ["<note>"]`: Set a started spec's status and log it, then commit it.
+- `spx check <slug> <n>... [--uncheck]`: Tick (or with --uncheck, untick) acceptance criteria of a started spec by number and commit it.
+- `spx amend <slug> <file> "<reason>"`: Replace a started spec's content with <file>, log why, and commit it.
 - `spx help [--skill [--body]]`: Print the top-level help, or with --skill a guide to the spec store as an Agent Skills SKILL.md.
 
 ## Refusals and exit codes
