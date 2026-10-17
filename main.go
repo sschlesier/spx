@@ -156,3 +156,19 @@ func repoProject(dir string) string {
 	}
 	return filepath.Base(filepath.Dir(strings.TrimSpace(string(out))))
 }
+
+// mainCheckout is the main checkout's path for the git checkout or worktree in dir. It reports
+// false outside a repo, or when the common git directory isn't named .git (a bare repo).
+func mainCheckout(dir string) (string, bool) {
+	cmd := exec.Command("git", "rev-parse", "--path-format=absolute", "--git-common-dir")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return "", false
+	}
+	common := strings.TrimSpace(string(out))
+	if filepath.Base(common) != ".git" {
+		return "", false
+	}
+	return filepath.Dir(common), true
+}
