@@ -264,3 +264,55 @@ func TestAmendUnchangedCommitsNothing(t *testing.T) {
 	}
 	untouched(t, root, headBefore)
 }
+
+const fencedFirstSpec = `---
+title: Started one
+type: feature
+priority: 2
+approved: "Someone, 2026-10-01: ok"
+status: in-progress
+---
+
+Outcome here.
+
+## Acceptance criteria
+
+- [ ] first
+
+` + "```" + `
+- [ ] fenced is not a criterion
+` + "```" + `
+
+- [ ] after the fence
+- [X] capital
+
+## Log
+
+- 2026-10-01: Started on branch b
+`
+
+func TestCheckCountsCriteriaAfterAFencedBlock(t *testing.T) {
+	root := newStore(t)
+	write(t, filepath.Join(root, "p/started/s.md"), fencedFirstSpec)
+	gitIn(t, root, "add", "-A")
+	gitIn(t, root, "commit", "-q", "-m", "started")
+	if _, err := Check(root, specAt(root, "started", "s"), []int{2}, false); err != nil {
+		t.Fatal(err)
+	}
+	if want := strings.Replace(fencedFirstSpec, "- [ ] after", "- [x] after", 1); readSpec(t, root) != want {
+		t.Fatalf("file:\n%s", readSpec(t, root))
+	}
+}
+
+func TestCheckOnACapitalXItemCommitsNothing(t *testing.T) {
+	root := newStore(t)
+	write(t, filepath.Join(root, "p/started/s.md"), fencedFirstSpec)
+	gitIn(t, root, "add", "-A")
+	gitIn(t, root, "commit", "-q", "-m", "started")
+	headBefore := head(t, root)
+	res, err := Check(root, specAt(root, "started", "s"), []int{3}, false)
+	if err != nil || !res.Unchanged {
+		t.Fatalf("res=%+v err=%v", res, err)
+	}
+	untouched(t, root, headBefore)
+}

@@ -23,6 +23,9 @@ func tick(spec store.Spec, data []byte, indexes []int, uncheck bool) ([]byte, er
 				spec.Project, spec.Slug, len(crit), n)
 		}
 		c := crit[n-1]
+		if c.ticked != uncheck {
+			continue
+		}
 		mark := "- [x] "
 		if uncheck {
 			mark = "- [ ] "
