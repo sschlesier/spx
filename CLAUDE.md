@@ -59,3 +59,10 @@ Invariants:
   for the commands; the editor on `e`; and one clipboard tool (pbcopy, wl-copy or xclip) on
   `y`/`Y`. In a project repo a command runs only that read-only `git rev-parse`, never a git
   command that writes.
+
+Accepted risks:
+- A dependency-only change (`go.mod` and `go.sum`) with a passing `go vet` and `go test ./...`
+  and a clean `govulncheck ./...` is treated as covered for UI behavior (list, filter and editor
+  keys, markdown rendering); an interactive `go run .` session is not required. Accepted by
+  Scott Schlesier, 2026-10-17.
+  Valid while: the diff touches no `.go` file.
