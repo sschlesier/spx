@@ -44,7 +44,10 @@ func Edit(root string, spec store.Spec, data []byte) (EditResult, error) {
 	if res.Demoted {
 		to = "draft"
 	}
-	err = transition(root, spec, to, spec.Project+": refine "+spec.Slug, func([]byte) ([]byte, error) {
+	err = transition(root, spec, to, spec.Project+": refine "+spec.Slug, func(fresh []byte) ([]byte, error) {
+		if err := checkReplacement(fresh, data, OwnedFields); err != nil {
+			return nil, err
+		}
 		if res.Demoted {
 			return clearApproved(spec, data)
 		}

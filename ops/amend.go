@@ -34,7 +34,10 @@ func Amend(root string, spec store.Spec, data []byte, reason string, now time.Ti
 	if bytes.Equal(stored, data) {
 		return AmendResult{Unchanged: true}, nil
 	}
-	err = transition(root, spec, spec.Status, spec.Project+": amend "+spec.Slug, func([]byte) ([]byte, error) {
+	err = transition(root, spec, spec.Status, spec.Project+": amend "+spec.Slug, func(fresh []byte) ([]byte, error) {
+		if err := checkReplacement(fresh, data, OwnedFields); err != nil {
+			return nil, err
+		}
 		return AppendLog(data, now.Format("2006-01-02"), "Amended: "+strings.TrimSpace(reason)), nil
 	})
 	return AmendResult{}, err
