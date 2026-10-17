@@ -198,3 +198,19 @@ func TestStartHelp(t *testing.T) {
 		t.Errorf("%+v", r)
 	}
 }
+
+func TestStartFromAnotherProjectsCheckoutWritesNoRepo(t *testing.T) {
+	root := gitStore(t)
+	addApproved(t, root, "p", "work", "[]")
+	_, other := repo(t, "q")
+
+	if r := runCLI(t, other, "start", "work", "--branch", "b"); r.code != 0 {
+		t.Fatalf("%+v", r)
+	}
+	if _, err := os.Stat(filepath.Join(root, "p/.repo")); err == nil {
+		t.Error(".repo written from another project's checkout")
+	}
+	if files := strings.Fields(git(t, root, "show", "--no-renames", "--name-only", "--format=", "HEAD")); len(files) != 2 {
+		t.Errorf("paths %v", files)
+	}
+}
