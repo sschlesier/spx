@@ -261,6 +261,25 @@ func TestWorkingSessionSkipsBadFilesAndAMissingDirectory(t *testing.T) {
 	}
 }
 
+func TestAProcessOwnedByAnotherUserIsAlive(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root can signal pid 1 without EPERM")
+	}
+	if !alive(1) {
+		t.Error("pid 1 (EPERM) counted as dead")
+	}
+}
+
+func TestWorkingSessionReadsOnlyJSONFiles(t *testing.T) {
+	e := newClaudeEnv(t)
+	cwd := filepath.Join(t.TempDir(), "worktrees", "proj", "the-spec")
+	data := `{"pid":` + strconv.Itoa(os.Getppid()) + `,"cwd":"` + cwd + `"}`
+	os.WriteFile(filepath.Join(e.sessions, "1.sock"), []byte(data), 0o644)
+	if _, _, ok := workingSession(e.sessions, e.repo, "proj", "the-spec"); ok {
+		t.Error("a file that isn't .json counted")
+	}
+}
+
 func TestSessionsDirDefaultsUnderHome(t *testing.T) {
 	t.Setenv("CLAUDE_CONFIG_DIR", "")
 	t.Setenv("HOME", "/h")
