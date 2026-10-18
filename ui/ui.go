@@ -66,6 +66,7 @@ type Model struct {
 	width, height int
 	detailOpen    bool // narrow layout only: detail shown full-width
 	tree          bool // list each spec under its parent
+	board         bool // draw one column per live status instead of the list
 
 	detail   viewport.Model
 	style    string // glamour standard style name
@@ -320,6 +321,9 @@ func (m Model) WithDone(done []store.Spec) Model {
 // visible is the listed rows: flat, or with each spec under its parent in tree mode.
 func (m Model) visible() []store.Spec {
 	rows := m.flat()
+	if m.board {
+		return boardRows(rows)
+	}
 	if m.tree {
 		rows, _ = treeLayout(rows)
 	}
@@ -329,12 +333,16 @@ func (m Model) visible() []store.Spec {
 // flat is the rows the scope's project, the filter's status (or every live status without
 // one) and the query leave, the matches best first.
 func (m Model) flat() []store.Spec {
+	filter := m.filter
+	if m.board {
+		filter = ""
+	}
 	var out []store.Spec
 	for _, s := range m.all {
 		if m.scope != "" && s.Project != m.scope {
 			continue
 		}
-		if s.Status == m.filter || m.filter == "" && s.Status != store.Dropped {
+		if s.Status == filter || filter == "" && s.Status != store.Dropped {
 			out = append(out, s)
 		}
 	}
@@ -400,6 +408,9 @@ func (m *Model) show(rows []store.Spec, fallback int) {
 		old = m.specs[m.cursor]
 	}
 	m.specs = rows
+	if m.board && had {
+		fallback = fallbackRow(rows, colOf(old.Status))
+	}
 	if i := find(rows, old); had && i >= 0 {
 		m.cursor = i
 		m.scrollList()
@@ -474,7 +485,12 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	}
+	if m.board && m.boardKey(k) {
+		return m, nil
+	}
 	switch k {
+	case "b":
+		m.toggleBoard()
 	case "j", "down":
 		m.selectRow(m.cursor + 1)
 	case "k", "up":
@@ -694,7 +710,8 @@ func (m *Model) selectRow(i int) {
 	m.detail.GotoTop()
 }
 
-func (m Model) split() bool { return m.width >= SplitWidth }
+// split reports the list-and-detail layout. The board uses the whole width, so it never splits.
+func (m Model) split() bool { return m.width >= SplitWidth && !m.board }
 
 func (m Model) detailVisible() bool { return m.split() || m.detailOpen }
 
@@ -722,6 +739,10 @@ func (m *Model) layout() {
 }
 
 func (m *Model) scrollList() {
+	if m.board {
+		m.scrollBoard()
+		return
+	}
 	h := m.bodyHeight()
 	if m.cursor < m.offset {
 		m.offset = m.cursor
@@ -793,12 +814,16 @@ func (m Model) render() string {
 			fit(m.detail.View(), m.detail.Width(), m.bodyHeight()))
 	case m.detailOpen:
 		body = fit(m.detail.View(), m.width, m.bodyHeight())
+	case m.board:
+		body = fit(m.boardView(), m.width, m.bodyHeight())
 	default:
 		body = fit(m.listView(), m.width, m.bodyHeight())
 	}
 	help := footerHelp
 	if m.detailOpen {
 		help = "esc back · j/k scroll · ]/[ deps · ctrl+d/u scroll · e edit · y/Y copy · q quit"
+	} else if m.board {
+		help = boardHelp
 	} else if !m.split() {
 		help = "enter open · d/a/s/x · t tree · / filter · e edit · y/Y copy · p project · q quit"
 	}
@@ -810,10 +835,15 @@ func (m Model) render() string {
 		lead = append(lead, "store unreadable: "+m.root)
 	}
 	lead = append(lead, m.scopeLabel())
-	if m.tree {
+	if m.board {
+		lead = append(lead, "board")
+		if m.visibleCols() < len(boardStatuses) && len(m.specs) > 0 {
+			lead = append(lead, fmt.Sprintf("col %d/%d", m.selCol()+1, len(boardStatuses)))
+		}
+	} else if m.tree {
 		lead = append(lead, "tree")
 	}
-	if m.filter != "" {
+	if m.filter != "" && !m.board {
 		active = append(active, m.filter)
 	}
 	if m.query != "" {
@@ -914,17 +944,21 @@ func (m Model) scopeLabel() string {
 
 // emptyMessage says why no spec is listed.
 func (m Model) emptyMessage() string {
+	filter := m.filter
+	if m.board {
+		filter = ""
+	}
 	in := ""
 	if m.scope != "" {
 		in = " in " + m.scope
 	}
 	switch {
-	case m.query != "" && m.filter != "":
-		return fmt.Sprintf("No %s specs match %q%s", m.filter, m.query, in)
+	case m.query != "" && filter != "":
+		return fmt.Sprintf("No %s specs match %q%s", filter, m.query, in)
 	case m.query != "":
 		return fmt.Sprintf("No specs match %q%s", m.query, in)
-	case m.filter != "":
-		return "No " + m.filter + " specs" + in
+	case filter != "":
+		return "No " + filter + " specs" + in
 	case m.scope != "":
 		return "No specs" + in
 	}
