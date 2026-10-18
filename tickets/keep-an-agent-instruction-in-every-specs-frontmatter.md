@@ -5,7 +5,7 @@ priority: 2
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-10-18: Agent instruction as first frontmatter line, stamped by new/edit/amend; field agent, wording as drafted. Cold read: not run"
-status: in-review
+status: done
 ---
 
 Every spec spx writes carries an `agent:` line as the first line of its frontmatter, telling an agent to run `spx help --skill` and use spx for every store step, so an agent that reads a spec in any repo sees it before it acts.
@@ -71,3 +71,5 @@ Don't touch: the line-level commands' behavior beyond keeping the line, the rece
 - 2026-10-18: Started on branch agent-instruction-in-frontmatter
 - 2026-10-18: Assumption: stampAgent in ops/agent.go removes any agent: lines and inserts the new one at line 2 itself, instead of SetField and fieldOrder, because SetField edits in place and cannot move a line to the top.
 - 2026-10-18: Status: in-review: PR open
+- 2026-10-18: Review round 1 triage: added tests for approve, send-back, drop, start, check and place keeping the line (accept not tested separately; it edits only its own fields). Dismissed: no-frontmatter and CRLF input never reach stampAgent, because checkContent rejects both first; agent is not an owned field, so the owned-field comparison is unaffected; silently replacing a supplied agent value is the spec's decision.
+- 2026-10-18: Status: done: Reviewed round 1: all 8 criteria verified by cold verify; tests added for the line-level commands.
