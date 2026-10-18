@@ -103,8 +103,9 @@ Out of scope:
   nor `~/src/<project>` shows the repo-not-found notice.
 - **Another session:** read every `*.json` in `$CLAUDE_CONFIG_DIR/sessions` (default
   `~/.claude/sessions`). An entry counts when its `pid` is alive (signal 0; `procStart` is not
-  compared) and its `cwd` is the project repo or under it, and its `cwd` path has a path element
-  equal to the slug (the worktree convention `.../worktrees/<project>/<slug>`). Sessions in the main checkout or
+  compared) and its `cwd` path has a path element equal to the slug, and its `cwd` is the project
+  repo or under it, or elsewhere with the slug directly under a directory named for the project
+  (worktrees count: `.../worktrees/<project>/<slug>`). Sessions in the main checkout or
   under another name are not counted, because the registry does not say which spec they work on.
   This is a heuristic and the notice says so by showing the cwd; a draft refined in the main
   checkout is not detected. No process is started to find sessions; the registry format is
@@ -134,3 +135,4 @@ Stop and ask if: resuming after `claude` leaves the terminal in a broken state t
 - 2026-10-18: Design deviation: the session match also accepts a cwd outside the repo whose path ends .../<project>/<slug> (the gtr worktree layout), because worktrees live under ~/src/worktrees, not under the repo, so 'in or under the repo' alone never matches them. Needs the user's yes to amend the Design.
 - 2026-10-18: Status: in-review: PR https://github.com/sschlesier/spx/pull/30
 - 2026-10-18: Review round 1 triage: dismissed as equivalent mutants (ui/claude.go rel != "..", sess.Cwd == "", setNotice clearing hold); dismissed (home == "" shows repo-not-found when UserHomeDir fails). Criterion 12 verified by reading: ui/claude.go only reads files and signals pid 0. Real registry checked: ~/.config/claude/sessions/*.json carry pid and cwd.
+- 2026-10-18: Amended: Session match: worktrees outside the repo count when laid out .../<project>/<slug> (user's yes in review round 1)
