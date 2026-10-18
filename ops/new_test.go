@@ -36,7 +36,7 @@ func TestNewWritesFillsAndCommits(t *testing.T) {
 		t.Fatalf("slug = %q", slug)
 	}
 	got, _ := os.ReadFile(filepath.Join(root, "p/draft/a-brand-new-idea.md"))
-	want := "---\ntitle: A brand-new idea   # why\npriority: 1\ntype:\ndepends-on: []\nparent:\napproved:\n---\n\nOutcome.\n"
+	want := "---\n" + agentLine + "\ntitle: A brand-new idea   # why\npriority: 1\ntype:\ndepends-on: []\nparent:\napproved:\n---\n\nOutcome.\n"
 	if string(got) != want {
 		t.Errorf("file:\n%s\nwant:\n%s", got, want)
 	}
@@ -49,7 +49,7 @@ func TestNewKeepsACompleteDraftByteForByte(t *testing.T) {
 	if _, err := New(root, "p", []byte(in)); err != nil {
 		t.Fatal(err)
 	}
-	if got, _ := os.ReadFile(filepath.Join(root, "p/draft/full.md")); string(got) != in {
+	if got, _ := os.ReadFile(filepath.Join(root, "p/draft/full.md")); string(got) != stamped(in) {
 		t.Errorf("file:\n%s", got)
 	}
 }

@@ -104,7 +104,7 @@ func NewRegistering(root, project string, data []byte, repo string) (string, err
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			return fail(CodeTool, "creating %s: %v", filepath.Dir(rel), err)
 		}
-		if err := os.WriteFile(path, fillTemplate(data), 0o644); err != nil {
+		if err := os.WriteFile(path, fillTemplate(stampAgent(data)), 0o644); err != nil {
 			return fail(CodeTool, "writing %s: %v", rel, err)
 		}
 		return nil

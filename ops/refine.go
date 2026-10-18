@@ -28,6 +28,7 @@ func Edit(root string, spec store.Spec, data []byte) (EditResult, error) {
 	if !slices.Contains(EditStatuses, spec.Status) {
 		return EditResult{}, statusError(spec, "edit", EditStatuses)
 	}
+	data = stampAgent(data)
 	stored, err := os.ReadFile(spec.Path)
 	if err != nil {
 		return EditResult{}, fail(CodeTool, "reading %s: %v", spec.Path, err)

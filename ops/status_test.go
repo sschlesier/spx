@@ -210,7 +210,7 @@ func TestAmendReplacesContentLogsAndCommits(t *testing.T) {
 	if err != nil || res.Unchanged {
 		t.Fatalf("res=%+v err=%v", res, err)
 	}
-	if want := in + "- 2026-10-12: Amended: user agreed\n"; readSpec(t, root) != want {
+	if want := stamped(in) + "- 2026-10-12: Amended: user agreed\n"; readSpec(t, root) != want {
 		t.Fatalf("file:\n%s", readSpec(t, root))
 	}
 	onlyCommitted(t, root, "p: amend s")
@@ -257,6 +257,8 @@ func TestAmendRefusals(t *testing.T) {
 
 func TestAmendUnchangedCommitsNothing(t *testing.T) {
 	root := startedStore(t)
+	write(t, filepath.Join(root, "p/started/s.md"), stamped(startedSpec))
+	gitIn(t, root, "commit", "-q", "-am", "stamp")
 	headBefore := head(t, root)
 	res, err := Amend(root, specAt(root, "started", "s"), []byte(startedSpec), "r", now)
 	if err != nil || !res.Unchanged {

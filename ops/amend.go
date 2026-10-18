@@ -24,6 +24,7 @@ func Amend(root string, spec store.Spec, data []byte, reason string, now time.Ti
 	if err := CheckLogText(reason); err != nil {
 		return AmendResult{}, err
 	}
+	data = stampAgent(data)
 	stored, err := os.ReadFile(spec.Path)
 	if err != nil {
 		return AmendResult{}, fail(CodeTool, "reading %s: %v", spec.Path, err)
