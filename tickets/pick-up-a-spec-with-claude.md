@@ -56,7 +56,7 @@ Out of scope:
 - [x] `c` works in the list (split or narrow) and in the narrow full-width detail. It does nothing
       with an empty list, and while a filter input or project popup is open, once those exist.
 - [x] The footer key hints gain `c advance`, dropping hints from the end as needed to fit.
-- [ ] `spx` itself writes, moves or deletes nothing under the store root, and nothing under the
+- [x] `spx` itself writes, moves or deletes nothing under the store root, and nothing under the
       Claude config directory.
 
 ## Verification
@@ -133,3 +133,4 @@ Stop and ask if: resuming after `claude` leaves the terminal in a broken state t
 - 2026-10-18: Started on branch pick-up-a-spec-with-claude
 - 2026-10-18: Design deviation: the session match also accepts a cwd outside the repo whose path ends .../<project>/<slug> (the gtr worktree layout), because worktrees live under ~/src/worktrees, not under the repo, so 'in or under the repo' alone never matches them. Needs the user's yes to amend the Design.
 - 2026-10-18: Status: in-review: PR https://github.com/sschlesier/spx/pull/30
+- 2026-10-18: Review round 1 triage: dismissed as equivalent mutants (ui/claude.go rel != "..", sess.Cwd == "", setNotice clearing hold); dismissed (home == "" shows repo-not-found when UserHomeDir fails). Criterion 12 verified by reading: ui/claude.go only reads files and signals pid 0. Real registry checked: ~/.config/claude/sessions/*.json carry pid and cwd.
