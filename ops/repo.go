@@ -76,3 +76,11 @@ func SetRepo(root, project, path string) error {
 		return nil
 	})
 }
+
+// RepoGuess is the path Repo looks for: the line recorded in .repo, else ~/src/<project>.
+func RepoGuess(root, project string) string {
+	if line, ok := recordedRepo(root, project); ok {
+		return line
+	}
+	return "~/src/" + project
+}
