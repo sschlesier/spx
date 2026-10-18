@@ -96,6 +96,8 @@ Frontmatter you write: ` + "`title`, `type`, `priority`, `depends-on`" + ` (a li
 
 Frontmatter spx fills: ` + "`approved`" + ` (who approved, when, and what), ` + "`status`, `accepted`, `pr` and `path`" + `.
 Leave them empty in a new spec; in an edit, copy them unchanged from the stored spec.
+` + "`agent`" + ` is the first frontmatter line, an instruction to run ` + "`spx help --skill`" + `; spx writes it on
+every new, edit and amend, so leave it out of a new spec and don't change it.
 
 Body, written by you: an Outcome paragraph first, then ` + "`## Acceptance criteria`, `## Verification`" + `,
 ` + "`## Design`, `## Boundaries`" + `, and a ` + "`## Log`" + ` of dated lines (` + "`- YYYY-MM-DD: text`" + `). The Log is

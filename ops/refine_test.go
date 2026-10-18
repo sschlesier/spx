@@ -46,6 +46,9 @@ Stop and ask if: lost.
 - 2026-10-01: Approved: Test, 2026-10-01: ok. Cold read: pass
 `
 
+// stamped is s as new, edit and amend store it.
+func stamped(s string) string { return string(stampAgent([]byte(s))) }
+
 // approvedStore is newStore plus p/approved/full.md holding approvedSpec.
 func approvedStore(t *testing.T) string {
 	t.Helper()
@@ -78,7 +81,7 @@ func TestEditDemotesOnAnApprovalChange(t *testing.T) {
 				t.Error("still in approved/")
 			}
 			got, _ := os.ReadFile(filepath.Join(root, "p/draft/full.md"))
-			want := strings.Replace(in, "approved: \"Test, 2026-10-01: ok. Cold read: pass\"\n", "approved:\n", 1)
+			want := strings.Replace(stamped(in), "approved: \"Test, 2026-10-01: ok. Cold read: pass\"\n", "approved:\n", 1)
 			if string(got) != want {
 				t.Errorf("file:\n%s", got)
 			}
@@ -106,7 +109,7 @@ func TestEditKeepsApprovalOnOtherChanges(t *testing.T) {
 			if err != nil || res.Demoted || res.Unchanged {
 				t.Fatalf("res=%+v err=%v", res, err)
 			}
-			if got, _ := os.ReadFile(filepath.Join(root, "p/approved/full.md")); string(got) != in {
+			if got, _ := os.ReadFile(filepath.Join(root, "p/approved/full.md")); string(got) != stamped(in) {
 				t.Errorf("file:\n%s", got)
 			}
 			committedOnly(t, root, h, "p: refine full", "p/approved/full.md")
@@ -125,7 +128,7 @@ func TestEditADraftReplacesItInPlace(t *testing.T) {
 	if err != nil || res.Demoted {
 		t.Fatalf("res=%+v err=%v", res, err)
 	}
-	if got, _ := os.ReadFile(filepath.Join(root, "p/draft/one.md")); string(got) != in {
+	if got, _ := os.ReadFile(filepath.Join(root, "p/draft/one.md")); string(got) != stamped(in) {
 		t.Errorf("file:\n%s", got)
 	}
 	committedOnly(t, root, h, "p: refine one", "p/draft/one.md")
@@ -133,6 +136,8 @@ func TestEditADraftReplacesItInPlace(t *testing.T) {
 
 func TestEditUnchangedCommitsNothing(t *testing.T) {
 	root := approvedStore(t)
+	write(t, filepath.Join(root, "p/approved/full.md"), stamped(approvedSpec))
+	gitIn(t, root, "commit", "-q", "-am", "stamp")
 	h := head(t, root)
 	res, err := Edit(root, specAt(root, "approved", "full"), []byte(approvedSpec))
 	if err != nil || !res.Unchanged {
