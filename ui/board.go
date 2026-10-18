@@ -16,7 +16,7 @@ var boardStatuses = []string{"draft", "approved", "started"}
 // minColWidth is the narrowest a board column is drawn; a column separator takes one more cell.
 const minColWidth = 28
 
-const boardHelp = "h/l column · j/k move · g/G top/bottom · enter open · b/esc list · / filter · e edit · y/Y copy · p project · q quit"
+const boardHelp = "h/l column · j/k move · g/G top/bottom · enter open · b/esc list · / filter · e edit · y/Y copy · c advance · p project · q quit"
 
 // colOf is the board column of a status, or -1 for one the board doesn't show.
 func colOf(status string) int {
