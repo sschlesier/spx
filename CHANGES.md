@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.0
+
+- Add a board view of draft, approved and started specs
+- Add `c` to advance the selected spec with Claude, in the project's repo
+- Keep an agent instruction as the first line of every spec's frontmatter
+- Shorten the `spx help --skill` guide by a quarter
+
 ## 0.3.0
 
 - Add spec lifecycle commands: `spx new`, `edit`, `approve`, `send-back`, `drop`, `log`, `place`, `accept`, `close`, `start`, `amend`, `sweep`
