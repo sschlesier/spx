@@ -6,7 +6,7 @@ type: feature
 priority: 3
 depends-on: [open-in-editor-and-copy, map-each-project-to-its-repo]
 approved: "Scott Schlesier, 2026-10-18: Advance a spec to its next stage with Claude via c, with a live-session registry check and a peer-check prompt sentence. Cold read: pass"
-status: in-review
+status: done
 ---
 
 From the list or the detail, one key suspends `spx` and starts Claude Code in the spec's project
@@ -107,3 +107,4 @@ Stop and ask if: resuming after `claude` leaves the terminal in a broken state t
 - 2026-10-18: Review round 1 triage: dismissed as equivalent mutants (ui/claude.go rel != "..", sess.Cwd == "", setNotice clearing hold); dismissed (home == "" shows repo-not-found when UserHomeDir fails). Criterion 12 verified by reading: ui/claude.go only reads files and signals pid 0. Real registry checked: ~/.config/claude/sessions/*.json carry pid and cwd.
 - 2026-10-18: Amended: Session match: worktrees outside the repo count when laid out .../<project>/<slug> (user's yes in review round 1)
 - 2026-10-18: Amended: Remove the conflict check: no live-session registry check, override or peer-check prompt sentence; the person watches for conflicts, a claim command with a hash check is future work (user's instruction after manual testing)
+- 2026-10-18: Status: done: Reviewed round 1: conflict check removed after manual testing; manual checks run by the user
