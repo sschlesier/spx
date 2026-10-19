@@ -96,6 +96,19 @@ func TestLoadParsesFrontmatter(t *testing.T) {
 	}
 }
 
+func TestLoadReadsAStartedSpecsProgress(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "p/started/a.md", "---\ntitle: A\nstatus: in-review\n---\n\nBody.\n")
+	write(t, root, "p/started/b.md", "---\ntitle: B\n---\n\nBody.\n")
+	specs, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if specs[0].Progress != "in-review" || specs[1].Progress != "" {
+		t.Errorf("progress %q and %q, want in-review and empty", specs[0].Progress, specs[1].Progress)
+	}
+}
+
 func TestLoadFallbacks(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, "p/draft/no-front.md", "# Just markdown\n")

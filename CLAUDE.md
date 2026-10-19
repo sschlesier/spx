@@ -2,7 +2,7 @@
 
 A terminal browser for the spec store (`$AGENT_SPECS_DIR`, or `~/src/specs`): a list of
 specs beside the selected spec's rendered markdown. The UI is read-only; the only writes are by
-the editor you open with `e`, by the store-writing CLI commands (`spx log`, `new`, `edit`,
+the editor you open with `e`, the Claude session you start with `c`, by the store-writing CLI commands (`spx log`, `new`, `edit`,
 `approve`, `start`, `send-back`, `drop`, `status`, `check`, `amend`, `repo --set`, `accept`, `close`,
 `sweep`) and by `spx place`, which writes one file into a project repo.
 
@@ -35,7 +35,7 @@ Deploy:    The user's own machine, run in a terminal. Network only through `gh`,
            starts to read pull request state.
 Load:      One user; a store of tens to low hundreds of specs.
 Data:      Reads markdown files under the store root. Writes under the store root only through
-           the CLI commands (each commits to the store's git repo) or an editor opened with `e`,
+           the CLI commands (each commits to the store's git repo) or a program opened with `e` or `c`,
            and outside it only `spx place`'s one ticket file in a project repo. Nothing sensitive.
 Staleness: Changes under the store show within about a second (fsnotify, 100 ms debounce);
            dropped/ isn't watched, so its changes show on the next reload from another change.
@@ -45,8 +45,8 @@ Invariants:
   `new`, `edit`, `approve`, `start`, `send-back`, `drop`, `status`, `check`, `amend`, `repo --set`, `accept`,
   `close`, `sweep`), each of which commits just the paths it touched as `<project>: <verb> <slug>`
   (`<project>: map repo` for `repo --set`, `<project>: done <slug>` for `close`, which `sweep` runs
-  for each merged pull request), never stashes or pushes, and restores the tree on failure. The TUI never writes; only an
-  editor the user opens with `e` may. `<project>/.repo` (one line: the project's main checkout
+  for each merged pull request), never stashes or pushes, and restores the tree on failure. The TUI never writes; only a
+  program the user starts with `e` (the editor) or `c` (Claude) may. `<project>/.repo` (one line: the project's main checkout
   path, written by `repo --set` and by `new` and `start`, which commit it with the draft or the start) is the one
   non-spec file spx writes under the store root; it is never listed. The one write outside the
   store root is `spx place <slug> [--dir <repo>]`: it overwrites `<repo>/<ticket folder>/<slug>.md`
@@ -73,7 +73,7 @@ Invariants:
   `git rev-parse` at startup, to scope to the current repo's project; `git` in the store root
   for the commands; `gh pr view <url> --json state` (read-only) for `spx sweep`, which `spx start` also
   runs first (a gh failure only warns there); the editor on
-  `e`; and one clipboard tool (pbcopy, wl-copy or xclip) on `y`/`Y`. In a project repo a command
+  `e`; `claude` on `c`, in the project's repo, with the prompt for the spec's stage; and one clipboard tool (pbcopy, wl-copy or xclip) on `y`/`Y`. In a project repo a command
   runs only read-only `git rev-parse` (`place` and `accept` to find the checkout's top-level),
   never a git command that writes; `place --dir` runs no git in the repo. `accept` also reads the
   repo's copy of the spec (and AGENTS.md or CLAUDE.md for the ticket folder) without writing.

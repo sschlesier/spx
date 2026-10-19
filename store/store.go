@@ -40,6 +40,7 @@ type Spec struct {
 	DependsOn []string
 	Parent    string // the parent: field as written; empty when missing
 	Approved  string
+	Progress  string // the status: field of a started spec as written; empty when missing
 	Body      string // the file without its frontmatter
 }
 
@@ -174,6 +175,9 @@ func read(project, status, path string) Spec {
 	}
 	if a, ok := scalar(fm["approved"]); ok {
 		s.Approved = a
+	}
+	if p, ok := scalar(fm["status"]); ok {
+		s.Progress = p
 	}
 	return s
 }

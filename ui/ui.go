@@ -30,7 +30,7 @@ const (
 	pollInterval = time.Second            // reload interval while the watcher is down
 )
 
-const footerHelp = "j/k move · g/G top/bottom · ctrl+d/u scroll · d/a/s/x status · t tree · / filter · ]/[ deps · e edit · y/Y copy slug/path · p project · q quit"
+const footerHelp = "j/k move · g/G top/bottom · ctrl+d/u scroll · d/a/s/x status · t tree · / filter · ]/[ deps · e edit · y/Y copy slug/path · c advance · p project · q quit"
 
 // filterKeys maps each status filter key to the status it lists.
 var filterKeys = map[string]string{"d": "draft", "a": "approved", "s": "started", "x": store.Dropped}
@@ -83,7 +83,7 @@ type Model struct {
 
 	notice    string // shown in place of the footer; cleared by a key press or noticeTime
 	noticeGen int    // only the tick for the latest notice clears it
-	editLoad  int    // the load issued when the editor exited
+	editLoad  int    // the load issued when the editor or Claude exited
 }
 
 // Reload messages. A message from a watcher other than the current one is stale.
@@ -200,6 +200,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.loaded(msg)
 	case editorDoneMsg:
 		return m.editorDone(msg)
+	case claudeDoneMsg:
+		return m.claudeDone(msg)
 	case noticeMsg:
 		if msg.gen == m.noticeGen {
 			m.notice = ""
@@ -450,6 +452,8 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	case "e":
 		return m.openEditor()
+	case "c":
+		return m.advance()
 	case "y", "Y":
 		return m.copySelected(k == "Y")
 	case "]", "[":
@@ -821,11 +825,11 @@ func (m Model) render() string {
 	}
 	help := footerHelp
 	if m.detailOpen {
-		help = "esc back · j/k scroll · ]/[ deps · ctrl+d/u scroll · e edit · y/Y copy · q quit"
+		help = "esc back · j/k scroll · ]/[ deps · ctrl+d/u scroll · e edit · y/Y copy · c advance · q quit"
 	} else if m.board {
 		help = boardHelp
 	} else if !m.split() {
-		help = "enter open · d/a/s/x · t tree · / filter · e edit · y/Y copy · p project · q quit"
+		help = "enter open · d/a/s/x · t tree · / filter · e edit · y/Y copy · c advance · p project · q quit"
 	}
 	if m.picking {
 		help = "type to filter · ctrl+j/k move · enter apply · esc clear/cancel · ctrl+c quit"

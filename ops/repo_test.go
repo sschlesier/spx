@@ -108,6 +108,17 @@ func TestNewRegisteringWritesRepoOnceInTheSameCommit(t *testing.T) {
 	}
 }
 
+func TestRepoGuessIsTheRecordedLineElseTheHomeConvention(t *testing.T) {
+	root := newStore(t)
+	if got := RepoGuess(root, "p"); got != "~/src/p" {
+		t.Errorf("unrecorded: %q", got)
+	}
+	write(t, filepath.Join(root, "p/.repo"), "/gone/away\nsecond\n")
+	if got := RepoGuess(root, "p"); got != "/gone/away" {
+		t.Errorf("recorded: %q", got)
+	}
+}
+
 func TestNewRegisteringInANewProjectAndWithoutARepo(t *testing.T) {
 	root := newStore(t)
 	h := head(t, root)

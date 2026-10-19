@@ -104,9 +104,19 @@ func editorFinished(err error) tea.Msg { return editorDoneMsg{err} }
 // editorDone reloads the store after the editor exits, so the edited spec shows its new
 // content.
 func (m Model) editorDone(msg editorDoneMsg) (tea.Model, tea.Cmd) {
-	var cmds []tea.Cmd
+	notice := ""
 	if msg.err != nil {
-		cmds = append(cmds, m.setNotice("editor failed: "+msg.err.Error()))
+		notice = "editor failed: " + msg.err.Error()
+	}
+	return m.resumed(notice)
+}
+
+// resumed reloads the store after a program run from spx exits, showing notice when it isn't
+// empty.
+func (m Model) resumed(notice string) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+	if notice != "" {
+		cmds = append(cmds, m.setNotice(notice))
 	}
 	cmds = append(cmds, m.load())
 	m.editLoad = m.loads
