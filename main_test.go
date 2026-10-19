@@ -162,7 +162,10 @@ func repo(t *testing.T, name string) (main, worktree string) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git is not installed")
 	}
-	parent := t.TempDir()
+	parent, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
 	t.Setenv("GIT_CEILING_DIRECTORIES", parent)
 	main = filepath.Join(parent, name)
 	if err := os.Mkdir(main, 0o755); err != nil {
