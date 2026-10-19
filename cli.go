@@ -35,8 +35,7 @@ var commands = []command{
 		Name:     "log",
 		Synopsis: `spx log <slug> "<text>"`,
 		Effect:   "Append a dated Log entry to a draft, approved or started spec and commit it.",
-		Rule: "Use instead of editing the Log by hand. Pass one line of text; the entry is dated today " +
-			"and committed as `<project>: log <slug>`. Done and dropped specs exit 3.",
+		Rule:     "Use instead of editing the Log by hand. Pass one line of text; the entry is dated today. Done and dropped specs exit 3.",
 		Usage: "usage: spx log <slug> \"<text>\"\n" +
 			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.",
 		Run: runTextCommand(ops.Log),
@@ -45,11 +44,7 @@ var commands = []command{
 		Name:     "new",
 		Synopsis: `spx new <project> <file>`,
 		Effect:   "Add a finished draft written outside the store as a new spec in <project>/draft/ and commit it.",
-		Rule: "Write the whole spec in a file outside the store first, then run this once; spx copies it in, " +
-			"so a half-written spec is never on main. The slug comes from `title:` and is printed; it never " +
-			"changes. Missing template fields are appended empty. Leave `approved`, `status`, `accepted`, `pr` " +
-			"and `path` empty (exit 2 otherwise). A new project folder is created only for a name of lowercase " +
-			"letters, digits and hyphens. Unresolved `depends-on` or `parent` slugs warn on stderr.",
+		Rule:     "Write the whole spec in a file outside the store first, then run this once. The slug comes from `title:` and is printed; it never changes. Leave the spx-filled fields empty (exit 2 otherwise). A new project folder is created only for a name of lowercase letters, digits and hyphens.",
 		Usage: "usage: spx new <project> <file>\n" +
 			"<file> is the finished draft, with a title: in its frontmatter. Prints the new spec's slug.",
 		Run: runNew,
@@ -58,13 +53,7 @@ var commands = []command{
 		Name:     "repo",
 		Synopsis: "spx repo [project] | spx repo --set <project> <path>",
 		Effect:   "Print the path of a project's main checkout, or with --set record it in the store and commit it.",
-		Rule: "Use to find the directory to start work in instead of guessing `~/src/<project>`. Without a " +
-			"project it uses the current checkout's project (exit 2 outside one, or when the store lacks it). " +
-			"The path is the one recorded in `<project>/.repo`, else `~/src/<project>` when that exists; " +
-			"otherwise it exits 1 with `repo not found for <project>`, or `repo path missing: <path>` when " +
-			"the recorded directory is gone. `spx repo --set <project> <path>` records an existing directory " +
-			"(`~` and relative paths are resolved), replacing a stale one, and commits `<project>: map repo`; " +
-			"`new` records it automatically from the project's main checkout.",
+		Rule:     "Use to find the directory to start work in instead of guessing `~/src/<project>`. Without a project it uses the current checkout's project (exit 2 outside one, or when the store lacks it). The path is the one in `<project>/.repo`, else `~/src/<project>` when that exists; otherwise it exits 1 (`repo not found for <project>`, or `repo path missing: <path>` when the recorded directory is gone). `--set` records an existing directory (`~` and relative paths are resolved), replacing a stale one; `new` records it automatically from the project's main checkout.",
 		Usage: "usage: spx repo [project]\n" +
 			"       spx repo --set <project> <path>\n" +
 			"Prints the project's main checkout; without a project, the current checkout's project.\n" +
@@ -75,13 +64,7 @@ var commands = []command{
 		Name:     "edit",
 		Synopsis: `spx edit <slug> <file>`,
 		Effect:   "Replace a draft or approved spec's content with <file> and commit it.",
-		Rule: "Refine a spec by editing a copy outside the store and passing it here. The file is the whole " +
-			"spec, frontmatter and a usable `title:` included (exit 2 otherwise). Keep every existing Log " +
-			"line unchanged and in order (append only) and leave `approved`, `status`, `accepted`, `pr` and " +
-			"`path` as stored, or it exits 3. The slug never changes. On an approved spec, a change to the " +
-			"Outcome paragraph, Acceptance criteria, Design or Boundaries clears the approval, moves it to " +
-			"draft/ and prints `approval cleared; moved to draft`. Unresolved `depends-on` or `parent` slugs " +
-			"warn on stderr.",
+		Rule:     "Refine a spec by editing a copy outside the store and passing it here. The file is the whole spec with a usable `title:` (exit 2 otherwise). Keep every existing Log line unchanged and in order, and the spx-filled fields as stored, or it exits 3. On an approved spec, changing the Outcome, Acceptance criteria, Design or Boundaries clears the approval and moves it to draft/.",
 		Usage: "usage: spx edit <slug> <file>\n" +
 			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.\n" +
 			"<file> is the spec's full new content.",
@@ -91,11 +74,7 @@ var commands = []command{
 		Name:     "approve",
 		Synopsis: `spx approve <slug> "<one line>" [--cold-read <result>]`,
 		Effect:   "Record the user's approval of a draft, move it to approved/ and commit it.",
-		Rule: "Run only after the user said yes; spx records the approval, it never decides one. The one line " +
-			"says what was approved; pass the cold read's result with --cold-read (default `not run`). " +
-			"`approved:` becomes `<git user.name>, <date>: <one line>. Cold read: <result>` and the Log gets " +
-			"`Approved: ` plus that text. Works on drafts only: an approved spec exits 3. An unset " +
-			"git user.name exits 5.",
+		Rule:     "Run only after the user said yes; spx records the approval, it never decides one. The one line says what was approved; pass the cold read's result with --cold-read (default `not run`). Drafts only: an approved spec exits 3. An unset git user.name exits 5.",
 		Usage: "usage: spx approve <slug> \"<one line>\" [--cold-read <result>]\n" +
 			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.\n" +
 			"<result> is one line and defaults to \"not run\".",
@@ -105,12 +84,7 @@ var commands = []command{
 		Name:     "start",
 		Synopsis: "spx start <slug> --branch <name>",
 		Effect:   "Start an approved spec: set its status to in-progress, log the branch, move it to started/ and commit it.",
-		Rule: "Run when work on an approved spec begins, with the branch you work on. Once the slug resolves it runs " +
-			"the sweep (a gh failure only warns), then needs the spec in approved/ and every `depends-on` in done/ " +
-			"(exit 3 otherwise). `status:` becomes `in-progress`, the Log gets `Started on branch <name>`, and " +
-			"the spec moves to started/, committed as `<project>: start <slug>`. Run from the project's main " +
-			"checkout or a worktree of it, it also records `<project>/.repo` in the same commit when missing. " +
-			"The repo gets no copy yet: `spx place` writes it when the PR opens.",
+		Rule:     "Run when work on an approved spec begins, with the branch you work on. It first runs the sweep (a gh failure only warns), then needs the spec in approved/ and every `depends-on` in done/ (exit 3 otherwise). It sets `status: in-progress`, logs the branch and moves the spec to started/. Run from the project's main checkout or a worktree of it, it also records `<project>/.repo` when missing. The repo gets no copy yet: `spx place` writes it.",
 		Usage: "usage: spx start <slug> --branch <name>\n" +
 			"<slug> is an approved spec in the current checkout's project, or <project>/<slug> from anywhere.\n" +
 			"<name> is the work branch, one word.",
@@ -120,8 +94,7 @@ var commands = []command{
 		Name:     "send-back",
 		Synopsis: `spx send-back <slug> "<questions>"`,
 		Effect:   "Clear a draft or approved spec's approval, log the open questions, move it to draft/ and commit it.",
-		Rule: "Use when a spec needs the user's answers before it can be approved. Pass the questions as one " +
-			"line; the Log gets `Needs clarification: <questions>`. Started, done and dropped specs exit 3.",
+		Rule:     "Use when a spec needs the user's answers before it can be approved. Pass the questions as one line. Started, done and dropped specs exit 3.",
 		Usage: "usage: spx send-back <slug> \"<questions>\"\n" +
 			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.",
 		Run: runTextCommand(ops.SendBack),
@@ -130,8 +103,7 @@ var commands = []command{
 		Name:     "drop",
 		Synopsis: `spx drop <slug> "<why>"`,
 		Effect:   "Log why a draft, approved or started spec is abandoned, move it to dropped/ and commit it.",
-		Rule: "Use when the user abandons a spec. Pass the reason as one line; the Log gets `Dropped: <why>`. " +
-			"Done and dropped specs exit 3.",
+		Rule:     "Use when the user abandons a spec. Pass the reason as one line. Done and dropped specs exit 3.",
 		Usage: "usage: spx drop <slug> \"<why>\"\n" +
 			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.",
 		Run: runTextCommand(ops.Drop),
@@ -140,11 +112,7 @@ var commands = []command{
 		Name:     "status",
 		Synopsis: `spx status <slug> <in-progress|in-review|done> ["<note>"]`,
 		Effect:   "Set a started spec's status and log it, then commit it.",
-		Rule: "Use any time while the spec is started, to say where the work is; the store copy is the live " +
-			"one, so run it from wherever the session is. The Log gets `Status: <value>`, followed by `: <note>` " +
-			"when you pass a note. Any other value, or a spec that is not started, exits 3. Any of the three " +
-			"values can follow any other. `status done` with unticked acceptance criteria still sets the " +
-			"status and lists them on stderr; tick them first with `spx check`, or leave one open with a Log note.",
+		Rule:     "Use any time while the spec is started, to say where the work is; run it from wherever the session is. Any other value, or a spec that is not started, exits 3; any value can follow any other. `status done` with unticked acceptance criteria still sets the status and lists them on stderr; tick them first with `spx check`, or leave one open with a Log note.",
 		Usage: "usage: spx status <slug> <in-progress|in-review|done> [\"<note>\"]\n" +
 			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.",
 		Run: runStatus,
@@ -153,10 +121,7 @@ var commands = []command{
 		Name:     "check",
 		Synopsis: "spx check <slug> <n>... [--uncheck]",
 		Effect:   "Tick (or with --uncheck, untick) acceptance criteria of a started spec by number and commit it.",
-		Rule: "Use as each acceptance criterion is met, any time while the spec is started; the numbers are " +
-			"1-based positions in the `## Acceptance criteria` list. Only top-level items directly under that " +
-			"heading count; nested bullets, fenced code and other sections are ignored. A number out of range " +
-			"exits 3 and changes nothing. Naming criteria already in the wanted state commits nothing.",
+		Rule:     "Use as each acceptance criterion is met, while the spec is started; the numbers are 1-based positions in the top-level items under `## Acceptance criteria`. A number out of range exits 3 and changes nothing. Criteria already in the wanted state commit nothing.",
 		Usage: "usage: spx check <slug> <n>... [--uncheck]\n" +
 			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.\n" +
 			"<n> is the 1-based position of a criterion in the Acceptance criteria list.",
@@ -166,12 +131,7 @@ var commands = []command{
 		Name:     "amend",
 		Synopsis: `spx amend <slug> <file> "<reason>"`,
 		Effect:   "Replace a started spec's content with <file>, log why, and commit it.",
-		Rule: "Run only after the user said yes to changing the Outcome, criteria, Design or Boundaries of a " +
-			"started spec; spx records the change, it never decides one. Edit a copy outside the store and " +
-			"pass it here with the reason as one line; the Log gets `Amended: <reason>`. The file is the whole " +
-			"spec with a usable `title:` (exit 2 otherwise). Keep every existing Log line unchanged and in " +
-			"order, and leave `approved`, `status`, `accepted`, `pr` and `path` as stored, or it exits 3. A " +
-			"spec that is not started exits 3. Unresolved `depends-on` or `parent` slugs warn on stderr.",
+		Rule:     "Run only after the user said yes to changing the Outcome, criteria, Design or Boundaries of a started spec; spx records the change, it never decides one. Edit a copy outside the store and pass it here with the reason as one line. Same file rules as `spx edit`; a spec that is not started exits 3.",
 		Usage: "usage: spx amend <slug> <file> \"<reason>\"\n" +
 			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.\n" +
 			"<file> is the spec's full new content; <reason> is one line.",

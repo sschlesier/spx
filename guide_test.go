@@ -130,7 +130,7 @@ func TestGuideBodyIsTheGuideWithoutFrontmatter(t *testing.T) {
 func TestGuideListsEveryCommandFromTheTable(t *testing.T) {
 	got := guideOutput(t, "--skill")
 	for _, c := range commands {
-		for _, want := range []string{"`" + c.Synopsis + "`: " + c.Effect, "`spx " + c.Name + "`: " + c.Rule} {
+		for _, want := range []string{"`" + c.Synopsis + "`: " + c.Rule} {
 			if !strings.Contains(got, want) {
 				t.Errorf("guide lacks %q", want)
 			}
@@ -182,7 +182,7 @@ func TestGuideGrowsWithTheTable(t *testing.T) {
 	commands = append(commands, command{Name: "zz", Synopsis: "spx zz <a>", Effect: "Does zz.", Rule: "Use zz."})
 	t.Cleanup(func() { commands = commands[:len(commands)-1] })
 	got := guideOutput(t, "--skill")
-	if !strings.Contains(got, "`spx zz <a>`: Does zz.") || !strings.Contains(got, "`spx zz`: Use zz.") {
+	if !strings.Contains(got, "`spx zz <a>`: Use zz.") {
 		t.Error("a new table entry is missing from the guide")
 	}
 }
