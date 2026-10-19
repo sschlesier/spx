@@ -84,7 +84,6 @@ type Model struct {
 	notice    string // shown in place of the footer; cleared by a key press or noticeTime
 	noticeGen int    // only the tick for the latest notice clears it
 	editLoad  int    // the load issued when the editor or Claude exited
-	hold      string // project/slug whose already-working notice is showing; c on it starts anyway
 }
 
 // Reload messages. A message from a watcher other than the current one is stale.
@@ -205,7 +204,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.claudeDone(msg)
 	case noticeMsg:
 		if msg.gen == m.noticeGen {
-			m.notice, m.hold = "", ""
+			m.notice = ""
 		}
 	default:
 		if m.typing {
@@ -439,8 +438,7 @@ func find(specs []store.Spec, s store.Spec) int {
 }
 
 func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	hold := m.hold
-	m.notice, m.hold = "", ""
+	m.notice = ""
 	m.noticeGen++
 	if m.typing {
 		return m.typingKey(msg)
@@ -455,7 +453,7 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "e":
 		return m.openEditor()
 	case "c":
-		return m.advance(hold)
+		return m.advance()
 	case "y", "Y":
 		return m.copySelected(k == "Y")
 	case "]", "[":

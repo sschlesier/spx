@@ -36,9 +36,7 @@ Deploy:    The user's own machine, run in a terminal. Network only through `gh`,
 Load:      One user; a store of tens to low hundreds of specs.
 Data:      Reads markdown files under the store root. Writes under the store root only through
            the CLI commands (each commits to the store's git repo) or a program opened with `e` or `c`,
-           and outside it only `spx place`'s one ticket file in a project repo. Reads
-           `$CLAUDE_CONFIG_DIR/sessions` (default `~/.claude/sessions`) and sends signal 0 to the
-           pids found there. Nothing sensitive.
+           and outside it only `spx place`'s one ticket file in a project repo. Nothing sensitive.
 Staleness: Changes under the store show within about a second (fsnotify, 100 ms debounce);
            dropped/ isn't watched, so its changes show on the next reload from another change.
 
@@ -47,7 +45,7 @@ Invariants:
   `new`, `edit`, `approve`, `start`, `send-back`, `drop`, `status`, `check`, `amend`, `repo --set`, `accept`,
   `close`, `sweep`), each of which commits just the paths it touched as `<project>: <verb> <slug>`
   (`<project>: map repo` for `repo --set`, `<project>: done <slug>` for `close`, which `sweep` runs
-  for each merged pull request), never stashes or pushes, and restores the tree on failure. The TUI never writes; only an
+  for each merged pull request), never stashes or pushes, and restores the tree on failure. The TUI never writes; only a
   program the user starts with `e` (the editor) or `c` (Claude) may. `<project>/.repo` (one line: the project's main checkout
   path, written by `repo --set` and by `new` and `start`, which commit it with the draft or the start) is the one
   non-spec file spx writes under the store root; it is never listed. The one write outside the
@@ -75,9 +73,7 @@ Invariants:
   `git rev-parse` at startup, to scope to the current repo's project; `git` in the store root
   for the commands; `gh pr view <url> --json state` (read-only) for `spx sweep`, which `spx start` also
   runs first (a gh failure only warns there); the editor on
-  `e`; `claude` on `c`, in the project's repo, with the prompt for the spec's stage, unless a
-  live session in `$CLAUDE_CONFIG_DIR/sessions` (default `~/.claude/sessions`; spx reads it and
-  sends signal 0 to the pids in it) already works on the spec; and one clipboard tool (pbcopy, wl-copy or xclip) on `y`/`Y`. In a project repo a command
+  `e`; `claude` on `c`, in the project's repo, with the prompt for the spec's stage; and one clipboard tool (pbcopy, wl-copy or xclip) on `y`/`Y`. In a project repo a command
   runs only read-only `git rev-parse` (`place` and `accept` to find the checkout's top-level),
   never a git command that writes; `place --dir` runs no git in the repo. `accept` also reads the
   repo's copy of the spec (and AGENTS.md or CLAUDE.md for the ticket folder) without writing.

@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -15,24 +14,20 @@ import (
 	"spx/store"
 )
 
-// claudeEnv is a store root with a project "proj" mapped to a checkout, and an empty Claude
-// sessions directory. HOME points at a scratch directory too.
-type claudeEnv struct{ root, repo, sessions string }
+// claudeEnv is a store root with a project "proj" mapped to a checkout. HOME points at a
+// scratch directory too.
+type claudeEnv struct{ root, repo string }
 
 func newClaudeEnv(t *testing.T) claudeEnv {
 	t.Helper()
-	e := claudeEnv{root: t.TempDir(), repo: t.TempDir(), sessions: filepath.Join(t.TempDir(), "sessions")}
+	e := claudeEnv{root: t.TempDir(), repo: t.TempDir()}
 	if err := os.MkdirAll(filepath.Join(e.root, "proj"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(e.root, "proj", ".repo"), []byte(e.repo+"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(e.sessions, 0o755); err != nil {
-		t.Fatal(err)
-	}
 	t.Setenv("HOME", t.TempDir())
-	t.Setenv("CLAUDE_CONFIG_DIR", filepath.Dir(e.sessions))
 	return e
 }
 
@@ -46,29 +41,11 @@ func (e claudeEnv) model(t *testing.T, specs []store.Spec) Model {
 	return send(t, m, tea.WindowSizeMsg{Width: 120, Height: 20})
 }
 
-func (e claudeEnv) session(t *testing.T, name string, pid int, cwd string) {
-	t.Helper()
-	data := `{"pid":` + strconv.Itoa(pid) + `,"sessionId":"s","cwd":"` + cwd + `","kind":"interactive","status":"idle","procStart":"x"}`
-	if err := os.WriteFile(filepath.Join(e.sessions, name+".json"), []byte(data), 0o644); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func oneSpec(status, progress string) []store.Spec {
 	return []store.Spec{{Project: "proj", Status: status, Progress: progress, Slug: "the-spec", Title: "The spec", Priority: 2}}
 }
 
-func deadPid(t *testing.T) int {
-	t.Helper()
-	c := exec.Command("true")
-	if err := c.Run(); err != nil {
-		t.Fatal(err)
-	}
-	return c.Process.Pid
-}
-
 func TestAdvancePromptPerStage(t *testing.T) {
-	const tail = " Before acting, list your peer sessions and ask each whether it is working on this spec; if one says yes, stop and tell me."
 	cases := []struct {
 		status, progress, want string
 	}{
@@ -82,11 +59,8 @@ func TestAdvancePromptPerStage(t *testing.T) {
 	}
 	for _, c := range cases {
 		got, ok := advancePrompt(store.Spec{Project: "p", Slug: "s", Status: c.status, Progress: c.progress}, "/x/s.md")
-		if !ok || got != c.want+tail {
+		if !ok || got != c.want {
 			t.Errorf("%s/%s: %q, %v", c.status, c.progress, got, ok)
-		}
-		if !strings.HasSuffix(got, peerCheck) {
-			t.Errorf("%s/%s: prompt does not end with the peer check", c.status, c.progress)
 		}
 	}
 	for _, status := range []string{"done", store.Dropped} {
@@ -104,7 +78,7 @@ func TestCStartsClaudeInTheRepoWithThePrompt(t *testing.T) {
 		if cmd == nil || isNotice(cmd) || next.(Model).notice != "" {
 			t.Fatalf("%s: c returned %v, notice %q, want an exec command", c.status, cmd, next.(Model).notice)
 		}
-		cmdline, notice := m.advancePlan(m.specs[0], "")
+		cmdline, notice := m.advancePlan(m.specs[0])
 		want, _ := advancePrompt(m.specs[0], absPath(m.specs[0]))
 		if notice != "" || cmdline.Dir != e.repo || len(cmdline.Args) != 2 || cmdline.Args[0] != "claude" || cmdline.Args[1] != want {
 			t.Errorf("%s: dir %q args %q notice %q", c.status, cmdline.Dir, cmdline.Args, notice)
@@ -206,123 +180,6 @@ func TestCWorksInTheNarrowListAndDetail(t *testing.T) {
 	m = press(t, m, "enter")
 	if got := press(t, m, "c"); got.notice != "nothing to advance (done)" || !got.detailOpen {
 		t.Errorf("narrow detail: notice %q", got.notice)
-	}
-}
-
-func TestWorkingSessionNeedsALivePidAndTheSpecsName(t *testing.T) {
-	e := newClaudeEnv(t)
-	live := os.Getppid()
-	worktree := filepath.Join(t.TempDir(), "worktrees", "proj", "the-spec")
-	e.session(t, "a", live, worktree)
-	pid, cwd, ok := workingSession(e.sessions, e.repo, "proj", "the-spec")
-	if !ok || pid != live || cwd != worktree {
-		t.Errorf("worktree: %d %q %v", pid, cwd, ok)
-	}
-	inRepo := filepath.Join(e.repo, ".claude", "worktrees", "the-spec")
-	e.session(t, "a", live, inRepo)
-	if _, cwd, ok := workingSession(e.sessions, e.repo, "proj", "the-spec"); !ok || cwd != inRepo {
-		t.Errorf("under the repo: %q %v", cwd, ok)
-	}
-	for name, c := range map[string]struct {
-		pid int
-		cwd string
-	}{
-		"dead pid":         {deadPid(t), worktree},
-		"own pid":          {os.Getpid(), worktree},
-		"main checkout":    {live, e.repo},
-		"another spec":     {live, filepath.Join(t.TempDir(), "worktrees", "proj", "other-spec")},
-		"another project":  {live, filepath.Join(t.TempDir(), "worktrees", "elsewhere", "the-spec")},
-		"slug as a prefix": {live, filepath.Join(t.TempDir(), "worktrees", "proj", "the-spec-two")},
-	} {
-		os.RemoveAll(e.sessions)
-		os.MkdirAll(e.sessions, 0o755)
-		e.session(t, "x", c.pid, c.cwd)
-		if _, _, ok := workingSession(e.sessions, e.repo, "proj", "the-spec"); ok {
-			t.Errorf("%s counted", name)
-		}
-	}
-}
-
-func TestWorkingSessionSkipsBadFilesAndAMissingDirectory(t *testing.T) {
-	e := newClaudeEnv(t)
-	os.WriteFile(filepath.Join(e.sessions, "bad.json"), []byte("{not json"), 0o644)
-	os.WriteFile(filepath.Join(e.sessions, "nopid.json"), []byte(`{"cwd":"/w/proj/the-spec"}`), 0o644)
-	os.WriteFile(filepath.Join(e.sessions, "note.txt"), []byte("x"), 0o644)
-	if _, _, ok := workingSession(e.sessions, e.repo, "proj", "the-spec"); ok {
-		t.Error("unusable entries counted")
-	}
-	if _, _, ok := workingSession(filepath.Join(e.sessions, "missing"), e.repo, "proj", "the-spec"); ok {
-		t.Error("a missing directory counted")
-	}
-	m := e.model(t, oneSpec("draft", ""))
-	os.RemoveAll(e.sessions)
-	if c, notice := m.advancePlan(m.specs[0], ""); c == nil || notice != "" {
-		t.Errorf("a missing registry blocked the launch: %q", notice)
-	}
-}
-
-func TestAProcessOwnedByAnotherUserIsAlive(t *testing.T) {
-	if os.Geteuid() == 0 {
-		t.Skip("root can signal pid 1 without EPERM")
-	}
-	if !alive(1) {
-		t.Error("pid 1 (EPERM) counted as dead")
-	}
-}
-
-func TestWorkingSessionReadsOnlyJSONFiles(t *testing.T) {
-	e := newClaudeEnv(t)
-	cwd := filepath.Join(t.TempDir(), "worktrees", "proj", "the-spec")
-	data := `{"pid":` + strconv.Itoa(os.Getppid()) + `,"cwd":"` + cwd + `"}`
-	os.WriteFile(filepath.Join(e.sessions, "1.sock"), []byte(data), 0o644)
-	if _, _, ok := workingSession(e.sessions, e.repo, "proj", "the-spec"); ok {
-		t.Error("a file that isn't .json counted")
-	}
-}
-
-func TestSessionsDirDefaultsUnderHome(t *testing.T) {
-	t.Setenv("CLAUDE_CONFIG_DIR", "")
-	t.Setenv("HOME", "/h")
-	if got := sessionsDir(); got != "/h/.claude/sessions" {
-		t.Errorf("got %q", got)
-	}
-	t.Setenv("CLAUDE_CONFIG_DIR", "/cfg")
-	if got := sessionsDir(); got != "/cfg/sessions" {
-		t.Errorf("got %q", got)
-	}
-}
-
-func TestASecondCOnTheSameSpecStartsAnyway(t *testing.T) {
-	e := newClaudeEnv(t)
-	specs := oneSpec("draft", "")
-	specs = append(specs, store.Spec{Project: "proj", Status: "draft", Slug: "other", Title: "Other", Priority: 3})
-	m := e.model(t, specs)
-	cwd := filepath.Join(t.TempDir(), "worktrees", "proj", "the-spec")
-	e.session(t, "a", os.Getppid(), cwd)
-
-	first, cmd := m.Update(keys["c"])
-	want := "claude already working on this spec (pid " + strconv.Itoa(os.Getppid()) + ", " + cwd + "); c again to start anyway"
-	if first.(Model).notice != want || !isNotice(cmd) {
-		t.Fatalf("notice %q, want %q", first.(Model).notice, want)
-	}
-	if _, cmd := first.Update(keys["c"]); cmd == nil || isNotice(cmd) {
-		t.Errorf("second c returned %v, want an exec command", cmd)
-	}
-
-	// A key press in between, or another spec, doesn't carry the override.
-	moved := press(t, first.(Model), "j")
-	if got := press(t, moved, "k", "c"); got.notice != want {
-		t.Errorf("after a key press: notice %q, want the warning again", got.notice)
-	}
-	other := press(t, first.(Model), "j")
-	if got := press(t, other, "c"); got.notice != "" && strings.HasPrefix(got.notice, "claude already") {
-		t.Errorf("a different spec was warned about: %q", got.notice)
-	}
-
-	// The override ends with the notice.
-	expired, _ := first.Update(noticeMsg{first.(Model).noticeGen})
-	if got := press(t, expired.(Model), "c"); got.notice != want {
-		t.Errorf("after the notice ended: %q, want the warning again", got.notice)
 	}
 }
 

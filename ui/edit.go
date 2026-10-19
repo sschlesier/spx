@@ -72,7 +72,7 @@ func copyCmd(text string) tea.Cmd {
 
 // setNotice shows s in place of the footer until the next key press or noticeTime.
 func (m *Model) setNotice(s string) tea.Cmd {
-	m.notice, m.hold = s, ""
+	m.notice = s
 	m.noticeGen++
 	gen := m.noticeGen
 	return tea.Tick(noticeTime, func(time.Time) tea.Msg { return noticeMsg{gen} })
