@@ -19,13 +19,7 @@ var finishCommands = []command{
 		Name:     "place",
 		Synopsis: "spx place <slug> [--dir <repo>]",
 		Effect:   "Write a started spec's current text to the repo's ticket folder, overwriting its copy there.",
-		Rule: "Run whenever the branch needs the spec's current text: when the PR opens, after ticking criteria, " +
-			"and last, after the spec's status is set to done. It writes the started spec as it is now (status, ticked " +
-			"criteria and Log included) to `<repo>/<ticket folder>/<slug>.md` and prints that path; you commit and " +
-			"push it, `spx place` runs no git. The repo is `--dir`, else the git checkout (or worktree) you run it " +
-			"in when its project is the spec's; anything else exits 3 and names `--dir`. The ticket folder is " +
-			"`tickets/`, or the `Ticket folder:` line of the repo's AGENTS.md or CLAUDE.md. Only started specs " +
-			"(exit 3 otherwise). It works from inside a worktree.",
+		Rule:     "Run whenever the branch needs the spec's current text: when the PR opens, after ticking criteria, and last, after the status is set to done. It writes the started spec as it is now to `<repo>/<ticket folder>/<slug>.md` and prints that path; you commit and push it, `spx place` runs no git. The repo is `--dir`, else the checkout (or worktree) you run it in when its project is the spec's; anything else exits 3 and names `--dir`. The ticket folder is `tickets/`, or the `Ticket folder:` line of the repo's AGENTS.md or CLAUDE.md. Only started specs (exit 3 otherwise).",
 		Usage: "usage: spx place <slug> [--dir <repo>]\n" +
 			"<slug> is a started spec in the current checkout's project, or <project>/<slug> from anywhere.\n" +
 			"<repo> is the checkout to write into; the default is the current checkout, when it is the spec's project.",
@@ -35,12 +29,7 @@ var finishCommands = []command{
 		Name:     "accept",
 		Synopsis: `spx accept <slug> --pr <url> "<note>" [--round <n>]`,
 		Effect:   "Record the user's acceptance of a started spec whose status is done, with its PR and repo path, and commit it.",
-		Rule: "Run only after the user said yes to the finished work, and after the spec's status is done and its final " +
-			"`spx place` is committed and pushed. The Log gets `Accepted: <git user.name>, <date>, round <n>: " +
-			"<note>` (round defaults to 1) and the frontmatter gets `pr:` and `path:`. A spec that is not `done`, " +
-			"or already accepted, exits 3. When the repo copy resolves from the current checkout and differs from " +
-			"the store copy, it exits 3: run `spx place` again. When no repo resolves it warns and records " +
-			"`tickets/<slug>.md`. An unset git user.name exits 5.",
+		Rule:     "Run only after the user said yes to the finished work, and after the spec's status is done and its final `spx place` is committed and pushed. Round defaults to 1. A spec that is not `done`, or already accepted, exits 3; so does a repo copy that differs from the store copy (run `spx place` again). When no repo resolves it warns and records `tickets/<slug>.md`. An unset git user.name exits 5.",
 		Usage: "usage: spx accept <slug> --pr <url> \"<note>\" [--round <n>]\n" +
 			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.\n" +
 			"<url> is the pull request; <note> is one line; <n> is the review round and defaults to 1.",
@@ -50,10 +39,7 @@ var finishCommands = []command{
 		Name:     "close",
 		Synopsis: "spx close <slug>",
 		Effect:   "Move an accepted started spec to done/ trimmed to a receipt and commit it.",
-		Rule: "Normally not run by hand: `spx sweep` does it after the PR merges. The receipt keeps `title`, " +
-			"`type`, `priority`, `depends-on`, `parent`, `approved`, `accepted`, `pr`, `path` and the Outcome " +
-			"paragraph, and drops `status`, any `id`, the other sections and the Log. Exits 3 without an " +
-			"`Accepted:` Log entry, a `pr:` and a `path:`.",
+		Rule:     "Normally not run by hand: `spx sweep` does it after the PR merges. Moves the spec to done/ as a receipt. Exits 3 without an `Accepted:` Log entry, a `pr:` and a `path:`.",
 		Usage: "usage: spx close <slug>\n" +
 			"<slug> is a started spec in the current checkout's project, or <project>/<slug> from anywhere.",
 		Run: runClose,
@@ -62,10 +48,7 @@ var finishCommands = []command{
 		Name:     "sweep",
 		Synopsis: "spx sweep [project]",
 		Effect:   "Close every started spec whose pull request has merged, and print one line per spec closed.",
-		Rule: "Run before listing specs or checking readiness, and after a merge: it asks `gh pr view <url> --json " +
-			"state` for each started spec with a `pr:` and runs `close` on MERGED ones, printing `closed <project>/<slug>`. " +
-			"A CLOSED pull request is reported on stderr and left alone. A gh failure exits 5. Without a project it " +
-			"covers every project.",
+		Rule:     "Run before listing specs or checking readiness, and after a merge: it runs `close` on each started spec whose `pr:` is MERGED, printing `closed <project>/<slug>`. A CLOSED pull request is reported on stderr and left alone. A gh failure exits 5. Without a project it covers every project.",
 		Usage: "usage: spx sweep [project]\n" +
 			"Without a project, every project is swept.",
 		Run: runSweep,

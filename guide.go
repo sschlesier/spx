@@ -70,11 +70,11 @@ var transitions = []transition{
 // has no entry.
 var exitAdvice = map[int]string{
 	ops.CodeOK:          "Carry on.",
-	ops.CodeNotFound:    "Report spx's message to the user; check the slug or path with them.",
+	ops.CodeNotFound:    "Check the slug or path with the user.",
 	ops.CodeUsage:       "Fix the arguments from the printed usage and run again; if the message names a rule you broke, correct the input first.",
-	ops.CodeWrongStatus: "Report spx's message to the user; the spec is not in a state that allows the step.",
-	ops.CodeConflict:    "Report spx's message to the user; they resolve the store. Do not touch the store to clear it.",
-	ops.CodeTool:        "Report spx's message to the user; the tooling needs fixing first.",
+	ops.CodeWrongStatus: "The spec is not in a state that allows the step.",
+	ops.CodeConflict:    "The user resolves the store; don't touch it to clear this.",
+	ops.CodeTool:        "The tooling needs fixing first.",
 }
 
 const guideStore = `## The store
@@ -107,10 +107,12 @@ append only; spx adds to it.
 const guideRulesFixed = `- Write content outside the store (a temporary file) and hand it to a command; spx copies it in.
 - Never edit, move or commit under the store root by hand, and never change directory into it.
 - Run every store step with ` + "`spx`" + ` from wherever the session is.
+- Every command that changes the store commits just the paths it touched, never pushes, and restores the tree on failure.
+- Unresolved ` + "`depends-on` or `parent`" + ` slugs in a file you pass warn on stderr.
 `
 
-const guideRefusals = `On a refusal (a nonzero exit), report spx's message to the user. Don't work around it by
-touching the store another way.
+const guideRefusals = `On a refusal (a nonzero exit), report spx's message to the user, unless the code below says to fix
+the input and run again. Don't work around it by touching the store another way.
 `
 
 // commandOf reports whether name is in the command table.
@@ -148,12 +150,7 @@ func skillGuide(frontmatter bool) string {
 	b.WriteString("\n## Rules\n\n")
 	b.WriteString(guideRulesFixed)
 	for _, c := range commands {
-		fmt.Fprintf(&b, "- `spx %s`: %s\n", c.Name, c.Rule)
-	}
-
-	b.WriteString("\n## Commands\n\n")
-	for _, c := range commands {
-		fmt.Fprintf(&b, "- `%s`: %s\n", c.Synopsis, c.Effect)
+		fmt.Fprintf(&b, "- `%s`: %s\n", c.Synopsis, c.Rule)
 	}
 
 	b.WriteString("\n## Refusals and exit codes\n\n")

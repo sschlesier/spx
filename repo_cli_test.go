@@ -215,7 +215,7 @@ func TestListingIsTheSameWithAndWithoutRepoFiles(t *testing.T) {
 
 func TestGuideDocumentsRepo(t *testing.T) {
 	got := guideOutput(t, "--skill")
-	for _, want := range []string{"spx repo [project]", "spx repo --set <project> <path>", "`spx repo`:", "map repo"} {
+	for _, want := range []string{"spx repo [project]", "spx repo --set <project> <path>"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("guide lacks %q", want)
 		}
