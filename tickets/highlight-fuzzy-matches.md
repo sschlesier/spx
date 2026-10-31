@@ -6,7 +6,7 @@ type: feature
 priority: 3
 depends-on: [fuzzy-filter-the-list]
 approved: "Scott Schlesier, 2026-10-18: Highlight the best-matching field's matched characters in yellow in list rows; nothing for slug matches; list pane only. Cold read: not run (one area, no flags)"
-status: in-review
+status: done
 ---
 
 While a `/` filter is active, the characters of the query that matched are shown in yellow in each list row, so I can see why a spec is listed.
@@ -51,3 +51,4 @@ Context: `fuzzy-filter-the-list` (done) matches the query against title, slug, p
 - 2026-10-31: Status: in-review: Implemented on branch highlight-fuzzy-matches; manual go run check pending
 - 2026-10-31: Status: in-review: Review started
 - 2026-10-31: Review round 1 triage: dismissed equivalent mutants (pos<=limit, query!="" guard); dismissed the per-render bestMatch cost and the printable() drift as negligible at tens to low hundreds of specs; added tests for the other survivors.
+- 2026-10-31: Status: done: Reviewed round 1: 5/5 criteria verified by tests; manual go run check done by Scott; Design still says rune offsets where the code uses byte offsets (left as is)
