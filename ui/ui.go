@@ -1025,9 +1025,13 @@ func (m Model) listView() string {
 		if m.query != "" {
 			marked = layout[i].matched(m.query, m.specs[i], row)
 		}
-		out := highlight(row, marked, base)
+		pad := ""
 		if i == m.cursor {
-			out += base.Render(strings.Repeat(" ", max(0, w-ansi.StringWidth(row))))
+			pad = strings.Repeat(" ", max(0, w-ansi.StringWidth(row)))
+		}
+		out := base.Render(row + pad)
+		if len(marked) > 0 {
+			out = highlight(row, marked, base) + base.Render(pad)
 		}
 		rows = append(rows, out)
 	}
