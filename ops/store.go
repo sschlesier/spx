@@ -2,8 +2,8 @@ package ops
 
 import (
 	"bytes"
-	"errors"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
