@@ -6,7 +6,7 @@ priority: 3
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-10-31: Approved as drafted: push main to origin or the sole remote after each store commit; a failed push warns and exits 0; no opt-out. Cold read: not run"
-status: in-review
+status: done
 ---
 
 Every spx command that commits to the spec store also pushes that commit to the store's `origin` (or its only remote), so the store is backed up and shared without a manual `git push`.
@@ -64,3 +64,4 @@ Context: `Store.Apply` (`ops/store.go`) commits the touched paths and stops ther
 - 2026-10-31: Status: in-review
 - 2026-10-31: Amended: Review round 1, user yes: no prompts, stop pushing after a failed push, warn once, warn when listing remotes fails
 - 2026-10-31: Review round 1 pass 2: dismissed the uncovered empty-output fallback in push (defensive) and the process-global flags (per-process by design); the ssh BatchMode ordering is left as is, a user's own BatchMode=no wins
+- 2026-10-31: Status: done: Reviewed round 1: all criteria verified by tests; owner accepted untested ssh/HTTPS transports, the unrun manual scratch-store check and ssh BatchMode ordering
