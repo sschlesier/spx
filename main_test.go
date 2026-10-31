@@ -90,7 +90,7 @@ func TestHelpPrintsUsageWithoutReadingTheStore(t *testing.T) {
 			t.Errorf("%s: code=%d started=%v stderr=%q", flag, r.code, r.model != nil, r.stderr)
 		}
 		lines := strings.Split(strings.TrimRight(r.stdout, "\n"), "\n")
-		if len(lines) < 4 || lines[0] != "usage: spx [-d] [-a] [-s] [project]" || lines[1] == "" {
+		if len(lines) < 4 || lines[0] != "usage: spx [-d] [-a] [-s] [-r] [project]" || lines[1] == "" {
 			t.Errorf("%s: stdout = %q", flag, r.stdout)
 		}
 		for _, c := range commands {
@@ -105,7 +105,7 @@ func TestBadArgumentsPrintUsageAndExitTwoWithoutReadingTheStore(t *testing.T) {
 	t.Setenv("AGENT_SPECS_DIR", filepath.Join(t.TempDir(), "nope"))
 	for _, args := range [][]string{{"a", "b"}, {"-d", "-h"}, {"-dh"}, {"-d", "a", "b"}, {"-x"}, {"--nope"}, {"-"}, {"-h", "p"}, {"p", "-h"}, {"--help", "--help"}, {"--version", "-h"}, {"--version", "p"}, {"-d", "--version"}, {"--version", "--version"}} {
 		r := runCLI(t, t.TempDir(), args...)
-		if r.code != 2 || r.model != nil || r.stdout != "" || r.stderr != "usage: spx [-d] [-a] [-s] [project]\n" {
+		if r.code != 2 || r.model != nil || r.stdout != "" || r.stderr != "usage: spx [-d] [-a] [-s] [-r] [project]\n" {
 			t.Errorf("%q: code=%d started=%v stdout=%q stderr=%q", args, r.code, r.model != nil, r.stdout, r.stderr)
 		}
 	}
@@ -302,6 +302,42 @@ func TestStatusFlagsPrintRowsWithoutStartingTheUI(t *testing.T) {
 	}
 }
 
+func TestReadyFlagPrintsReadySpecsOnce(t *testing.T) {
+	printStore(t)
+	root := os.Getenv("AGENT_SPECS_DIR")
+	write := func(path, front string) {
+		full := filepath.Join(root, path)
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte("---\n"+front+"\n---\n\nBody.\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("alpha/done/fin.md", "title: Finished")
+	write("alpha/approved/a2.md", "title: Approved ready\ndepends-on: [fin]")
+	write("alpha/approved/a3.md", "title: Approved blocked\ndepends-on: [d1]")
+	write("alpha/approved/a4.md", "title: Approved missing\ndepends-on: [nope]")
+	cases := []struct {
+		args []string
+		want []string
+	}{
+		{[]string{"-r"}, []string{"Approved one", "Approved ready"}},
+		{[]string{"-r", "beta"}, nil},
+		{[]string{"-ra"}, []string{"Approved one", "Approved ready", "Approved blocked", "Approved missing"}},
+		{[]string{"-rd", "alpha"}, []string{"Approved one", "Approved ready", "Draft one", "Draft two"}},
+	}
+	for _, c := range cases {
+		r := runCLI(t, t.TempDir(), c.args...)
+		if r.code != 0 || r.model != nil || r.stderr != "" {
+			t.Errorf("%q: code=%d started=%v stderr=%q", c.args, r.code, r.model != nil, r.stderr)
+		}
+		if got := titles(r.stdout); !reflect.DeepEqual(got, c.want) {
+			t.Errorf("%q: got %q, want %q", c.args, got, c.want)
+		}
+	}
+}
+
 func TestStatusFlagRowsMatchTheList(t *testing.T) {
 	printStore(t)
 	r := runCLI(t, t.TempDir(), "-s")
@@ -370,7 +406,7 @@ func TestStatusFlagRowsAreOneLineWhateverTheTitleHolds(t *testing.T) {
 
 func TestHelpMentionsTheStatusFlags(t *testing.T) {
 	r := runCLI(t, t.TempDir(), "-h")
-	for _, f := range []string{"-d", "-a", "-s"} {
+	for _, f := range []string{"-d", "-a", "-s", "-r"} {
 		if !strings.Contains(r.stdout, f) {
 			t.Errorf("help lacks %s: %q", f, r.stdout)
 		}

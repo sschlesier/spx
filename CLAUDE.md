@@ -57,7 +57,7 @@ Invariants:
   only to resolve `depends-on` slugs in the detail pane (watched, never listed).
 - An unreadable root exits 1 with `spx: spec store not found: <path>` before the UI starts;
   quitting exits 0 and restores the terminal.
-- The CLI is `spx [-d] [-a] [-s] [project]` (`spx --version` alone prints `spx <version>`) and
+- The CLI is `spx [-d] [-a] [-s] [-r] [project]` (`spx --version` alone prints `spx <version>`) and
   the commands `spx log <slug> "<text>"`, `spx new <project> <file>`, `spx edit <slug> <file>`,
   `spx approve <slug> "<one line>" [--cold-read <result>]`, `spx start <slug> --branch <name>`, `spx send-back <slug> "<questions>"`,
   `spx drop <slug> "<why>"`, `spx status <slug> <in-progress|in-review|done> ["<note>"]`,
