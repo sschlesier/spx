@@ -47,3 +47,4 @@ Stop and ask if: ready would need information not already in the loaded specs an
 - 2026-10-18: Approved: Scott Schlesier, 2026-10-18: r key and -r flag list approved specs whose depends-on are all done. Cold read: pass
 - 2026-10-31: Started on branch filter-ready-specs
 - 2026-10-31: Status: in-review
+- 2026-10-31: Review round 1: LoadDone failure path untested and dismissed: it fails only when the store root cannot be listed, which Load has already done. Footer hint kept as d/a/s/x/r status.
