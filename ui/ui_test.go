@@ -27,6 +27,7 @@ var keys = map[string]tea.KeyPressMsg{
 	"a":         {Code: 'a', Text: "a"},
 	"s":         {Code: 's', Text: "s"},
 	"x":         {Code: 'x', Text: "x"},
+	"r":         {Code: 'r', Text: "r"},
 	"t":         {Code: 't', Text: "t"},
 	"p":         {Code: 'p', Text: "p"},
 	"e":         {Code: 'e', Text: "e"},
