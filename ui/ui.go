@@ -30,10 +30,13 @@ const (
 	pollInterval = time.Second            // reload interval while the watcher is down
 )
 
-const footerHelp = "j/k move · g/G top/bottom · ctrl+d/u scroll · d/a/s/x status · t tree · / filter · ]/[ deps · e edit · y/Y copy slug/path · c advance · p project · q quit"
+const footerHelp = "j/k move · g/G top/bottom · ctrl+d/u scroll · d/a/s/x/r status · t tree · / filter · ]/[ deps · e edit · y/Y copy slug/path · c advance · p project · q quit"
 
 // filterKeys maps each status filter key to the status it lists.
-var filterKeys = map[string]string{"d": "draft", "a": "approved", "s": "started", "x": store.Dropped}
+var filterKeys = map[string]string{"d": "draft", "a": "approved", "s": "started", "x": store.Dropped, "r": readyFilter}
+
+// readyFilter is the filter value that lists the approved specs whose dependencies are all done.
+const readyFilter = "ready"
 
 var (
 	selectedStyle = lipgloss.NewStyle().Reverse(true)
@@ -344,7 +347,16 @@ func (m Model) flat() []store.Spec {
 		if m.scope != "" && s.Project != m.scope {
 			continue
 		}
-		if s.Status == filter || filter == "" && s.Status != store.Dropped {
+		var listed bool
+		switch filter {
+		case readyFilter:
+			listed = Ready(s, m.all, m.done)
+		case "":
+			listed = s.Status != store.Dropped
+		default:
+			listed = s.Status == filter
+		}
+		if listed {
 			out = append(out, s)
 		}
 	}
@@ -530,7 +542,7 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		} else if m.filter != "" {
 			m.setFilter("")
 		}
-	case "d", "a", "s", "x":
+	case "d", "a", "s", "x", "r":
 		if status := filterKeys[k]; status != m.filter {
 			m.setFilter(status)
 		} else {
@@ -829,7 +841,7 @@ func (m Model) render() string {
 	} else if m.board {
 		help = boardHelp
 	} else if !m.split() {
-		help = "enter open · d/a/s/x · t tree · / filter · e edit · y/Y copy · c advance · p project · q quit"
+		help = "enter open · d/a/s/x/r · t tree · / filter · e edit · y/Y copy · c advance · p project · q quit"
 	}
 	if m.picking {
 		help = "type to filter · ctrl+j/k move · enter apply · esc clear/cancel · ctrl+c quit"

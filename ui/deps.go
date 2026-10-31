@@ -25,13 +25,12 @@ func depEntries(s store.Spec, all, done []store.Spec) (depends, blocks []depEntr
 	for i, slug := range s.DependsOn {
 		shown := printable(slug)
 		e := depEntry{key: fmt.Sprintf("dep:%d:%s", i, slug)}
-		j := slices.IndexFunc(pool, func(t store.Spec) bool { return t.Project == s.Project && t.Slug == slug })
+		first, found := resolveDep(s, pool, slug)
 		switch {
-		case j < 0:
+		case !found:
 			e.label = shown + " (not in store)"
 			e.notice = shown + " is not in the store"
 		default:
-			first := pool[j]
 			e.label = entryLabel(first)
 			if first.Status == store.Done {
 				e.notice = shown + " is done"
@@ -53,6 +52,31 @@ func depEntries(s store.Spec, all, done []store.Spec) (depends, blocks []depEntr
 		})
 	}
 	return depends, blocks
+}
+
+// resolveDep finds the spec a depends-on slug of s names: the first spec of s's project with
+// that slug in pool.
+func resolveDep(s store.Spec, pool []store.Spec, slug string) (store.Spec, bool) {
+	j := slices.IndexFunc(pool, func(t store.Spec) bool { return t.Project == s.Project && t.Slug == slug })
+	if j < 0 {
+		return store.Spec{}, false
+	}
+	return pool[j], true
+}
+
+// Ready reports whether s is approved and every depends-on slug resolves, as the detail pane
+// resolves it, to a done spec.
+func Ready(s store.Spec, all, done []store.Spec) bool {
+	if s.Status != "approved" {
+		return false
+	}
+	pool := slices.Concat(all, done)
+	for _, slug := range s.DependsOn {
+		if d, found := resolveDep(s, pool, slug); !found || d.Status != store.Done {
+			return false
+		}
+	}
+	return true
 }
 
 func entryLabel(s store.Spec) string {
