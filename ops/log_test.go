@@ -37,6 +37,7 @@ func write(t *testing.T, path, content string) {
 // newStore makes a git repo on main holding p/draft/one.md, p/done/old.md and p/dropped/gone.md, all committed.
 func newStore(t *testing.T) string {
 	t.Helper()
+	resetPushState()
 	root := t.TempDir()
 	gitIn(t, root, "init", "-q", "-b", "main")
 	gitIn(t, root, "config", "user.name", "Test")

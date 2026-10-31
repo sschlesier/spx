@@ -46,7 +46,7 @@ Invariants:
   `new`, `edit`, `approve`, `start`, `send-back`, `drop`, `status`, `check`, `amend`, `repo --set`, `accept`,
   `close`, `sweep`), each of which commits just the paths it touched as `<project>: <verb> <slug>`
   (`<project>: map repo` for `repo --set`, `<project>: done <slug>` for `close`, which `sweep` runs
-  for each merged pull request), then pushes `main` (never forced) to the store's `origin`, else its only remote, warning on stderr if the push fails or times out (15 s) and keeping the commit; never stashes, and restores the tree on failure. The TUI never writes; only a
+  for each merged pull request), then pushes `main` (never forced) to the store's `origin`, else its only remote, warning on stderr if the push fails or times out (15 s) and keeping the commit (later commits in that process are not pushed; git and ssh never prompt); never stashes, and restores the tree on failure. The TUI never writes; only a
   program the user starts with `e` (the editor) or `c` (Claude) may. `<project>/.repo` (one line: the project's main checkout
   path, written by `repo --set` and by `new` and `start`, which commit it with the draft or the start) is the one
   non-spec file spx writes under the store root; it is never listed. The one write outside the

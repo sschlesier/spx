@@ -50,7 +50,7 @@ draft → approved → started → done, or dropped from any live status. The st
 - Write content outside the store (a temporary file) and hand it to a command; spx copies it in.
 - Never edit, move or commit under the store root by hand, and never change directory into it.
 - Run every store step with `spx` from wherever the session is.
-- Every command that changes the store commits just the paths it touched, then pushes main to the store's remote (origin, else the only remote; a failed push only warns on stderr), and restores the tree on failure.
+- Every command that changes the store commits just the paths it touched, then pushes main to the store's remote (origin, else the only remote; a failed push only warns on stderr, and the command pushes no more commits), and restores the tree on failure.
 - Unresolved `depends-on` or `parent` slugs in a file you pass warn on stderr.
 - `spx log <slug> "<text>"`: Use instead of editing the Log by hand. Pass one line of text; the entry is dated today. Done and dropped specs exit 3.
 - `spx new <project> <file>`: Write the whole spec in a file outside the store first, then run this once. The slug comes from `title:` and is printed; it never changes. Leave the spx-filled fields empty (exit 2 otherwise). A new project folder is created only for a name of lowercase letters, digits and hyphens.

@@ -44,8 +44,67 @@ func TestSweepClosesAllWhenEveryPushFails(t *testing.T) {
 	if rep.Err != nil || len(rep.Closed) != 2 {
 		t.Fatalf("report = %+v", rep)
 	}
-	if n := strings.Count(w.String(), "spx: push to origin failed: "); n != 2 {
-		t.Errorf("%d push warnings, want 2:\n%s", n, w)
+	if n := strings.Count(w.String(), "spx: push to origin failed: "); n != 1 {
+		t.Errorf("%d push warnings, want 1 (later pushes are skipped):\n%s", n, w)
+	}
+}
+
+func TestAfterAFailedPushLaterCommitsAreNotPushed(t *testing.T) {
+	root := newStore(t)
+	origin := bare(t, root, "origin")
+	gitIn(t, root, "remote", "set-url", "origin", filepath.Join(t.TempDir(), "nope"))
+	w := warnings(t)
+	if err := logOne(t, root); err != nil {
+		t.Fatal(err)
+	}
+	gitIn(t, root, "remote", "set-url", "origin", origin)
+	if err := Log(root, specAt(root, "draft", "two"), "y", now); err != nil {
+		t.Fatal(err)
+	}
+	if hasMain(origin) {
+		t.Error("pushed after an earlier failure in the same process")
+	}
+	if n := strings.Count(w.String(), "spx: "); n != 1 {
+		t.Errorf("warnings:\n%s", w)
+	}
+}
+
+func TestSeveralRemotesWarnOncePerProcess(t *testing.T) {
+	root := newStore(t)
+	bare(t, root, "a")
+	bare(t, root, "b")
+	w := warnings(t)
+	if err := logOne(t, root); err != nil {
+		t.Fatal(err)
+	}
+	if err := Log(root, specAt(root, "draft", "two"), "y", now); err != nil {
+		t.Fatal(err)
+	}
+	if n := strings.Count(w.String(), "\n"); n != 1 {
+		t.Errorf("warnings:\n%s", w)
+	}
+}
+
+func TestGitRemoteFailureWarns(t *testing.T) {
+	resetPushState()
+	w := warnings(t)
+	if r := (Store{Root: filepath.Join(t.TempDir(), "missing")}).pushRemote(); r != "" {
+		t.Errorf("remote = %q", r)
+	}
+	if !strings.HasPrefix(w.String(), "spx: push failed: ") {
+		t.Errorf("warning = %q", w)
+	}
+}
+
+func TestPushEnvDisablesPrompts(t *testing.T) {
+	root := newStore(t)
+	t.Setenv("GIT_SSH_COMMAND", "")
+	gitIn(t, root, "config", "core.sshCommand", "ssh -i key")
+	env := strings.Join(Store{Root: root}.pushEnv(), "\n")
+	for _, want := range []string{"GIT_TERMINAL_PROMPT=0", "GIT_SSH_COMMAND=ssh -i key -o BatchMode=yes"} {
+		if !strings.Contains(env, want) {
+			t.Errorf("env lacks %q", want)
+		}
 	}
 }
 
