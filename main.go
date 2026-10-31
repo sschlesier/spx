@@ -125,10 +125,12 @@ func run(args []string, stdout, stderr io.Writer, dir string, start func(tea.Mod
 	} else if p := repoProject(dir); slices.Contains(projects, p) {
 		scope = p
 	}
-	done, err := store.LoadDone(root)
-	if err != nil {
-		fmt.Fprintf(stderr, "spx: %v\n", err)
-		return 1
+	var done []store.Spec
+	if ready || len(statuses) == 0 {
+		if done, err = store.LoadDone(root); err != nil {
+			fmt.Fprintf(stderr, "spx: %v\n", err)
+			return 1
+		}
 	}
 	if len(statuses) > 0 || ready {
 		var shown []store.Spec
