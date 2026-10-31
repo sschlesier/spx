@@ -63,3 +63,4 @@ Context: `Store.Apply` (`ops/store.go`) commits the touched paths and stops ther
 - 2026-10-31: Implemented on push-to-store-remote; manual scratch-store check not run (denied), ops tests cover it with bare remotes
 - 2026-10-31: Status: in-review
 - 2026-10-31: Amended: Review round 1, user yes: no prompts, stop pushing after a failed push, warn once, warn when listing remotes fails
+- 2026-10-31: Review round 1 pass 2: dismissed the uncovered empty-output fallback in push (defensive) and the process-global flags (per-process by design); the ssh BatchMode ordering is left as is, a user's own BatchMode=no wins
