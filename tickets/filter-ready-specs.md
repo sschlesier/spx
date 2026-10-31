@@ -6,7 +6,7 @@ type: feature
 priority: 2
 depends-on: [show-dependencies-in-the-detail-pane]
 approved: "Scott Schlesier, 2026-10-18: r key and -r flag list approved specs whose depends-on are all done. Cold read: pass"
-status: in-review
+status: done
 ---
 
 A key in the list (`r`) and a CLI flag (`-r`) show only approved specs whose `depends-on` are all done, so I can see what is ready to pick up.
@@ -48,3 +48,4 @@ Stop and ask if: ready would need information not already in the loaded specs an
 - 2026-10-31: Started on branch filter-ready-specs
 - 2026-10-31: Status: in-review
 - 2026-10-31: Review round 1: LoadDone failure path untested and dismissed: it fails only when the store root cannot be listed, which Load has already done. Footer hint kept as d/a/s/x/r status.
+- 2026-10-31: Status: done: Reviewed round 1: all criteria verified; footer hint and manual check confirmed by Scott
