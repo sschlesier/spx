@@ -231,9 +231,7 @@ func (s Store) push() {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), pushTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "git", s.pushArgs(remote)...)
-	cmd.WaitDelay = time.Second
-	cmd.Env = s.pushEnv()
+	cmd := s.pushCmd(ctx, remote)
 	var out bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &out
 	if err := cmd.Run(); err != nil {
@@ -245,6 +243,14 @@ func (s Store) push() {
 		}
 		s.pushFailed(remote, msg)
 	}
+}
+
+// pushCmd is the push process: no prompts, killed with ctx.
+func (s Store) pushCmd(ctx context.Context, remote string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, "git", s.pushArgs(remote)...)
+	cmd.WaitDelay = time.Second
+	cmd.Env = s.pushEnv()
+	return cmd
 }
 
 // pushArgs is the push invocation: only main, never forced.

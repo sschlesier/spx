@@ -1,9 +1,12 @@
 package ops
 
 import (
+	"context"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 func acceptedSpec(slug string) string {
@@ -93,6 +96,17 @@ func TestGitRemoteFailureWarns(t *testing.T) {
 	}
 	if !strings.HasPrefix(w.String(), "spx: push failed: ") {
 		t.Errorf("warning = %q", w)
+	}
+}
+
+func TestPushCommandCarriesTheNoPromptEnvAndTheDefaultTimeout(t *testing.T) {
+	root := newStore(t)
+	cmd := Store{Root: root}.pushCmd(context.Background(), "origin")
+	if !slices.Contains(cmd.Env, "GIT_TERMINAL_PROMPT=0") {
+		t.Error("push command does not disable prompts")
+	}
+	if pushTimeout != 15*time.Second {
+		t.Errorf("pushTimeout = %s", pushTimeout)
 	}
 }
 
