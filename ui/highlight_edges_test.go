@@ -2,6 +2,7 @@ package ui
 
 import (
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -20,16 +21,11 @@ func paddingReversed(line string) bool {
 	}
 	// The last style opened before the end of the line must be reverse.
 	last := sgr.FindAllStringSubmatch(line, -1)
-	for i := len(last) - 1; i >= 0; i-- {
-		if last[i][1] == "" || last[i][1] == "0" {
+	for _, m := range slices.Backward(last) {
+		if m[1] == "" || m[1] == "0" {
 			continue
 		}
-		for _, p := range strings.Split(last[i][1], ";") {
-			if p == "7" {
-				return true
-			}
-		}
-		return false
+		return slices.Contains(strings.Split(m[1], ";"), "7")
 	}
 	return false
 }
@@ -62,7 +58,7 @@ func TestSelectedRowPaddingIsReversedAfterAHighlight(t *testing.T) {
 
 func TestFilterNeverColorsTheEllipsisAtTheCut(t *testing.T) {
 	for n := 20; n < 60; n++ {
-		m := filtered(t, twoSpecs(strings.Repeat("a", n)+"z", strings.Repeat("a", n)+"z"), "z", 60)
+		m := filtered(t, twoSpecs(strings.Repeat("a", n)+"zzzz", strings.Repeat("a", n)+"zzzz"), "z", 60)
 		for i, line := range listLines(m) {
 			yellow, _ := spans(line)
 			for _, y := range yellow {
@@ -92,7 +88,7 @@ func TestFilterTieBetweenFieldsHighlightsTheTitle(t *testing.T) {
 
 func TestFilterHighlightsAfterMultibyteProjectAndTreePrefix(t *testing.T) {
 	specs := []store.Spec{
-		{Project: "projé", Status: "draft", Slug: "epic", Title: "Epic", Type: "feature", Priority: 1},
+		{Project: "projé", Status: "draft", Slug: "epic", Title: "Filter epic", Type: "feature", Priority: 1},
 		{Project: "projé", Status: "draft", Slug: "kid", Title: "Filter kid", Type: "feature", Priority: 2, Parent: "epic"},
 	}
 	for _, tree := range []bool{false, true} {
