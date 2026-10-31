@@ -3,12 +3,21 @@ package ops
 import (
 	"bytes"
 	"errors"
+	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
+
+// Warn is where push warnings go.
+var Warn io.Writer = os.Stderr
+
+// pushTimeout bounds one push.
+var pushTimeout = 15 * time.Second
 
 // Store is the spec store as a git repo, driven with git as a child process.
 type Store struct{ Root string }
@@ -143,7 +152,57 @@ func (s Store) Apply(msg string, paths []string, change func() error) error {
 		rollback()
 		return fail(CodeTool, "git commit: %v", err)
 	}
+	s.push()
 	return nil
+}
+
+// pushRemote is the remote to push to: origin, else the only remote. It is "" when there is
+// none to choose; with several remotes and no origin it warns, naming them.
+func (s Store) pushRemote() string {
+	out, err := s.git("remote")
+	if err != nil || out == "" {
+		return ""
+	}
+	remotes := strings.Fields(out)
+	for _, r := range remotes {
+		if r == "origin" {
+			return r
+		}
+	}
+	if len(remotes) == 1 {
+		return remotes[0]
+	}
+	fmt.Fprintf(Warn, "spx: not pushing: several remotes and none is origin: %s\n", strings.Join(remotes, ", "))
+	return ""
+}
+
+// push sends main to the chosen remote after a commit. It never forces and never fails the
+// command: a failure, or a push still running after pushTimeout, is a warning.
+func (s Store) push() {
+	remote := s.pushRemote()
+	if remote == "" {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), pushTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", s.pushArgs(remote)...)
+	cmd.WaitDelay = time.Second
+	var out bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &out, &out
+	if err := cmd.Run(); err != nil {
+		msg := strings.TrimSpace(out.String())
+		if ctx.Err() != nil {
+			msg = fmt.Sprintf("timed out after %s", pushTimeout)
+		} else if msg == "" {
+			msg = err.Error()
+		}
+		fmt.Fprintf(Warn, "spx: push to %s failed: %s\n", remote, msg)
+	}
+}
+
+// pushArgs is the push invocation: only main, never forced.
+func (s Store) pushArgs(remote string) []string {
+	return []string{"-C", s.Root, "push", remote, "main"}
 }
 
 // relPath is path relative to the store root.
