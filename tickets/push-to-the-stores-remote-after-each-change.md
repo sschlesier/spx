@@ -21,7 +21,7 @@ Context: `Store.Apply` (`ops/store.go`) commits the touched paths and stops ther
 - [x] A command that fails before or during the commit (a refusal, or a rollback) pushes nothing.
 - [x] The push never forces: no `--force`, `--force-with-lease` or `+` refspec, and it pushes only `main`.
 - [x] A push that hangs is abandoned after 15 seconds and reported as a failed push.
-- [x] `spx sweep` pushes once per spec it closes (each close is its own commit), and a failed push for one does not stop the rest.
+- [x] `spx sweep` pushes once per spec it closes (each close is its own commit) until a push fails; after that failure the rest of the sweep still closes its specs but pushes nothing more.
 - [x] The guide (`spx help --skill`) and CLAUDE.md state that commands push to the remote after committing, and `testdata/skill.golden.md` matches.
 
 ## Verification
@@ -40,6 +40,9 @@ Context: `Store.Apply` (`ops/store.go`) commits the touched paths and stops ther
 - Decision (proposed): a failed push is a warning, not an exit code. The commit is already the source of truth locally, and the next successful push carries the earlier commits too. No new exit code, and `ExitCodes` is unchanged.
 - Decision (proposed): no opt-out setting. A store without a remote is already a no-op.
 - Decision (proposed): `Check` does not test the remote, so offline use is unaffected until the push.
+- Decision (review round 1): the push runs with `GIT_TERMINAL_PROMPT=0` and ssh `BatchMode=yes` (appended to `GIT_SSH_COMMAND`, else `core.sshCommand`, else `ssh`), so a missing credential fails fast as a failed push instead of prompting. No credentials are stored or handled.
+- Decision (review round 1): after the first failed push in a process, later commits in that process are not pushed, so an unreachable remote costs one wait. The next successful push carries them.
+- Decision (review round 1): the several-remotes warning prints once per process. If `git remote` itself fails, it warns `spx: push failed: <message>` and counts as a failed push.
 - Flags: public API. Commands now reach the network and the "never pushes" guarantee goes. The CLAUDE.md invariants, process list and "Network only through `gh`" in the Review profile, and `guide.go`'s rules line are rewritten to match.
 
 ## Boundaries
@@ -59,3 +62,4 @@ Context: `Store.Apply` (`ops/store.go`) commits the touched paths and stops ther
 - 2026-10-31: Started on branch push-to-store-remote
 - 2026-10-31: Implemented on push-to-store-remote; manual scratch-store check not run (denied), ops tests cover it with bare remotes
 - 2026-10-31: Status: in-review
+- 2026-10-31: Amended: Review round 1, user yes: no prompts, stop pushing after a failed push, warn once, warn when listing remotes fails
