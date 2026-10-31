@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
 	"charm.land/bubbles/v2/textinput"
 	"charm.land/bubbles/v2/viewport"
@@ -381,15 +382,32 @@ func (m Model) flat() []store.Spec {
 	return out
 }
 
-// matchScore is the best fuzzy score of query over the spec's title, slug, project and type.
-func matchScore(query string, s store.Spec) (int, bool) {
-	best, ok := 0, false
-	for _, field := range []string{s.Title, s.Slug, s.Project, s.Type} {
-		if ms := fuzzy.Find(query, []string{field}); len(ms) > 0 && (!ok || ms[0].Score > best) {
-			best, ok = ms[0].Score, true
+// field names a spec field the filter query is matched against.
+type field int
+
+// The fields in the order bestMatch tries them, which breaks score ties.
+const (
+	fieldTitle field = iota
+	fieldSlug
+	fieldProject
+	fieldType
+)
+
+// bestMatch is the spec's best-scoring field for query, with the byte offsets in that field
+// of the matched characters.
+func bestMatch(query string, s store.Spec) (f field, indexes []int, score int, ok bool) {
+	for i, text := range []string{s.Title, s.Slug, s.Project, s.Type} {
+		if ms := fuzzy.Find(query, []string{text}); len(ms) > 0 && (!ok || ms[0].Score > score) {
+			f, indexes, score, ok = field(i), ms[0].MatchedIndexes, ms[0].Score, true
 		}
 	}
-	return best, ok
+	return f, indexes, score, ok
+}
+
+// matchScore is the best fuzzy score of query over the spec's title, slug, project and type.
+func matchScore(query string, s store.Spec) (int, bool) {
+	_, _, score, ok := bestMatch(query, s)
+	return score, ok
 }
 
 // setQuery lists the specs matching query and selects the best one, showing its detail
@@ -985,26 +1003,68 @@ func (m Model) listView() string {
 	if len(m.specs) == 0 {
 		return m.emptyMessage()
 	}
-	all := Rows(m.specs)
+	var prefixes []string
 	if m.tree {
 		_, nodes := treeLayout(m.specs)
-		prefixes := make([]string, len(nodes))
+		prefixes = make([]string, len(nodes))
 		for i, n := range nodes {
 			prefixes[i] = treePrefix(n)
 		}
-		all = rows(m.specs, prefixes)
 	}
+	layout := layoutRows(m.specs, prefixes)
 	w := m.listWidth()
 	end := min(len(m.specs), m.offset+m.bodyHeight())
 	rows := make([]string, 0, end-m.offset)
 	for i := m.offset; i < end; i++ {
-		row := ansi.Truncate(all[i], w, "…")
+		row := ansi.Truncate(layout[i].text, w, "…")
+		base := lipgloss.NewStyle()
 		if i == m.cursor {
-			row = selectedStyle.Render(row + strings.Repeat(" ", max(0, w-ansi.StringWidth(row))))
+			base = selectedStyle
 		}
-		rows = append(rows, row)
+		var marked map[int]bool
+		if m.query != "" {
+			marked = layout[i].matched(m.query, m.specs[i], row)
+		}
+		out := highlight(row, marked, base)
+		if i == m.cursor {
+			out += base.Render(strings.Repeat(" ", max(0, w-ansi.StringWidth(row))))
+		}
+		rows = append(rows, out)
 	}
 	return strings.Join(rows, "\n")
+}
+
+// matchColor is ANSI yellow, for the characters of a field that matched the filter query.
+var matchColor = lipgloss.Color("3")
+
+// highlight renders row in base, with the runes at the positions in marked also in matchColor.
+// Each run is styled on its own, so base (the selected row's reverse) holds across a highlight.
+func highlight(row string, marked map[int]bool, base lipgloss.Style) string {
+	if len(marked) == 0 {
+		return base.Render(row)
+	}
+	var out, run strings.Builder
+	runMarked := false
+	flush := func() {
+		if run.Len() == 0 {
+			return
+		}
+		style := base
+		if runMarked {
+			style = base.Foreground(matchColor)
+		}
+		out.WriteString(style.Render(run.String()))
+		run.Reset()
+	}
+	for pos, r := range []rune(row) {
+		if marked[pos] != runMarked {
+			flush()
+			runMarked = marked[pos]
+		}
+		run.WriteRune(r)
+	}
+	flush()
+	return out.String()
 }
 
 // Rows formats shown as list rows, one per spec, without the terminal-width cut or any styling.
@@ -1013,6 +1073,64 @@ func Rows(shown []store.Spec) []string { return rows(shown, nil) }
 
 // rows is Rows with prefixes[i], when given, starting row i's title.
 func rows(shown []store.Spec, prefixes []string) []string {
+	layout := layoutRows(shown, prefixes)
+	out := make([]string, len(layout))
+	for i, l := range layout {
+		out[i] = l.text
+	}
+	return out
+}
+
+// rowLayout is a plain list row and the byte offsets where its project, type and title cells start.
+type rowLayout struct {
+	text                       string
+	projectAt, typeAt, titleAt int
+}
+
+// matched is the rune positions in row, which is l.text, cut to the list width or not, of the
+// characters of spec's best-matching field that matched query. The slug is not a column, so it
+// marks nothing.
+func (l rowLayout) matched(query string, spec store.Spec, row string) map[int]bool {
+	f, indexes, _, ok := bestMatch(query, spec)
+	if !ok {
+		return nil
+	}
+	var text string
+	var at int
+	switch f {
+	case fieldTitle:
+		text, at = spec.Title, l.titleAt
+	case fieldProject:
+		text, at = spec.Project, l.projectAt
+	case fieldType:
+		text, at = spec.Type, l.typeAt
+	default:
+		return nil
+	}
+	hit := make(map[int]bool, len(indexes))
+	for _, i := range indexes {
+		hit[i] = true
+	}
+	// A cut row ends in the ellipsis, which is never a match.
+	limit := utf8.RuneCountInString(row)
+	if row != l.text {
+		limit--
+	}
+	marked := map[int]bool{}
+	pos := utf8.RuneCountInString(l.text[:at])
+	for b, r := range text {
+		if unicode.IsControl(r) {
+			continue
+		}
+		if hit[b] && pos < limit {
+			marked[pos] = true
+		}
+		pos++
+	}
+	return marked
+}
+
+func layoutRows(shown []store.Spec, prefixes []string) []rowLayout {
 	projectW, typeW := 0, len("feature")
 	projects, types := make([]string, len(shown)), make([]string, len(shown))
 	for i, s := range shown {
@@ -1020,10 +1138,16 @@ func rows(shown []store.Spec, prefixes []string) []string {
 		projectW = max(projectW, len(projects[i]))
 		typeW = max(typeW, len(types[i]))
 	}
-	rows := make([]string, len(shown))
+	rows := make([]rowLayout, len(shown))
 	for i, s := range shown {
-		rows[i] = fmt.Sprintf("%-*s  %-8s %-2s  %-*s  %s",
-			projectW, projects[i], s.Status, priority(s.Priority), typeW, orDash(types[i]), prefixAt(prefixes, i)+printable(s.Title))
+		head := fmt.Sprintf("%-*s  %-8s %-2s  ", projectW, projects[i], s.Status, priority(s.Priority))
+		typeCell := fmt.Sprintf("%-*s  ", typeW, orDash(types[i]))
+		prefix := prefixAt(prefixes, i)
+		rows[i] = rowLayout{
+			text:    head + typeCell + prefix + printable(s.Title),
+			typeAt:  len(head),
+			titleAt: len(head) + len(typeCell) + len(prefix),
+		}
 	}
 	return rows
 }
