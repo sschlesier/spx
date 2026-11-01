@@ -6,7 +6,7 @@ priority: 3
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-11-01: ? opens a help popup; footer trimmed to status letters, deps, copy, advance, project, help (approach A). Cold read: pass"
-status: in-review
+status: done
 ---
 
 In `spx`, `?` opens a centered popup listing every key for the current view, and the bottom line shows only the few keys I am likely to forget, so I can read a short reminder at a glance and look up the rest when I need it.
@@ -66,3 +66,5 @@ Stop and ask if: a key beyond `?` would need to change, or the popup needs more 
 - 2026-11-01: Review round 1 triage: dismissed maxHelpRows 22->40 mutant (equivalent, tallest view is 19 rows) and Help title style mutant (style only); height-10 clipping of the View group is as specified (clip, no scrolling).
 - 2026-11-01: Review round 1 triage 2: dismissed label-padding 6->5 mutant (cosmetic column alignment); added a test that each group name shows once.
 - 2026-11-01: Review round 1 decisions: keep ]/[ and ctrl+d/u in the narrow list help; footer shows 'q quit · ? or esc close' while help is open; manual 80x24 check pending with Scott.
+- 2026-11-01: Manual 80x24 check (list, board, detail help popups) done by Scott: looks good.
+- 2026-11-01: Status: done: Reviewed round 1: all criteria verified; manual 80x24 check passed
