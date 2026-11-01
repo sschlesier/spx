@@ -37,7 +37,7 @@ func TestScopeListsOnlyThatProject(t *testing.T) {
 	if got := listed(m); !reflect.DeepEqual(got, []string{"a-one", "a-two"}) {
 		t.Fatalf("listed %v", got)
 	}
-	if f := footer(m); !strings.HasPrefix(f, "alpha · j/k move") {
+	if f := footer(m); !strings.HasPrefix(f, "alpha · d/a/s/x/r status") {
 		t.Errorf("footer %q", f)
 	}
 	if got := listed(scoped(t, "", 140)); len(got) != 4 {

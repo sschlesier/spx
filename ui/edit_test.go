@@ -357,14 +357,14 @@ func TestEditAndCopyAreIgnoredInThePopupAndTheFilterInput(t *testing.T) {
 }
 
 func TestFooterHintsListEditAndCopy(t *testing.T) {
-	if f := footer(start(t, draftSpecs(2), 200, 20)); !strings.Contains(f, "e edit · y/Y copy slug/path") {
-		t.Errorf("wide footer %q lacks the edit and copy hints", f)
+	if f := footer(start(t, draftSpecs(2), 200, 20)); !strings.Contains(f, "y/Y copy · c advance") || strings.Contains(f, "e edit") {
+		t.Errorf("wide footer %q lacks the copy hint or still has e edit", f)
 	}
-	if f := footer(start(t, draftSpecs(2), 99, 20)); !strings.Contains(f, "e edit · y/Y copy ·") {
-		t.Errorf("narrow footer %q lacks the edit and copy hints", f)
+	if f := footer(start(t, draftSpecs(2), 99, 20)); !strings.Contains(f, "y/Y copy ·") {
+		t.Errorf("narrow footer %q lacks the copy hint", f)
 	}
 	m := press(t, start(t, draftSpecs(2), 99, 20), "enter")
-	if f := footer(m); !strings.Contains(f, "e edit · c advance · q quit") {
+	if f := footer(m); !strings.Contains(f, "c advance · ? help") {
 		t.Errorf("detail footer %q lacks the edit and advance hints", f)
 	}
 }

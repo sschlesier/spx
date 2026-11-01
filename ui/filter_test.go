@@ -82,8 +82,8 @@ func TestNarrowFilteredFooterFits80Columns(t *testing.T) {
 		specs[i].Status = "approved"
 	}
 	m := press(t, start(t, specs, 80, 30), "a")
-	if f := footer(m); !strings.HasPrefix(f, "all projects · approved · 20 shown · ") || !strings.HasSuffix(strings.TrimRight(f, " "), "q quit") {
-		t.Fatalf("footer %q should keep the filter and end with q quit", f)
+	if f := footer(m); !strings.HasPrefix(f, "all projects · approved · 20 shown · ") || !strings.HasSuffix(strings.TrimRight(f, " "), "? help") {
+		t.Fatalf("footer %q should keep the filter and end with ? help", f)
 	}
 }
 
@@ -97,7 +97,7 @@ func TestFooterWithAndWithoutFilter(t *testing.T) {
 		t.Errorf("filtered footer %q, want %q", f, want)
 	}
 	n := press(t, start(t, mixed(), 80, 20), "x")
-	if f := footer(n); !strings.HasPrefix(f, "all projects · dropped · 2 shown · enter open") {
+	if f := footer(n); !strings.HasPrefix(f, "all projects · dropped · 2 shown · d/a/s/x/r status") {
 		t.Errorf("narrow filtered footer %q", f)
 	}
 }

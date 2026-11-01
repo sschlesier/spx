@@ -417,7 +417,7 @@ func TestFooterHintsKeepProjectAndQuitAt80Columns(t *testing.T) {
 				m = press(t, m, k)
 			}
 			f := footer(m)
-			if w := ansi.StringWidth(f); w > 80 || !strings.HasSuffix(f, "q quit") {
+			if w := ansi.StringWidth(f); w > 80 || !strings.HasSuffix(f, "? help") {
 				t.Errorf("%s/%q: footer %q (%d columns)", name, scope, f, w)
 			}
 			if scope == "" && !strings.Contains(f, "p project") {
@@ -501,7 +501,7 @@ func TestPopupFitsANarrowTerminal(t *testing.T) {
 func TestNarrowFooterKeepsTheStatusHintAfterAStatusFilter(t *testing.T) {
 	m := press(t, scoped(t, "", 80), "d")
 	f := footer(m)
-	if !strings.Contains(f, "d/a/s/x") || !strings.Contains(f, "p project") || !strings.HasSuffix(f, "q quit") || ansi.StringWidth(f) > 80 {
+	if !strings.Contains(f, "d/a/s/x") || !strings.Contains(f, "p project") || !strings.HasSuffix(f, "? help") || ansi.StringWidth(f) > 80 {
 		t.Fatalf("footer %q", f)
 	}
 }

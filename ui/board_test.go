@@ -220,7 +220,7 @@ func TestEmptyBoard(t *testing.T) {
 
 func TestBoardFooterShowsBoardKeys(t *testing.T) {
 	m := board(t, boardSpecs(), 200, 30)
-	if f := footer(m); !strings.Contains(f, "h/l column") || !strings.Contains(f, "b/esc list") {
+	if f := footer(m); !strings.Contains(f, "h/l column") || !strings.HasSuffix(f, "? help") {
 		t.Errorf("footer %q", f)
 	}
 }

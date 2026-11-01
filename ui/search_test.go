@@ -160,7 +160,7 @@ func TestEnterKeepsTheFilterAndReturnsKeysToTheList(t *testing.T) {
 func TestFooterShowsTheQueryAfterEnter(t *testing.T) {
 	m := press(t, start(t, findable(), 120, 20), "d", "/")
 	m = press(t, typed(t, m, "zebra"), "enter")
-	want := "all projects · draft · /zebra · 1 shown · j/k move"
+	want := "all projects · draft · /zebra · 1 shown · d/a/s/x/r status"
 	if got := footer(m); !strings.HasPrefix(got, want) {
 		t.Fatalf("footer %q, want it to start %q", got, want)
 	}
@@ -181,7 +181,7 @@ func TestNarrowFooterDropsHintsToKeepQuit(t *testing.T) {
 	m := press(t, start(t, findable(), 80, 20), "d", "/")
 	m = press(t, typed(t, m, "zebra"), "enter")
 	got := footer(m)
-	want := "all projects · draft · /zebra · 1 shown · enter open · p project · q quit"
+	want := "all projects · draft · /zebra · 1 shown · d/a/s/x/r status · p project · ? help"
 	if got != want {
 		t.Fatalf("footer %q, want %q", got, want)
 	}
@@ -335,15 +335,6 @@ func TestNoMatchMessages(t *testing.T) {
 	}
 }
 
-func TestFooterHintsListSlashFilter(t *testing.T) {
-	for _, w := range []int{120, 80} {
-		m := start(t, findable(), w, 20)
-		if got := footer(m); !strings.Contains(got, "/ filter") {
-			t.Errorf("width %d: footer %q has no / filter hint", w, got)
-		}
-	}
-}
-
 func TestSpecScoresByItsBestField(t *testing.T) {
 	specs := []store.Spec{
 		{Project: "p", Status: "draft", Slug: "other", Title: "f1z medium", Type: "feature"},
@@ -366,7 +357,7 @@ func TestReopenedInputDoesNotKeepClearedText(t *testing.T) {
 func TestNarrowFooterWithAQueryKeepsTheFilterHint(t *testing.T) {
 	m := press(t, typed(t, press(t, start(t, findable(), 80, 20), "/"), "zebra"), "enter")
 	got := footer(m)
-	if !strings.HasPrefix(got, "all projects · /zebra · 1 shown · enter open") || !strings.HasSuffix(got, "· q quit") {
+	if !strings.HasPrefix(got, "all projects · /zebra · 1 shown · d/a/s/x/r status") || !strings.HasSuffix(got, "· ? help") {
 		t.Fatalf("footer %q", got)
 	}
 	if strings.Contains(got, "g/G") {
