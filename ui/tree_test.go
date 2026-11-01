@@ -229,18 +229,12 @@ func TestTreeIgnoredWhileTypingOrPicking(t *testing.T) {
 
 func TestTreeShownInFooter(t *testing.T) {
 	m := start(t, family(), 200, 20)
-	if f := footer(m); !strings.Contains(f, "t tree") || strings.Contains(f, "all projects · tree") {
+	if f := footer(m); strings.Contains(f, "all projects · tree") {
 		t.Errorf("footer off: %q", f)
 	}
 	m = press(t, m, "t")
 	if f := footer(m); !strings.Contains(f, "all projects · tree") {
 		t.Errorf("footer on: %q", f)
-	}
-}
-
-func TestTreeHintShownInTheNarrowListFooter(t *testing.T) {
-	if f := footer(start(t, family(), 80, 20)); !strings.Contains(f, "t tree") {
-		t.Errorf("narrow footer %q lacks the tree hint", f)
 	}
 }
 

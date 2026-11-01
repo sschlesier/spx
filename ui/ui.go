@@ -31,8 +31,6 @@ const (
 	pollInterval = time.Second            // reload interval while the watcher is down
 )
 
-const footerHelp = "j/k move · g/G top/bottom · ctrl+d/u scroll · d/a/s/x/r status · t tree · / filter · ]/[ deps · e edit · y/Y copy slug/path · c advance · p project · q quit"
-
 // filterKeys maps each status filter key to the status it lists.
 var filterKeys = map[string]string{"d": "draft", "a": "approved", "s": "started", "x": store.Dropped, "r": readyFilter}
 
@@ -61,6 +59,7 @@ type Model struct {
 	input  textinput.Model
 
 	projects []string        // project folders in the store, alphabetical
+	helping  bool            // the help popup has the keys
 	picking  bool            // the project popup has the keys
 	pick     int             // the popup's selected entry; 0 is all projects
 	pickOff  int             // the popup's first entry shown
@@ -470,6 +469,9 @@ func find(specs []store.Spec, s store.Spec) int {
 func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	m.notice = ""
 	m.noticeGen++
+	if m.helping {
+		return m.helpKey(msg.String())
+	}
 	if m.typing {
 		return m.typingKey(msg)
 	}
@@ -480,6 +482,9 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch k {
 	case "q", "ctrl+c":
 		return m, tea.Quit
+	case "?":
+		m.helping = true
+		return m, nil
 	case "e":
 		return m.openEditor()
 	case "c":
@@ -853,13 +858,9 @@ func (m Model) render() string {
 	default:
 		body = fit(m.listView(), m.width, m.bodyHeight())
 	}
-	help := footerHelp
-	if m.detailOpen {
-		help = "esc back · j/k scroll · ]/[ deps · ctrl+d/u scroll · e edit · y/Y copy · c advance · q quit"
-	} else if m.board {
-		help = boardHelp
-	} else if !m.split() {
-		help = "enter open · d/a/s/x/r · t tree · / filter · e edit · y/Y copy · c advance · p project · q quit"
+	help := m.footerHints()
+	if m.helping {
+		help = helpOpenHelp
 	}
 	if m.picking {
 		help = "type to filter · ctrl+j/k move · enter apply · esc clear/cancel · ctrl+c quit"
@@ -894,14 +895,17 @@ func (m Model) render() string {
 		footer = ansi.Truncate(m.notice, m.width, "…")
 	}
 	out := body + "\n" + dimStyle.Render(footer)
-	if m.picking {
-		return m.overlay(out)
+	switch {
+	case m.helping:
+		return m.overlay(out, m.helpPopup())
+	case m.picking:
+		return m.overlay(out, m.popup())
 	}
 	return out
 }
 
 // footerLine joins lead and hints. When it is wider than width, it drops hints from the one
-// before the last two, so the last two (project, quit) stay visible, and cuts what's left at
+// before the last two, so the last hint (? help) stays visible, and cuts what's left at
 // width.
 func footerLine(lead, hints []string, width int) string {
 	join := func() string { return strings.Join(append(append([]string{}, lead...), hints...), " · ") }
@@ -957,9 +961,8 @@ func (m Model) popup() string {
 		Render(strings.Join(lines, "\n"))
 }
 
-// overlay draws the project popup centered over view.
-func (m Model) overlay(view string) string {
-	p := m.popup()
+// overlay draws popup p centered over view.
+func (m Model) overlay(view, p string) string {
 	x := max(0, (m.width-lipgloss.Width(p))/2)
 	y := max(0, (m.height-lipgloss.Height(p))/2)
 	return lipgloss.NewCompositor(

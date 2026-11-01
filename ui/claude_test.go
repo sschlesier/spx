@@ -184,10 +184,10 @@ func TestCWorksInTheNarrowListAndDetail(t *testing.T) {
 }
 
 func TestFooterHintsListAdvance(t *testing.T) {
-	if f := footer(start(t, draftSpecs(2), 200, 20)); !strings.Contains(f, "y/Y copy slug/path · c advance · p project") {
+	if f := footer(start(t, draftSpecs(2), 200, 20)); !strings.Contains(f, "y/Y copy · c advance · p project") {
 		t.Errorf("wide footer %q lacks the advance hint", f)
 	}
-	if f := footer(start(t, draftSpecs(2), 99, 20)); !strings.HasSuffix(f, "p project · q quit") {
+	if f := footer(start(t, draftSpecs(2), 99, 20)); !strings.HasSuffix(f, "p project · ? help") {
 		t.Errorf("narrow footer %q lost the project and quit hints to the advance hint", f)
 	}
 }
