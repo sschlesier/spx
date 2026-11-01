@@ -139,7 +139,7 @@ func run(args []string, stdout, stderr io.Writer, dir string, start func(tea.Mod
 				shown = append(shown, spec)
 			}
 		}
-		for _, row := range ui.Rows(shown) {
+		for _, row := range ui.StatusRows(shown) {
 			fmt.Fprintln(stdout, row)
 		}
 		return 0

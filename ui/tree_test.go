@@ -20,14 +20,14 @@ func slugsOf(m Model) []string {
 	return out
 }
 
-// titleCol is the title column of a slug's list row: its text after the type column, up to
+// titleCol is the title column of a slug's list row: its text after the priority column, up to
 // the detail pane.
 func titleCol(m Model, slug string) string {
 	l := rowOf(m, "T "+slug)
 	if i := strings.LastIndex(l, "│"); i >= 0 {
 		l = l[:i] // the divider; the guides in a title come before it
 	}
-	_, title, _ := strings.Cut(l, "feature  ")
+	_, title, _ := strings.Cut(l, "P2 ")
 	return strings.TrimRight(title, " ")
 }
 
@@ -267,7 +267,7 @@ func TestTreeEnterOpensTheSelectedChild(t *testing.T) {
 
 func TestRowsWithoutPrefixesMatchTheSharedRows(t *testing.T) {
 	specs := family()
-	if got, want := rows(specs, nil), Rows(specs); !reflect.DeepEqual(got, want) {
+	if got, want := rows(specs, nil, true), Rows(specs); !reflect.DeepEqual(got, want) {
 		t.Errorf("got %q want %q", got, want)
 	}
 }

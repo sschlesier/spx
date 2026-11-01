@@ -236,20 +236,20 @@ func TestListRowColumns(t *testing.T) {
 		{Project: "x", Status: "draft", Slug: "b", Title: "Beta", Priority: store.NoPriority},
 	}
 	s := screen(start(t, specs, 80, 10))
-	for _, want := range []string{"mdserver  started  P1  bug      Alpha", "x         draft    -   -        Beta"} {
+	for _, want := range []string{"mdser… s b P1 Alpha", "x      d - -  Beta"} {
 		if !strings.Contains(s, want) {
 			t.Errorf("missing row %q:\n%s", want, s)
 		}
 	}
 }
 
-func TestLongTypeKeepsTitlesAligned(t *testing.T) {
+func TestLongTypeShowsItsFirstLetterAndKeepsTitlesAligned(t *testing.T) {
 	specs := []store.Spec{
 		{Project: "p", Status: "draft", Slug: "a", Title: "Alpha", Type: "refactor", Priority: 1},
 		{Project: "p", Status: "draft", Slug: "b", Title: "Beta", Type: "bug", Priority: 1},
 	}
 	s := screen(start(t, specs, 80, 10))
-	for _, want := range []string{"refactor  Alpha", "bug       Beta"} {
+	for _, want := range []string{"p d r P1 Alpha", "p d b P1 Beta"} {
 		if !strings.Contains(s, want) {
 			t.Errorf("missing %q:\n%s", want, s)
 		}
