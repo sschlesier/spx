@@ -63,3 +63,4 @@ Stop and ask if: a key beyond `?` would need to change, or the popup needs more 
 - 2026-11-01: Approved: Scott Schlesier, 2026-11-01: ? opens a help popup; footer trimmed to status letters, deps, copy, advance, project, help (approach A). Cold read: pass
 - 2026-11-01: Started on branch help-popup
 - 2026-11-01: Status: in-review: Implemented on help-popup (3837c11); manual 80x24 check left to the reviewer
+- 2026-11-01: Review round 1 triage: dismissed maxHelpRows 22->40 mutant (equivalent, tallest view is 19 rows) and Help title style mutant (style only); height-10 clipping of the View group is as specified (clip, no scrolling).
