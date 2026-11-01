@@ -125,7 +125,7 @@ func (m Model) helpPopup() string {
 		if r.group != last {
 			label, last = r.group, r.group
 		}
-		label += strings.Repeat(" ", 6-ansi.StringWidth(label))
+		label += strings.Repeat(" ", max(0, 6-ansi.StringWidth(label)))
 		key := r.key + strings.Repeat(" ", keyW-ansi.StringWidth(r.key))
 		lines = append(lines, dimStyle.Render(label)+" "+key+"  "+r.text)
 	}
