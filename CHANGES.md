@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Compact the list columns to `project S T P# title` with one-letter status and type, a project capped at 6 cells, and no project cell when scoped
+- Add a Columns legend to the `?` help popup; the status filter row refers to it instead of repeating the words
+
 ## 1.0.0
 
 - Add a board view of draft, approved and started specs
