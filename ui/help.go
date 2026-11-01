@@ -70,6 +70,9 @@ const (
 	footerHelp = "d/a/s/x/r status · ]/[ deps · y/Y copy · c advance · p project · ? help"
 	detailHelp = "esc back · ]/[ deps · y/Y copy · c advance · ? help"
 	boardHelp  = "h/l column · y/Y copy · c advance · p project · ? help"
+
+	// helpOpenHelp is the footer while the help popup is open.
+	helpOpenHelp = "q quit · ? or esc close"
 )
 
 // helpView is the view that has the keys now.

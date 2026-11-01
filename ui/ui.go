@@ -859,6 +859,9 @@ func (m Model) render() string {
 		body = fit(m.listView(), m.width, m.bodyHeight())
 	}
 	help := m.footerHints()
+	if m.helping {
+		help = helpOpenHelp
+	}
 	if m.picking {
 		help = "type to filter · ctrl+j/k move · enter apply · esc clear/cancel · ctrl+c quit"
 	}
