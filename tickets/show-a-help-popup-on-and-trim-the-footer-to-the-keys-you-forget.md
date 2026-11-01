@@ -64,3 +64,4 @@ Stop and ask if: a key beyond `?` would need to change, or the popup needs more 
 - 2026-11-01: Started on branch help-popup
 - 2026-11-01: Status: in-review: Implemented on help-popup (3837c11); manual 80x24 check left to the reviewer
 - 2026-11-01: Review round 1 triage: dismissed maxHelpRows 22->40 mutant (equivalent, tallest view is 19 rows) and Help title style mutant (style only); height-10 clipping of the View group is as specified (clip, no scrolling).
+- 2026-11-01: Review round 1 triage 2: dismissed label-padding 6->5 mutant (cosmetic column alignment); added a test that each group name shows once.
