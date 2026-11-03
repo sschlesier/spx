@@ -1,9 +1,12 @@
 # Changelog
 
-## Unreleased
+## 1.1.0
 
+- Add a `?` help popup (with a Columns legend) and trim the footer to the keys you forget
 - Compact the list columns to `project S T P# title` with one-letter status and type, a project capped at 6 cells, and no project cell when scoped
-- Add a Columns legend to the `?` help popup; the status filter row refers to it instead of repeating the words
+- Add the `r` key and `-r` flag to list approved specs whose dependencies are done
+- Highlight the best-matching field's matched characters in filtered list rows
+- Push `main` to the store's remote after each store commit (never forced, no prompts, 15 s timeout, warns on failure)
 
 ## 1.0.0
 
