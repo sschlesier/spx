@@ -30,7 +30,17 @@ type helpRow struct {
 }
 
 // maxHelpRows is the tallest the help popup is drawn, border included.
-const maxHelpRows = 22
+const maxHelpRows = 26
+
+// legendRows explain the abbreviated cells of a list row, in row order, and head the list
+// view's popup. Status letters are the status filter keys, so the Filter row refers back here
+// instead of spelling the words out again.
+var legendRows = []helpRow{
+	{viewList, "Columns", "project", "cut to 5 characters and … past 6; absent when scoped"},
+	{viewList, "Columns", "S", "d draft · a approved · s started · x dropped"},
+	{viewList, "Columns", "T", "b bug · c chore · e epic · f feature · t task · - none"},
+	{viewList, "Columns", "P#", "P1 to P3, - none"},
+}
 
 // helpRows is the one table the popup is built from and the footers are checked against. A key
 // handled in key or boardKey needs a row for each view it works in; TestHelpCoversEveryKey
@@ -48,7 +58,7 @@ var helpRows = []helpRow{
 	{viewBoard, "Move", "enter", "open the spec"},
 	{viewDetail, "Move", "enter", "jump to the highlighted dependency"},
 
-	{viewList, "Filter", "d/a/s/x/r", "status: draft, approved, started, dropped, ready"},
+	{viewList, "Filter", "d/a/s/x/r", "by status (letters as S above); r is ready to start"},
 	{listBoard, "Filter", "/", "search"},
 	{viewList, "Filter", "esc", "clear the search, then the status"},
 	{listBoard, "Filter", "p", "project"},
@@ -115,7 +125,7 @@ func (m Model) helpPopup() string {
 	v := m.helpView()
 	var rows []helpRow
 	keyW := 0
-	for _, r := range helpRows {
+	for _, r := range append(append([]helpRow{}, legendRows...), helpRows...) {
 		if r.views&v != 0 {
 			rows = append(rows, r)
 			keyW = max(keyW, ansi.StringWidth(r.key))
@@ -128,7 +138,7 @@ func (m Model) helpPopup() string {
 		if r.group != last {
 			label, last = r.group, r.group
 		}
-		label += strings.Repeat(" ", max(0, 6-ansi.StringWidth(label)))
+		label += strings.Repeat(" ", max(0, 7-ansi.StringWidth(label)))
 		key := r.key + strings.Repeat(" ", keyW-ansi.StringWidth(r.key))
 		lines = append(lines, dimStyle.Render(label)+" "+key+"  "+r.text)
 	}

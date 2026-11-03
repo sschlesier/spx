@@ -86,9 +86,10 @@ func TestFilterShowsMatchedProjectAndTypeCharacters(t *testing.T) {
 	if len(lines) != 2 {
 		t.Fatalf("got %d rows", len(lines))
 	}
-	for i, line := range lines {
-		if got, _ := spans(line); !reflect.DeepEqual(got, []string{"zebra"}) {
-			t.Errorf("row %d yellow %q, want [zebra] in %q", i, got, line)
+	// The type cell is one letter, so a type match marks only its first character.
+	for i, want := range [][]string{{"zebra"}, {"z"}} {
+		if got, _ := spans(lines[i]); !reflect.DeepEqual(got, want) {
+			t.Errorf("row %d yellow %q, want %q in %q", i, got, want, lines[i])
 		}
 	}
 }
@@ -189,8 +190,8 @@ func TestRowsDropControlCharactersInEveryCell(t *testing.T) {
 	}
 	got := Rows(specs)
 	want := []string{
-		"p[0m  draft    P1  bug      Tx",
-		"q     draft    P1  -        U",
+		"p[0m d b P1 Tx",
+		"q    d - P1 U",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %q\nwant %q", got, want)
@@ -213,8 +214,8 @@ func TestRowsFormatsUntruncatedAlignedRowsStartingWithTheProject(t *testing.T) {
 	}
 	got := Rows(shown)
 	want := []string{
-		"a   draft    P1  bug      First",
-		"bb  approved -   -        " + long + "[31m",
+		"a  d b P1 First",
+		"bb a - -  " + long + "[31m",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %q\nwant %q", got, want)

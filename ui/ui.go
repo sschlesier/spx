@@ -1014,7 +1014,7 @@ func (m Model) listView() string {
 			prefixes[i] = treePrefix(n)
 		}
 	}
-	layout := layoutRows(m.specs, prefixes)
+	layout := layoutRows(m.specs, prefixes, m.scope == "")
 	w := m.listWidth()
 	end := min(len(m.specs), m.offset+m.bodyHeight())
 	rows := make([]string, 0, end-m.offset)
@@ -1076,11 +1076,29 @@ func highlight(row string, marked map[int]bool, base lipgloss.Style) string {
 
 // Rows formats shown as list rows, one per spec, without the terminal-width cut or any styling.
 // Column widths come from shown.
-func Rows(shown []store.Spec) []string { return rows(shown, nil) }
+func Rows(shown []store.Spec) []string { return rows(shown, nil, true) }
+
+// StatusRows formats shown as the lines `spx -d/-a/-s/-r` print: full words, project first,
+// columns widened to the longest value shown. The list uses the compact Rows instead.
+func StatusRows(shown []store.Spec) []string {
+	projectW, typeW := 0, len("feature")
+	projects, types := make([]string, len(shown)), make([]string, len(shown))
+	for i, s := range shown {
+		projects[i], types[i] = printable(s.Project), printable(s.Type)
+		projectW = max(projectW, len(projects[i]))
+		typeW = max(typeW, len(types[i]))
+	}
+	out := make([]string, len(shown))
+	for i, s := range shown {
+		out[i] = fmt.Sprintf("%-*s  %-8s %-2s  %-*s  %s", projectW, projects[i], s.Status,
+			priority(s.Priority), typeW, orDash(types[i]), printable(s.Title))
+	}
+	return out
+}
 
 // rows is Rows with prefixes[i], when given, starting row i's title.
-func rows(shown []store.Spec, prefixes []string) []string {
-	layout := layoutRows(shown, prefixes)
+func rows(shown []store.Spec, prefixes []string, showProject bool) []string {
+	layout := layoutRows(shown, prefixes, showProject)
 	out := make([]string, len(layout))
 	for i, l := range layout {
 		out[i] = l.text
@@ -1091,6 +1109,7 @@ func rows(shown []store.Spec, prefixes []string) []string {
 // rowLayout is a plain list row and the byte offsets where its project, type and title cells start.
 type rowLayout struct {
 	text                       string
+	hasProject                 bool
 	projectAt, typeAt, titleAt int
 }
 
@@ -1104,13 +1123,20 @@ func (l rowLayout) matched(query string, spec store.Spec, row string) map[int]bo
 	}
 	var text string
 	var at int
+	visible := -1 // runes of text shown, or all when negative
 	switch f {
 	case fieldTitle:
 		text, at = spec.Title, l.titleAt
 	case fieldProject:
+		if !l.hasProject {
+			return nil
+		}
 		text, at = spec.Project, l.projectAt
+		if len([]rune(printable(text))) > maxProjectW {
+			visible = maxProjectW - 1
+		}
 	case fieldType:
-		text, at = spec.Type, l.typeAt
+		text, at, visible = spec.Type, l.typeAt, 1
 	default:
 		return nil
 	}
@@ -1125,35 +1151,75 @@ func (l rowLayout) matched(query string, spec store.Spec, row string) map[int]bo
 	}
 	marked := map[int]bool{}
 	pos := utf8.RuneCountInString(l.text[:at])
+	shown := 0
 	for b, r := range text {
 		if unicode.IsControl(r) {
 			continue
+		}
+		if visible >= 0 && shown >= visible {
+			break
 		}
 		if hit[b] && pos < limit {
 			marked[pos] = true
 		}
 		pos++
+		shown++
 	}
 	return marked
 }
 
-func layoutRows(shown []store.Spec, prefixes []string) []rowLayout {
-	projectW, typeW := 0, len("feature")
-	projects, types := make([]string, len(shown)), make([]string, len(shown))
+// maxProjectW is the widest the project column gets; a longer name is cut to fit.
+const maxProjectW = 6
+
+// projectCell is name cut to maxProjectW cells: a longer name keeps its first five runes and a ….
+func projectCell(name string) string {
+	r := []rune(name)
+	if len(r) <= maxProjectW {
+		return name
+	}
+	return string(r[:maxProjectW-1]) + "…"
+}
+
+// statusLetters and typeLetters are the one-letter cells; any other value shows its first letter.
+var (
+	statusLetters = map[string]string{"draft": "d", "approved": "a", "started": "s", "dropped": "x"}
+	typeLetters   = map[string]string{"bug": "b", "chore": "c", "epic": "e", "feature": "f", "task": "t"}
+)
+
+func letter(letters map[string]string, v string) string {
+	if l, ok := letters[v]; ok {
+		return l
+	}
+	if r := []rune(v); len(r) > 0 {
+		return string(r[0])
+	}
+	return "-"
+}
+
+// layoutRows lays out shown as `project S T P# title` rows; without showProject the project
+// cell and its separator are left out.
+func layoutRows(shown []store.Spec, prefixes []string, showProject bool) []rowLayout {
+	projectW := 0
+	projects := make([]string, len(shown))
 	for i, s := range shown {
-		projects[i], types[i] = printable(s.Project), printable(s.Type)
-		projectW = max(projectW, len(projects[i]))
-		typeW = max(typeW, len(types[i]))
+		projects[i] = projectCell(printable(s.Project))
+		projectW = max(projectW, utf8.RuneCountInString(projects[i]))
 	}
 	rows := make([]rowLayout, len(shown))
 	for i, s := range shown {
-		head := fmt.Sprintf("%-*s  %-8s %-2s  ", projectW, projects[i], s.Status, priority(s.Priority))
-		typeCell := fmt.Sprintf("%-*s  ", typeW, orDash(types[i]))
+		head := ""
+		if showProject {
+			head = projects[i] + strings.Repeat(" ", projectW-utf8.RuneCountInString(projects[i])) + " "
+		}
+		head += letter(statusLetters, printable(s.Status)) + " "
+		typeAt := len(head)
+		head += letter(typeLetters, printable(s.Type)) + " " + fmt.Sprintf("%-2s", priority(s.Priority)) + " "
 		prefix := prefixAt(prefixes, i)
 		rows[i] = rowLayout{
-			text:    head + typeCell + prefix + printable(s.Title),
-			typeAt:  len(head),
-			titleAt: len(head) + len(typeCell) + len(prefix),
+			text:       head + prefix + printable(s.Title),
+			hasProject: showProject,
+			typeAt:     typeAt,
+			titleAt:    len(head) + len(prefix),
 		}
 	}
 	return rows
