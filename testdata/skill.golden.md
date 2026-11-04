@@ -44,6 +44,7 @@ draft → approved → started → done, or dropped from any live status. The st
 - `spx accept`: started → done: the user accepts the work. Decided by the user's explicit yes.
 - `spx close`: the accepted, merged spec is moved to done/. Decided by the agent.
 - `spx drop`: an abandoned spec moves to dropped/. Decided by the user's explicit yes.
+- `spx reopen`: a dropped spec the user asks to reconsider goes back to draft/; it is not an approval. Decided by the agent.
 
 ## Rules
 
@@ -60,6 +61,7 @@ draft → approved → started → done, or dropped from any live status. The st
 - `spx start <slug> --branch <name>`: Run when work on an approved spec begins, with the branch you work on. It first runs the sweep (a gh failure only warns), then needs the spec in approved/ and every `depends-on` in done/ (exit 3 otherwise). It sets `status: in-progress`, logs the branch and moves the spec to started/. Run from the project's main checkout or a worktree of it, it also records `<project>/.repo` when missing. The repo gets no copy yet: `spx place` writes it.
 - `spx send-back <slug> "<questions>"`: Use when a spec needs the user's answers before it can be approved. Pass the questions as one line. Started, done and dropped specs exit 3.
 - `spx drop <slug> "<why>"`: Use when the user abandons a spec. Pass the reason as one line. Done and dropped specs exit 3.
+- `spx reopen <slug> "<why>"`: Use when the user asks to reconsider a dropped spec. Pass the reason as one line. It is not an approval: the draft still needs the user's yes. Only dropped specs reopen; any other status exits 3.
 - `spx status <slug> <in-progress|in-review|done> ["<note>"]`: Use any time while the spec is started, to say where the work is; run it from wherever the session is. Any other value, or a spec that is not started, exits 3; any value can follow any other. `status done` with unticked acceptance criteria still sets the status and lists them on stderr; tick them first with `spx check`, or leave one open with a Log note.
 - `spx check <slug> <n>... [--uncheck]`: Use as each acceptance criterion is met, while the spec is started; the numbers are 1-based positions in the top-level items under `## Acceptance criteria`. A number out of range exits 3 and changes nothing. Criteria already in the wanted state commit nothing.
 - `spx amend <slug> <file> "<reason>"`: Run only after the user said yes to changing the Outcome, criteria, Design or Boundaries of a started spec; spx records the change, it never decides one. Edit a copy outside the store and pass it here with the reason as one line. Same file rules as `spx edit`; a spec that is not started exits 3.

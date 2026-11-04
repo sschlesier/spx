@@ -64,6 +64,7 @@ var transitions = []transition{
 	{"started → done: the user accepts the work", "accept", byUser},
 	{"the accepted, merged spec is moved to done/", "close", byAgent},
 	{"an abandoned spec moves to dropped/", "drop", byUser},
+	{"a dropped spec the user asks to reconsider goes back to draft/; it is not an approval", "reopen", byAgent},
 }
 
 // exitAdvice is what the agent does on each exit code. A test fails if a code in ops.ExitCodes
