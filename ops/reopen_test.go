@@ -18,7 +18,7 @@ func TestReopenDropped(t *testing.T) {
 	for _, slug := range []string{"w", "d"} {
 		s := specAt(root, "dropped", slug)
 		h := head(t, root)
-		if err := Reopen(root, s, "again", now); err != nil {
+		if err := Reopen(root, s, "  again\t", now); err != nil {
 			t.Fatalf("%s: %v", slug, err)
 		}
 		got, _ := os.ReadFile(filepath.Join(root, "p/draft", slug+".md"))
