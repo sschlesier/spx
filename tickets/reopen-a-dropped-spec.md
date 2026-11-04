@@ -6,7 +6,7 @@ priority: 3
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-11-04: Add spx reopen: dropped spec back to draft with a Log entry. Cold read: pass"
-status: in-review
+status: done
 ---
 
 `spx reopen <slug> "<why>"` moves a dropped spec back to draft/ with a Log entry, so an idea that was discarded can be reconsidered without writing a new spec.
@@ -52,3 +52,4 @@ Context: `spx drop` moves a spec to dropped/ and nothing moves it back. Done and
 - 2026-11-04: Started on branch reopen-a-dropped-spec
 - 2026-11-04: Manual scratch-store check not run (command denied by permissions); TestReopenCommand covers drop, reopen, spx -d and the commit message.
 - 2026-11-04: Status: in-review
+- 2026-11-04: Status: done: Reviewed round 1: all 6 criteria verified; malformed-frontmatter branch accepted untested; manual scratch-store check not run
