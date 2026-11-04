@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Add `v` to open any spec read-only in your editor
+- Make `e` edit a scratch copy of a draft, approved, started or dropped spec and commit it through `spx edit`, `spx amend` or `spx reopen`, or hand it to a Claude session to merge; done specs can't be edited
+
 ## 1.1.0
 
 - Add a `?` help popup (with a Columns legend) and trim the footer to the keys you forget
