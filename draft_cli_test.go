@@ -366,3 +366,35 @@ func TestApproveCommandExitCodes(t *testing.T) {
 		t.Error("HEAD moved")
 	}
 }
+
+func TestReopenCommand(t *testing.T) {
+	root := gitStore(t)
+	dir := t.TempDir()
+	if r := runCLI(t, dir, "reopen", "p/one", "again"); r.code != 3 || !strings.Contains(r.stderr, "needs a spec that is dropped") {
+		t.Errorf("reopen draft: code=%d stderr=%q", r.code, r.stderr)
+	}
+	if r := runCLI(t, dir, "drop", "p/one", "no"); r.code != 0 {
+		t.Fatalf("drop: %d %q", r.code, r.stderr)
+	}
+	h := gitOut(t, root, "rev-parse", "HEAD")
+	for _, args := range [][]string{{"reopen", "p/one"}, {"reopen", "p/one", ""}, {"reopen", "p/one", "a\nb"}} {
+		if r := runCLI(t, dir, args...); r.code != 2 {
+			t.Errorf("%q: code=%d", args, r.code)
+		}
+	}
+	if r := runCLI(t, dir, "reopen", "p/nope", "x"); r.code != 1 {
+		t.Errorf("unknown slug: code=%d", r.code)
+	}
+	if gitOut(t, root, "rev-parse", "HEAD") != h {
+		t.Error("HEAD moved")
+	}
+	if r := runCLI(t, dir, "reopen", "p/one", "again"); r.code != 0 || r.stdout != "" || r.stderr != "" {
+		t.Fatalf("reopen: code=%d stdout=%q stderr=%q", r.code, r.stdout, r.stderr)
+	}
+	if msg := gitOut(t, root, "log", "-1", "--format=%s"); msg != "p: reopen one" {
+		t.Errorf("commit: %q", msg)
+	}
+	if r := runCLI(t, dir, "-d"); !strings.Contains(r.stdout, "One") {
+		t.Errorf("-d: %q", r.stdout)
+	}
+}

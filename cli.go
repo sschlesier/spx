@@ -109,6 +109,15 @@ var commands = []command{
 		Run: runTextCommand(ops.Drop),
 	},
 	{
+		Name:     "reopen",
+		Synopsis: `spx reopen <slug> "<why>"`,
+		Effect:   "Clear a dropped spec's approval and progress status, log why it is reconsidered, move it to draft/ and commit it.",
+		Rule:     "Use when the user asks to reconsider a dropped spec. Pass the reason as one line. It is not an approval: the draft still needs the user's yes. Only dropped specs reopen; any other status exits 3.",
+		Usage: "usage: spx reopen <slug> \"<why>\"\n" +
+			"<slug> is a dropped spec in the current checkout's project, or <project>/<slug> from anywhere.",
+		Run: runTextCommand(ops.Reopen),
+	},
+	{
 		Name:     "status",
 		Synopsis: `spx status <slug> <in-progress|in-review|done> ["<note>"]`,
 		Effect:   "Set a started spec's status and log it, then commit it.",
