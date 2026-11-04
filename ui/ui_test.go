@@ -31,6 +31,8 @@ var keys = map[string]tea.KeyPressMsg{
 	"t":         {Code: 't', Text: "t"},
 	"p":         {Code: 'p', Text: "p"},
 	"e":         {Code: 'e', Text: "e"},
+	"v":         {Code: 'v', Text: "v"},
+	"n":         {Code: 'n', Text: "n"},
 	"c":         {Code: 'c', Text: "c"},
 	"y":         {Code: 'y', Text: "y"},
 	"Y":         {Code: 'y', ShiftedCode: 'Y', Text: "Y", Mod: tea.ModShift},

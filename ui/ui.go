@@ -84,9 +84,10 @@ type Model struct {
 	applied    int            // the newest load whose result was handled
 	unreadable bool           // the last load couldn't read the root
 
-	notice    string // shown in place of the footer; cleared by a key press or noticeTime
-	noticeGen int    // only the tick for the latest notice clears it
-	editLoad  int    // the load issued when the editor or Claude exited
+	notice    string   // shown in place of the footer; cleared by a key press or noticeTime
+	noticeGen int      // only the tick for the latest notice clears it
+	editLoad  int      // the load issued when the editor or Claude exited
+	sc        *scratch // the scratch-copy edit in progress; nil for none
 }
 
 // Reload messages. A message from a watcher other than the current one is stale.
@@ -203,6 +204,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.loaded(msg)
 	case editorDoneMsg:
 		return m.editorDone(msg)
+	case viewDoneMsg:
+		return m.viewDone(msg)
+	case scratchEditMsg:
+		return m.editFinished(msg)
+	case scratchClaude:
+		return m.scratchClaudeDone(msg)
+	case spxDoneMsg:
+		return m.spxDone(msg)
 	case claudeDoneMsg:
 		return m.claudeDone(msg)
 	case noticeMsg:
@@ -469,6 +478,9 @@ func find(specs []store.Spec, s store.Spec) int {
 func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	m.notice = ""
 	m.noticeGen++
+	if m.sc != nil {
+		return m.scratchKey(msg)
+	}
 	if m.helping {
 		return m.helpKey(msg.String())
 	}
@@ -485,6 +497,8 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "?":
 		m.helping = true
 		return m, nil
+	case "v":
+		return m.viewSelected()
 	case "e":
 		return m.openEditor()
 	case "c":
@@ -893,6 +907,9 @@ func (m Model) render() string {
 	footer := footerLine(lead, strings.Split(help, " · "), m.width)
 	if m.notice != "" {
 		footer = ansi.Truncate(m.notice, m.width, "…")
+	}
+	if p := m.scratchFooter(); p != "" {
+		footer = ansi.Truncate(p, m.width, "…")
 	}
 	out := body + "\n" + dimStyle.Render(footer)
 	switch {

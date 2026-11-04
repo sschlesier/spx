@@ -138,17 +138,17 @@ func TestHelpPopupFitsAndIsCentered(t *testing.T) {
 
 func TestFooterStrings(t *testing.T) {
 	const lead = "all projects · "
-	if got, want := footer(start(t, fixture(5), 200, 30)), lead+"d/a/s/x/r status · ]/[ deps · y/Y copy · c advance · p project · ? help"; got != want {
+	if got, want := footer(start(t, fixture(5), 200, 30)), lead+"d/a/s/x/r status · ]/[ deps · v view · e edit · y/Y copy · c advance · p project · ? help"; got != want {
 		t.Errorf("list footer %q, want %q", got, want)
 	}
-	if got, want := footer(press(t, start(t, fixture(5), 80, 24), "enter")), lead+"esc back · ]/[ deps · y/Y copy · c advance · ? help"; got != want {
+	if got, want := footer(press(t, start(t, fixture(5), 80, 24), "enter")), lead+"esc back · ]/[ deps · v view · e edit · c advance · ? help"; got != want {
 		t.Errorf("detail footer %q, want %q", got, want)
 	}
-	if got, want := footer(board(t, boardSpecs(), 200, 30)), lead+"board · h/l column · y/Y copy · c advance · p project · ? help"; got != want {
+	if got, want := footer(board(t, boardSpecs(), 200, 30)), lead+"board · h/l column · v view · e edit · y/Y copy · c advance · p project · ? help"; got != want {
 		t.Errorf("board footer %q, want %q", got, want)
 	}
 	for _, f := range []string{footerHelp, detailHelp, boardHelp} {
-		for _, gone := range []string{"j/k", "g/G", "ctrl+d/u", "quit", "enter", "edit", "tree", "filter"} {
+		for _, gone := range []string{"j/k", "g/G", "ctrl+d/u", "quit", "enter", "tree", "filter"} {
 			if strings.Contains(f, gone) {
 				t.Errorf("footer %q still lists %q", f, gone)
 			}
