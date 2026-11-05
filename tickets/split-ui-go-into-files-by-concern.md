@@ -6,7 +6,7 @@ priority: 3
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-11-04: Split ui/ui.go into reload.go, keys.go, picker.go and render.go as a pure move, one commit per file. Cold read: pass"
-status: in-review
+status: done
 ---
 
 `ui/ui.go` (1290 lines) is spread over four new files by concern, so a reader finds reload plumbing, key handling, the project popup and rendering each in one place, with no change in behavior.
@@ -56,3 +56,4 @@ Don't touch: any behavior, any test file except the one-line `ui/help_test.go` f
 - 2026-11-04: Amended: help_test.go parses ui.go for func key; moving key to keys.go needs a one-line test edit
 - 2026-11-04: go doc -all -u differs from the baseline only in the order of the debounce/pollInterval const group (it prints in file order); no declaration added, lost or changed.
 - 2026-11-04: Status: in-review: four moves and the CLAUDE.md edit pushed on split-ui-go-by-concern
+- 2026-11-04: Status: done: Reviewed round 1: pure move verified by a cold pass; no findings, decisions or risks
