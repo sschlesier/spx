@@ -117,8 +117,8 @@ func TestHelpPopupFitsAndIsCentered(t *testing.T) {
 		"board":  board(t, boardSpecs(), 80, 24),
 	} {
 		p := m.helpPopup()
-		if h := len(strings.Split(p, "\n")); h > maxHelpRows {
-			t.Errorf("%s: popup is %d rows, want at most %d", name, h, maxHelpRows)
+		if h := len(strings.Split(p, "\n")); h > 24 {
+			t.Errorf("%s: popup is %d rows, want at most 24", name, h)
 		}
 		for i, l := range strings.Split(screen(press(t, m, "?")), "\n") {
 			if w := ansi.StringWidth(l); w > 80 {

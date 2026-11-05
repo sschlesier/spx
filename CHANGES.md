@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Make the `?` help popup scroll (`j`/`k`, `ctrl+d`/`ctrl+u`, `g`/`G`) when it is taller than the terminal, with an `n/m` position line
 - Add `v` to open any spec read-only in your editor
 - Make `e` edit a scratch copy of a draft, approved, started or dropped spec and commit it through `spx edit`, `spx amend` or `spx reopen`, or hand it to a Claude session to merge; done specs can't be edited
 

@@ -60,6 +60,7 @@ type Model struct {
 
 	projects []string        // project folders in the store, alphabetical
 	helping  bool            // the help popup has the keys
+	helpOff  int             // first visible line of the help popup
 	picking  bool            // the project popup has the keys
 	pick     int             // the popup's selected entry; 0 is all projects
 	pickOff  int             // the popup's first entry shown
@@ -158,6 +159,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
+		m.helpOff = m.clampHelpOff()
 		m.layout()
 		m.renderDetail()
 	case tea.BackgroundColorMsg:
@@ -495,7 +497,7 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "q", "ctrl+c":
 		return m, tea.Quit
 	case "?":
-		m.helping = true
+		m.helping, m.helpOff = true, 0
 		return m, nil
 	case "v":
 		return m.viewSelected()
