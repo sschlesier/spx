@@ -64,6 +64,24 @@ func TestCtrlCAtTheReasonPromptKeepsTheFiles(t *testing.T) {
 	}
 }
 
+func TestBackspaceDeletesTheOnlyCharacterOfTheReason(t *testing.T) {
+	e, m := newScratchEnv(t, "started", "echo more >> \"$1\"")
+	m, _ = commitFlow(t, e, m)
+	t.Cleanup(func() { os.RemoveAll(m.sc.dir) })
+	m = press(t, m, "c")
+	m = send(t, m, keyRune('x'))
+	if m.sc.reason != "x" {
+		t.Fatalf("reason %q", m.sc.reason)
+	}
+	m = press(t, m, "backspace")
+	if m.sc.reason != "" {
+		t.Errorf("reason %q after backspace, want empty", m.sc.reason)
+	}
+	if _, cmd := pressCmd(t, m, "enter"); cmd != nil {
+		t.Error("an empty reason was submitted")
+	}
+}
+
 func TestFailedSpxAmendShowsItsMessageAndKeepsTheDirectory(t *testing.T) {
 	e, m := newScratchEnv(t, "started", "echo more >> \"$1\"")
 	t.Setenv("STUB_FAIL", "spx: amend refused")
