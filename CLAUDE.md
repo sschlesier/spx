@@ -15,7 +15,7 @@ the Claude session you start with `c` or from `e`'s review, by `e`'s scratch cop
 - `guide.go` - `spx help`: the store guide (`--skill`), generated from the command table
 - `ops/` - Store-writing operations: exit codes, spec resolution, line-level edits, git commit with rollback
 - `store/` - Store discovery, frontmatter parsing, sorting (read-only)
-- `ui/` - Bubble Tea model: list pane, detail pane, key handling
+- `ui/` - Bubble Tea model: list pane, detail pane, key handling (`ui.go` model and list state, `reload.go` store reloads, `keys.go` key handlers, `picker.go` project popup, `render.go` drawing)
 - `tickets/` - Specs for work in this repo
 - `.github/workflows/` - CI
 
