@@ -80,6 +80,12 @@ func checkReplacement(stored, data []byte, kept []string) error {
 	return nil
 }
 
+// ChangesApproval reports whether replacing the stored spec text with data would change its
+// Outcome paragraph or an approval section, the test Edit uses to clear an approval.
+func ChangesApproval(stored, data []byte) bool {
+	return changesApproval(splitBody(stored), splitBody(data))
+}
+
 // changesApproval reports whether the Outcome paragraph or an approval section differs.
 func changesApproval(old, new body) bool {
 	if norm(old.outcome) != norm(new.outcome) {

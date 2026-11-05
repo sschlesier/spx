@@ -78,20 +78,6 @@ func (m *Model) setNotice(s string) tea.Cmd {
 	return tea.Tick(noticeTime, func(time.Time) tea.Msg { return noticeMsg{gen} })
 }
 
-// openEditor suspends spx and opens the selected draft in the editor. Other statuses are
-// not editable from here.
-func (m Model) openEditor() (tea.Model, tea.Cmd) {
-	if len(m.specs) == 0 {
-		return m, nil
-	}
-	s := m.specs[m.cursor]
-	if s.Status != "draft" {
-		cmd := m.setNotice("only drafts can be edited (" + s.Status + ")")
-		return m, cmd
-	}
-	return m, tea.ExecProcess(editorExec(s.Path), editorFinished)
-}
-
 // editorExec is the command that opens path in the user's editor. It doesn't go through a
 // shell.
 func editorExec(path string) *exec.Cmd {

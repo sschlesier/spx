@@ -94,40 +94,6 @@ func isNotice(cmd tea.Cmd) bool {
 	return ok
 }
 
-func TestEditOnADraftReturnsAnExecCommand(t *testing.T) {
-	quickNotices(t)
-	t.Setenv("VISUAL", "true")
-	m := start(t, draftSpecs(3), 120, 20)
-	next, cmd := m.Update(keys["e"])
-	if cmd == nil || isNotice(cmd) {
-		t.Fatalf("e on a draft returned %v, want an exec command", cmd)
-	}
-	if got := next.(Model).notice; got != "" {
-		t.Errorf("notice %q, want none", got)
-	}
-}
-
-func TestEditOnOtherStatusesOnlyShowsANotice(t *testing.T) {
-	quickNotices(t)
-	for _, status := range []string{"approved", "started", store.Dropped} {
-		specs := draftSpecs(2)
-		specs[0].Status = status
-		m := start(t, specs, 120, 20)
-		m.filter = status
-		m.specs = m.visible()
-		next, cmd := m.Update(keys["e"])
-		if want := "only drafts can be edited (" + status + ")"; next.(Model).notice != want {
-			t.Errorf("%s: notice %q, want %q", status, next.(Model).notice, want)
-		}
-		if !isNotice(cmd) {
-			t.Errorf("%s: e returned more than the notice tick", status)
-		}
-		if f := footer(next.(Model)); !strings.HasPrefix(f, "only drafts can be edited ("+status+")") {
-			t.Errorf("%s: footer %q", status, f)
-		}
-	}
-}
-
 func TestEditorDoneReloadsKeepsSelectionAndClampsScroll(t *testing.T) {
 	specs := draftSpecs(6)
 	m := press(t, start(t, specs, 120, 20), "j", "j", "j", "ctrl+d", "ctrl+d", "ctrl+d")
@@ -320,18 +286,12 @@ func TestEditAndCopyWorkInNarrowListAndDetail(t *testing.T) {
 	specs := draftSpecs(2)
 	specs[0].Status = "approved"
 	m := start(t, specs, 80, 20)
-	if got := press(t, m, "e"); got.notice != "only drafts can be edited (approved)" {
-		t.Errorf("narrow list: e notice %q", got.notice)
-	}
 	if got := press(t, m, "y"); got.notice != "copied proj/spec-00" {
 		t.Errorf("narrow list: y notice %q", got.notice)
 	}
 	m = press(t, m, "enter")
 	if !m.detailOpen {
 		t.Fatal("detail did not open")
-	}
-	if got := press(t, m, "e"); got.notice != "only drafts can be edited (approved)" || !got.detailOpen {
-		t.Errorf("narrow detail: e notice %q", got.notice)
 	}
 	if got := press(t, m, "Y"); got.notice != "copied /store/proj/draft/spec-00.md" {
 		t.Errorf("narrow detail: Y notice %q", got.notice)
@@ -357,14 +317,14 @@ func TestEditAndCopyAreIgnoredInThePopupAndTheFilterInput(t *testing.T) {
 }
 
 func TestFooterHintsListEditAndCopy(t *testing.T) {
-	if f := footer(start(t, draftSpecs(2), 200, 20)); !strings.Contains(f, "y/Y copy · c advance") || strings.Contains(f, "e edit") {
-		t.Errorf("wide footer %q lacks the copy hint or still has e edit", f)
+	if f := footer(start(t, draftSpecs(2), 200, 20)); !strings.Contains(f, "v view · e edit · y/Y copy · c advance") {
+		t.Errorf("wide footer %q lacks the view, edit and copy hints", f)
 	}
 	if f := footer(start(t, draftSpecs(2), 99, 20)); !strings.Contains(f, "y/Y copy ·") {
 		t.Errorf("narrow footer %q lacks the copy hint", f)
 	}
 	m := press(t, start(t, draftSpecs(2), 99, 20), "enter")
-	if f := footer(m); !strings.Contains(f, "c advance · ? help") {
+	if f := footer(m); !strings.Contains(f, "v view · e edit") || !strings.Contains(f, "c advance · ? help") {
 		t.Errorf("detail footer %q lacks the edit and advance hints", f)
 	}
 }

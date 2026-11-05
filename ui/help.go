@@ -63,7 +63,8 @@ var helpRows = []helpRow{
 	{viewList, "Filter", "esc", "clear the search, then the status"},
 	{listBoard, "Filter", "p", "project"},
 
-	{allViews, "Act", "e", "edit in $EDITOR"},
+	{allViews, "Act", "v", "view read-only in $EDITOR"},
+	{allViews, "Act", "e", "edit on a scratch copy"},
 	{allViews, "Act", "c", "advance with Claude"},
 	{allViews, "Act", "y/Y", "copy slug / path"},
 
@@ -77,9 +78,9 @@ var helpRows = []helpRow{
 
 // Footer hints, joined by " · ".
 const (
-	footerHelp = "d/a/s/x/r status · ]/[ deps · y/Y copy · c advance · p project · ? help"
-	detailHelp = "esc back · ]/[ deps · y/Y copy · c advance · ? help"
-	boardHelp  = "h/l column · y/Y copy · c advance · p project · ? help"
+	footerHelp = "d/a/s/x/r status · ]/[ deps · v view · e edit · y/Y copy · c advance · p project · ? help"
+	detailHelp = "esc back · ]/[ deps · v view · e edit · y/Y copy · c advance · ? help"
+	boardHelp  = "h/l column · v view · e edit · y/Y copy · c advance · p project · ? help"
 
 	// helpOpenHelp is the footer while the help popup is open.
 	helpOpenHelp = "q quit · ? or esc close"
