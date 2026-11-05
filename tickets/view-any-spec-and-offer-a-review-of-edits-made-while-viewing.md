@@ -7,7 +7,7 @@ depends-on:
   - reopen-a-dropped-spec
 parent:
 approved: "Scott Schlesier, 2026-11-04: v views any spec read-only; e edits through a scratch copy committed via spx edit/amend or a Claude session. Cold read: pass"
-status: in-review
+status: done
 ---
 
 In the spx UI, `v` opens any spec read-only, and `e` edits a draft, approved or started spec on a scratch copy that spx then commits through `spx edit` or `spx amend`, or hands to a Claude session to merge, so a hand edit never sits uncommitted in the store.
@@ -69,3 +69,4 @@ Context: `e` today opens a draft's store file directly and refuses every other s
 - 2026-11-04: Implemented on view-and-edit-scratch-copy. Criteria 1, 11 and 12 left open: v is tested from the list only, a failing spx amend is untested (spx edit is), and the Claude session is tested up to launch and cleanup. Manual scratch-store run not done. Done specs are never listed, so e on one is unreachable in the real UI.
 - 2026-11-04: Status: in-review
 - 2026-11-04: Review round 1: added tests for v/e in board and detail, ctrl+c at the reason prompt, a failing amend and the review prompt text. Dismissed: a reason starting with - is safe, runAmend takes args as positionals; spx's own uncommitted-change check (exit 4) covers a store change between the SHA check and the command.
+- 2026-11-04: Status: done: Reviewed round 1: 13/13 criteria verified. Accepted by Scott: keys ignored while a subprocess runs, AGENT_SPECS_DIR passed to subprocesses, temp-dir leftover after a crash, and the untested manual scratch-store run, real claude start and reopen-not-found notice.
