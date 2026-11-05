@@ -21,7 +21,7 @@ status: in-review
 - [x] Every function, type, var and const that was in `ui/ui.go` exists exactly once in `package ui`, with a body identical to before (a move, not a rewrite).
 - [x] The package's exported API is unchanged.
 - [x] The only test edit is `ui/help_test.go` reading `func key` from `keys.go` instead of `ui.go` (one line, in the commit that moves `key`), and `go test ./...` passes.
-- [ ] `CLAUDE.md`'s `ui/` line in Project Structure names the new files.
+- [x] `CLAUDE.md`'s `ui/` line in Project Structure names the new files.
 
 ## Verification
 
