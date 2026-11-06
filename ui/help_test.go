@@ -242,7 +242,7 @@ func funcDecl(t *testing.T, file, name string) *ast.FuncDecl {
 
 // TestHelpCoversEveryKey fails when a key is added to a handler without a help row.
 func TestHelpCoversEveryKey(t *testing.T) {
-	key := funcDecl(t, "ui.go", "key")
+	key := funcDecl(t, "keys.go", "key")
 	var global, list, detail []string
 	var switches int
 	for _, st := range key.Body.List {
