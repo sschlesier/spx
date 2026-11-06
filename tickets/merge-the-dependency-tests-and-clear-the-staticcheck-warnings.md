@@ -6,7 +6,7 @@ priority: 3
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-11-06: Merge deps tests into ui/deps_test.go; clear staticcheck incl. one-line scratch.go S1016 fix. Cold read: not run"
-status: in-review
+status: done
 ---
 
 The dependency-pane tests live in one file, `ui/deps_test.go`, and `staticcheck ./...` reports nothing, with no test lost or weakened and one line of production code changed.
@@ -45,3 +45,5 @@ Don't touch: production code other than the one line in `ui/scratch.go`, any tes
 - 2026-11-06: Started on branch chore/merge-deps-tests-staticcheck
 - 2026-11-06: Implemented on chore/merge-deps-tests-staticcheck in 3 commits. Revert check: with a write to the store injected in the refused-command loops, TestPlaceRefusals and TestCloseRefusesWithoutAcceptance failed; restored, they pass. go vet, go test ./..., staticcheck clean.
 - 2026-11-06: Status: in-review
+- 2026-11-06: Review round 1 pass 1: pass, no open decisions or risks. Dismissed the finding about a fourth commit: it is the placed ticket copy that pr-review requires, not a Go change.
+- 2026-11-06: Status: done: Reviewed round 1: all six criteria verified by cold verify; revert check failed as expected on injected store writes
