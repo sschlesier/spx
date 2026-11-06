@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -251,5 +253,182 @@ func TestReloadDropsAHighlightWhoseEntryVanished(t *testing.T) {
 	}
 	if strings.Contains(screen(m), "Blocks") {
 		t.Errorf("Blocks still shown:\n%s", screen(m))
+	}
+}
+
+func TestSelfDependencyIsNotListedUnderBlocks(t *testing.T) {
+	all := []store.Spec{dspec("p", "draft", "loop", "loop")}
+	m := send(t, New("/store", all, styles.AsciiStyle), tea.WindowSizeMsg{Width: 140, Height: 20})
+	if s := screen(m); strings.Contains(s, "Blocks") || !strings.Contains(s, "loop  Title loop  (draft)") {
+		t.Errorf("self-dependency:\n%s", s)
+	}
+}
+
+func TestALoadedSpecWinsOverADoneReceiptWithTheSameSlug(t *testing.T) {
+	all := []store.Spec{dspec("p", "draft", "a", "x"), dspec("p", "started", "x")}
+	done := []store.Spec{dspec("p", store.Done, "x")}
+	m := send(t, New("/store", all, styles.AsciiStyle).WithDone(done), tea.WindowSizeMsg{Width: 140, Height: 20})
+	if c := m.detail.GetContent(); !strings.Contains(c, "x  Title x  (started)") || strings.Contains(c, "(done)") {
+		t.Errorf("depends on:\n%s", c)
+	}
+	if m = press(t, m, "]", "enter"); selected(m) != "x" || m.notice != "" {
+		t.Errorf("selected %s, notice %q", selected(m), m.notice)
+	}
+}
+
+func TestAnEmptyDependsOnEntryMatchesNothing(t *testing.T) {
+	all := []store.Spec{dspec("p", "draft", "a", ""), dspec("p", "draft", "b")}
+	m := send(t, New("/store", all, styles.AsciiStyle), tea.WindowSizeMsg{Width: 140, Height: 20})
+	if c := m.detail.GetContent(); !strings.Contains(c, "(not in store)") || strings.Contains(c, "Title b") {
+		t.Errorf("empty entry resolved:\n%s", c)
+	}
+}
+
+func TestAnotherProjectsSameSlugDoesNotMatch(t *testing.T) {
+	all := []store.Spec{dspec("p", "draft", "a", "shared"), dspec("q", "draft", "shared", "a")}
+	m := send(t, New("/store", all, styles.AsciiStyle), tea.WindowSizeMsg{Width: 140, Height: 20})
+	c := m.detail.GetContent()
+	if !strings.Contains(c, "shared (not in store)") || strings.Contains(c, "Blocks") {
+		t.Errorf("matched across projects:\n%s", c)
+	}
+}
+
+func TestControlCharactersInASlugNeverReachTheDependencyLabel(t *testing.T) {
+	bad := "x\n\x1b[31my"
+	all := []store.Spec{dspec("p", "draft", "a", bad), dspec("p", "draft", bad)}
+	all[1].Title = "Target"
+	m := send(t, New("/store", all, styles.AsciiStyle), tea.WindowSizeMsg{Width: 140, Height: 20})
+	if c := m.detail.GetContent(); !strings.Contains(c, "x[31my  Target  (draft)") {
+		t.Errorf("depends on:\n%q", c)
+	}
+}
+
+func TestJumpEmptiesTheFilterInputWhenItClearsTheQuery(t *testing.T) {
+	m := depsModel(t, 140)
+	m.query, m.specs = "main", m.visible()
+	m.input.SetValue("main")
+	m = press(t, m, "]", "enter")
+	if m.input.Value() != "" {
+		t.Errorf("input still holds %q", m.input.Value())
+	}
+}
+
+func TestEnterWithAStaleHighlightOpensTheDetailWhenOnlyTheListShows(t *testing.T) {
+	m := press(t, depsModel(t, 140), "]")
+	m = send(t, m, tea.WindowSizeMsg{Width: 80, Height: 40})
+	m = press(t, m, "enter")
+	if selected(m) != "main" || !m.detailOpen {
+		t.Errorf("selected %s, detailOpen %v", selected(m), m.detailOpen)
+	}
+}
+
+func TestHighlightClearsOnQueryAndScopeChanges(t *testing.T) {
+	m := press(t, depsModel(t, 140), "]")
+	m.setQuery("main")
+	if m.hl != "" {
+		t.Errorf("highlight %q survived a query", m.hl)
+	}
+	m = press(t, depsModel(t, 140), "]")
+	m.setScope("q")
+	if m.hl != "" {
+		t.Errorf("highlight %q survived a scope change", m.hl)
+	}
+}
+
+func TestLoadReadsDoneReceipts(t *testing.T) {
+	root := t.TempDir()
+	for rel, body := range map[string]string{
+		"p/started/a.md": "---\ntitle: A\ndepends-on: [d]\n---\n",
+		"p/done/d.md":    "---\ntitle: Receipt\n---\n",
+	} {
+		path := filepath.Join(root, rel)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	m := New(root, nil, styles.AsciiStyle)
+	msg := m.load()().(loadedMsg)
+	if len(msg.done) != 1 || msg.done[0].Slug != "d" {
+		t.Fatalf("load returned done = %v", msg.done)
+	}
+	m = send(t, m, tea.WindowSizeMsg{Width: 140, Height: 20}, msg)
+	if s := screen(m); !strings.Contains(s, "d  Receipt  (done)") {
+		t.Errorf("receipt not shown after load:\n%s", s)
+	}
+}
+
+// longModel is depsModel with a body tall enough to scroll the detail.
+func longModel(t *testing.T) Model {
+	t.Helper()
+	all, done := depsFixture()
+	all[0].Body = strings.Repeat("line\n\n", 60)
+	m := New("/store", all, styles.AsciiStyle).WithDone(done)
+	return send(t, m, tea.WindowSizeMsg{Width: 140, Height: 12})
+}
+
+func TestARepeatedDependsOnEntryHasOneEntryPerOccurrence(t *testing.T) {
+	all := []store.Spec{dspec("p", "draft", "a", "b", "b"), dspec("p", "draft", "b")}
+	m := send(t, New("/store", all, styles.AsciiStyle), tea.WindowSizeMsg{Width: 140, Height: 20})
+	m = press(t, m, "]", "]")
+	if m.hl != "dep:1:b" {
+		t.Errorf("second ] highlights %q", m.hl)
+	}
+	if m = press(t, m, "["); m.hl != "dep:0:b" {
+		t.Errorf("[ highlights %q", m.hl)
+	}
+}
+
+func TestCyclingScrollsTheDetailToTheTop(t *testing.T) {
+	m := longModel(t)
+	m.detail.SetYOffset(10)
+	if m = press(t, m, "]"); m.detail.YOffset() != 0 {
+		t.Errorf("YOffset = %d after ]", m.detail.YOffset())
+	}
+}
+
+func TestJumpShowsTheTargetFromTheTop(t *testing.T) {
+	m := press(t, longModel(t), "]")
+	m.detail.SetYOffset(10)
+	m = press(t, m, "enter")
+	if selected(m) != "s1-spec" || m.detail.YOffset() != 0 {
+		t.Errorf("selected %s, YOffset %d", selected(m), m.detail.YOffset())
+	}
+}
+
+func TestJumpKeepsAStatusFilterThatShowsTheTargetWhenOnlyTheQueryHidesIt(t *testing.T) {
+	m := depsModel(t, 140)
+	m.filter, m.query = "started", "main"
+	m.specs = m.visible()
+	m = press(t, m, "]", "enter")
+	if selected(m) != "s1-spec" || m.filter != "started" || m.query != "" {
+		t.Errorf("selected %s, filter %q, query %q", selected(m), m.filter, m.query)
+	}
+}
+
+func TestBlocksLeavesOutDroppedDependents(t *testing.T) {
+	all := []store.Spec{dspec("p", "draft", "base"), dspec("p", "draft", "live", "base"),
+		dspec("p", store.Dropped, "dead", "base")}
+	m := send(t, New("/store", all, styles.AsciiStyle), tea.WindowSizeMsg{Width: 140, Height: 20})
+	c := m.detail.GetContent()
+	if !strings.Contains(c, "Title live") || strings.Contains(c, "Title dead") {
+		t.Errorf("blocks:\n%s", c)
+	}
+}
+
+func TestSplitFooterHintsTheDependencyKeys(t *testing.T) {
+	if f := footer(depsModel(t, 190)); !strings.Contains(f, "]/[ deps") {
+		t.Errorf("split footer %q", f)
+	}
+}
+
+func TestReloadThatMovesTheSelectionClearsTheHighlight(t *testing.T) {
+	m := press(t, depsModel(t, 140), "]")
+	all, done := depsFixture()
+	m = send(t, m, loadedMsg{seq: 1, specs: all[1:], done: done, projects: []string{"p", "q"}})
+	if selected(m) == "main" || m.hl != "" {
+		t.Errorf("selected %s, highlight %q", selected(m), m.hl)
 	}
 }

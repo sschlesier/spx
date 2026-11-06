@@ -344,7 +344,7 @@ func (m Model) reviewWithClaude() (tea.Model, tea.Cmd) {
 func (m Model) scratchClaudeDone(msg scratchClaude) (tea.Model, tea.Cmd) {
 	m.sc.cleanup()
 	m.sc = nil
-	return m.claudeDone(claudeDoneMsg{msg.err})
+	return m.claudeDone(claudeDoneMsg(msg))
 }
 
 // scratchFooter is the footer line for the prompt that has the keys, or "".
