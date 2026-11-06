@@ -209,6 +209,7 @@ func TestPlaceRefusals(t *testing.T) {
 			}
 		})
 	}
+	storeClean(t, root, head)
 	// a spec that is not started
 	write(t, filepath.Join(root, "p", "approved", "two.md"), "---\ntitle: Two\n---\n\nx\n")
 	git(t, root, "add", "-A")
@@ -479,6 +480,7 @@ func TestCloseRefusesWithoutAcceptance(t *testing.T) {
 			t.Errorf("%s: code=%d %q", name, r.code, r.stderr)
 		}
 	}
+	storeClean(t, root, head)
 	// accepted entry but no pr or path
 	write(t, filepath.Join(root, "p/started/one.md"), strings.Replace(startedSpec, "%s", "done", 1)+"- 2026-10-02: Accepted: T, 2026-10-02, round 1: ok\n")
 	git(t, root, "commit", "-qam", "half")
@@ -486,6 +488,7 @@ func TestCloseRefusesWithoutAcceptance(t *testing.T) {
 	if r := runCLI(t, t.TempDir(), "close", "p/one"); r.code != 3 {
 		t.Errorf("no pr/path: code=%d", r.code)
 	}
+	storeClean(t, root, head)
 	// each of Accepted:, pr: and path: alone is missing
 	body := strings.Replace(startedSpec, "%s", "done", 1)
 	acc := "- 2026-10-02: Accepted: T, 2026-10-02, round 1: ok\n"
