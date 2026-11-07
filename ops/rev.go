@@ -23,6 +23,9 @@ func Revision(data []byte) string {
 
 // Rev is the revision of spec as stored now. It reads without the lock and starts no process.
 func Rev(spec store.Spec) (string, error) {
+	if spec.Status == "dropped" {
+		return "", fail(CodeNotFound, "unknown spec: %s/%s (dropped)", spec.Project, spec.Slug)
+	}
 	data, err := os.ReadFile(spec.Path)
 	if err != nil {
 		return "", fail(CodeTool, "reading %s: %v", spec.Path, err)

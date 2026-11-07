@@ -64,20 +64,21 @@ Invariants:
 - An unreadable root exits 1 with `spx: spec store not found: <path>` before the UI starts;
   quitting exits 0 and restores the terminal.
 - The CLI is `spx [-d] [-a] [-s] [-r] [project]` (`spx --version` alone prints `spx <version>`) and
-  the commands `spx log <slug> "<text>"`, `spx new <project> <file>`, `spx edit <slug> <file>`,
+  the commands `spx log <slug> "<text>"`, `spx new <project> <file>`, `spx edit <slug> <file> [--base <rev>]`,
+  `spx rev <slug>` (read-only: prints the spec's revision, starts no process),
   `spx approve <slug> "<one line>" [--cold-read <result>]`, `spx start <slug> --branch <name>`, `spx send-back <slug> "<questions>"`,
   `spx drop <slug> "<why>"`, `spx reopen <slug> "<why>"`, `spx status <slug> <in-progress|in-review|done> ["<note>"]`,
-  `spx check <slug> <n>... [--uncheck]`, `spx amend <slug> <file> "<reason>"`, `spx repo [project]`,
+  `spx check <slug> <n>... [--uncheck]`, `spx amend <slug> <file> "<reason>" [--base <rev>]`, `spx repo [project]`,
   `spx repo --set <project> <path>`, `spx place <slug> [--dir <repo>]`,
   `spx accept <slug> --pr <url> "<note>" [--round <n>]`, `spx close <slug>`,
   `spx sweep [project]` and `spx help [--skill [--body]]`; a command name is
   not usable as a project name. Exit codes (listed once in `ops.ExitCodes`): 0 success or `-h`/`--help`/`--version`; 1 not found (store,
   project, slug, input file); 2 usage error; 3 wrong status; 4 store conflict (not a git repo,
-  not on main, index lock, uncommitted change on a touched path); 5 tool failure (git missing,
+  not on main, index lock, uncommitted change on a touched path, or an `edit`/`amend` `--base` that is not the spec's current revision); 5 tool failure (git missing,
   failing or unconfigured). Status flags print the matching specs to stdout instead of starting
   the UI. Usage paths and `--version` never read the store. The only processes spx starts are
   `git rev-parse` at startup, to scope to the current repo's project; `git` in the store root
-  for the commands, including `git push <remote> main` after each commit; `gh pr view <url> --json state` (read-only) for `spx sweep`, which `spx start` also
+  for the commands other than `rev`, including `git push <remote> main` after each commit; `gh pr view <url> --json state` (read-only) for `spx sweep`, which `spx start` also
   runs first (a gh failure only warns there); the editor on `v` (a read-only copy) and `e` (a scratch copy);
   this binary's `spx edit`, `spx amend` and `spx reopen` after `e`; `claude` on `c`, in the project's repo, with the prompt for the spec's stage, and on `a` after `e`, with a prompt to review the edit; and one clipboard tool (pbcopy, wl-copy or xclip) on `y`/`Y`. In a project repo a command
   runs only read-only `git rev-parse` (`place` and `accept` to find the checkout's top-level),
