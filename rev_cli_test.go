@@ -122,6 +122,25 @@ func TestAmendBase(t *testing.T) {
 	}
 }
 
+func TestDashedArgumentsStayPositionalWithoutBase(t *testing.T) {
+	root := startedStore(t)
+	dir := t.TempDir()
+	stored, _ := os.ReadFile(filepath.Join(root, "p", "started", "s.md"))
+	next := strings.Replace(string(stored), "Outcome.", "New outcome.", 1)
+	if err := os.WriteFile(filepath.Join(dir, "--new.md"), []byte(next), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if r := runCLI(t, dir, "amend", "p/s", "--new.md", "--because"); r.code != 0 {
+		t.Fatalf("code=%d stderr=%q", r.code, r.stderr)
+	}
+	if got := readStarted(t, root); !strings.HasSuffix(got, ": Amended: --because\n") {
+		t.Errorf("file:\n%s", got)
+	}
+	if r := runCLI(t, dir, "amend", "p/s", "--new.md", "r", "extra"); r.code != 2 {
+		t.Errorf("extra positional: code=%d stderr=%q", r.code, r.stderr)
+	}
+}
+
 func TestBaseUsageErrors(t *testing.T) {
 	startedStore(t)
 	dir, name := draftFile(t, "---\ntitle: One\n---\n")
@@ -131,6 +150,8 @@ func TestBaseUsageErrors(t *testing.T) {
 		{"edit", "p/one", name, "--base="},
 		{"amend", "p/s", name, "r", "--base"},
 		{"amend", "p/s", name, "r", "--base", ""},
+		{"amend", "p/s", name, "r", "--base=", "--base=x"},
+		{"edit", "p/one", name, "--base", "a", "--base", "b"},
 	} {
 		if r := runCLI(t, dir, args...); r.code != 2 || !strings.Contains(r.stderr, "usage: spx") {
 			t.Errorf("%v: code=%d stderr=%q", args, r.code, r.stderr)

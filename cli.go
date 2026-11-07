@@ -332,15 +332,28 @@ func runNew(c command, args []string, e env) int {
 // baseFlag splits a --base <rev> flag off args. ok is false for a --base without a value, an empty
 // value, a repeated flag or any other flag.
 func baseFlag(args []string) (pos []string, base string, ok bool) {
-	pos, flags, ok := splitFlags(args, "--base")
-	if !ok {
-		return nil, "", false
-	}
-	if v, set := flags["--base"]; set {
-		if v == "" {
+	set := false
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		val, isFlag := "", false
+		switch {
+		case a == "--base":
+			if i+1 >= len(args) {
+				return nil, "", false
+			}
+			i++
+			val, isFlag = args[i], true
+		case strings.HasPrefix(a, "--base="):
+			val, isFlag = strings.TrimPrefix(a, "--base="), true
+		}
+		if !isFlag {
+			pos = append(pos, a)
+			continue
+		}
+		if set || val == "" {
 			return nil, "", false
 		}
-		base = v
+		base, set = val, true
 	}
 	return pos, base, true
 }
