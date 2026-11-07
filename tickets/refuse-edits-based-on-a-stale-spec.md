@@ -55,3 +55,4 @@ Context: both commands replace the whole file. Today the only guard is that ever
 - 2026-11-07: Assumption: criterion 2 says a dropped slug exits 1 as for other commands, but log etc. exit 3 on a dropped spec; rev follows the criterion (exit 1, unknown spec)
 - 2026-11-07: Status: in-review: implemented; PR next
 - 2026-11-07: Review round 1: pass 1 found untested in-lock stale-base checks and untested identical-file amend; fixed with ops tests, mutants now killed. Open decision: only a full 12-char revision is accepted as --base (spec says first 12 hex)
+- 2026-11-07: Review decision (round 1): --base matches the revision case-insensitively; length stays exactly 12
