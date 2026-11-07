@@ -6,7 +6,7 @@ priority: 3
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-11-07: Add spx rev and --base on edit/amend to refuse stale replacements (exit 4). Cold read: pass"
-status: in-review
+status: done
 ---
 
 `spx edit` and `spx amend` can refuse a replacement that was written from an older version of the spec than the one now in the store, so two sessions refining the same spec cannot silently overwrite each other.
@@ -56,3 +56,5 @@ Context: both commands replace the whole file. Today the only guard is that ever
 - 2026-11-07: Status: in-review: implemented; PR next
 - 2026-11-07: Review round 1: pass 1 found untested in-lock stale-base checks and untested identical-file amend; fixed with ops tests, mutants now killed. Open decision: only a full 12-char revision is accepted as --base (spec says first 12 hex)
 - 2026-11-07: Review decision (round 1): --base matches the revision case-insensitively; length stays exactly 12
+- 2026-11-07: Review round 1 pass 2: fixed edit/amend rejecting other dashed positionals (only --base is a flag); added tests. Not run: manual scratch-store check (CLI tests cover it); claude -p /code-review not run, diff reviewed by hand
+- 2026-11-07: Status: done: Reviewed round 1: all criteria verified by tests and mutation; awaiting acceptance
