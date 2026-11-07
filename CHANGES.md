@@ -1,7 +1,9 @@
 # Changelog
 
-## Unreleased
+## 1.2.0
 
+- Add `spx reopen` to move a dropped spec back to draft
+- Add `spx rev` and `--base` on `spx edit` and `spx amend` to refuse replacing a spec that changed since it was read (exit 4)
 - Add `v` to open any spec read-only in your editor
 - Make `e` edit a scratch copy of a draft, approved, started or dropped spec and commit it through `spx edit`, `spx amend` or `spx reopen`, or hand it to a Claude session to merge; done specs can't be edited
 
