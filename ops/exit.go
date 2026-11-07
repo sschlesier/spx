@@ -27,7 +27,7 @@ var ExitCodes = []ExitCode{
 	{CodeNotFound, "not found", "the store, project, slug, or an input file given to a command does not exist"},
 	{CodeUsage, "usage error", "the arguments are wrong; the command's usage is printed"},
 	{CodeWrongStatus, "wrong status", "the transition isn't allowed from the spec's current status, or a precondition on the spec fails"},
-	{CodeConflict, "store conflict", "the store isn't a git repo, isn't on main, has a .git/index.lock, or a touched path has an uncommitted change"},
+	{CodeConflict, "store conflict", "the store isn't a git repo, isn't on main, has a .git/index.lock, a touched path has an uncommitted change, or a --base is not the spec's current revision"},
 	{CodeTool, "tool failure", "git is missing, fails for another reason, or lacks configuration a command needs (such as user.name)"},
 }
 

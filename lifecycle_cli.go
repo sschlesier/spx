@@ -76,21 +76,22 @@ func runCheck(c command, args []string, e env) int {
 }
 
 func runAmend(c command, args []string, e env) int {
-	if len(args) != 3 || args[0] == "" || args[1] == "" {
+	pos, base, ok := baseFlag(args)
+	if !ok || len(pos) != 3 || pos[0] == "" || pos[1] == "" {
 		return usageError(c, e)
 	}
-	if err := ops.CheckLogText(args[2]); err != nil {
+	if err := ops.CheckLogText(pos[2]); err != nil {
 		return textArgError(c, e, err)
 	}
-	v, spec, err := resolve(e, args[0])
+	v, spec, err := resolve(e, pos[0])
 	if err != nil {
 		return report(e, err)
 	}
-	data, err := ops.ReadInput(inputPath(e, args[1]))
+	data, err := ops.ReadInput(inputPath(e, pos[1]))
 	if err != nil {
 		return report(e, err)
 	}
-	res, err := ops.Amend(v.root, spec, data, args[2], time.Now())
+	res, err := ops.AmendBase(v.root, spec, data, pos[2], base, time.Now())
 	if err != nil {
 		return report(e, err)
 	}

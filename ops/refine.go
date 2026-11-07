@@ -25,6 +25,12 @@ type EditResult struct {
 // spec, a change to the Outcome paragraph or an approval section clears approved: and moves it
 // to draft/.
 func Edit(root string, spec store.Spec, data []byte) (EditResult, error) {
+	return EditBase(root, spec, data, "")
+}
+
+// EditBase is Edit that refuses with a store conflict, changing nothing, when base is not empty
+// and is not the stored spec's revision.
+func EditBase(root string, spec store.Spec, data []byte, base string) (EditResult, error) {
 	if !slices.Contains(EditStatuses, spec.Status) {
 		return EditResult{}, statusError(spec, "edit", EditStatuses)
 	}
@@ -32,6 +38,9 @@ func Edit(root string, spec store.Spec, data []byte) (EditResult, error) {
 	stored, err := os.ReadFile(spec.Path)
 	if err != nil {
 		return EditResult{}, fail(CodeTool, "reading %s: %v", spec.Path, err)
+	}
+	if err := checkBase(spec, stored, base); err != nil {
+		return EditResult{}, err
 	}
 	if err := checkReplacement(stored, data, OwnedFields); err != nil {
 		return EditResult{}, err
@@ -46,6 +55,9 @@ func Edit(root string, spec store.Spec, data []byte) (EditResult, error) {
 		to = "draft"
 	}
 	err = transition(root, spec, to, spec.Project+": refine "+spec.Slug, func(fresh []byte) ([]byte, error) {
+		if err := checkBase(spec, fresh, base); err != nil {
+			return nil, err
+		}
 		if err := checkReplacement(fresh, data, OwnedFields); err != nil {
 			return nil, err
 		}

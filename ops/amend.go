@@ -18,6 +18,12 @@ type AmendResult struct {
 // "<project>: amend <slug>". data follows Edit's rules: a usable title, the stored Log entries
 // unchanged and in order, and approved, status, accepted, pr and path as stored.
 func Amend(root string, spec store.Spec, data []byte, reason string, now time.Time) (AmendResult, error) {
+	return AmendBase(root, spec, data, reason, "", now)
+}
+
+// AmendBase is Amend that refuses with a store conflict, changing nothing, when base is not empty
+// and is not the stored spec's revision.
+func AmendBase(root string, spec store.Spec, data []byte, reason, base string, now time.Time) (AmendResult, error) {
 	if err := requireStarted(spec, "amend"); err != nil {
 		return AmendResult{}, err
 	}
@@ -29,6 +35,9 @@ func Amend(root string, spec store.Spec, data []byte, reason string, now time.Ti
 	if err != nil {
 		return AmendResult{}, fail(CodeTool, "reading %s: %v", spec.Path, err)
 	}
+	if err := checkBase(spec, stored, base); err != nil {
+		return AmendResult{}, err
+	}
 	if err := checkReplacement(stored, data, OwnedFields); err != nil {
 		return AmendResult{}, err
 	}
@@ -36,6 +45,9 @@ func Amend(root string, spec store.Spec, data []byte, reason string, now time.Ti
 		return AmendResult{Unchanged: true}, nil
 	}
 	err = transition(root, spec, spec.Status, spec.Project+": amend "+spec.Slug, func(fresh []byte) ([]byte, error) {
+		if err := checkBase(spec, fresh, base); err != nil {
+			return nil, err
+		}
 		if err := checkReplacement(fresh, data, OwnedFields); err != nil {
 			return nil, err
 		}

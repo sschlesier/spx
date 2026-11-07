@@ -74,7 +74,7 @@ var exitAdvice = map[int]string{
 	ops.CodeNotFound:    "Check the slug or path with the user.",
 	ops.CodeUsage:       "Fix the arguments from the printed usage and run again; if the message names a rule you broke, correct the input first.",
 	ops.CodeWrongStatus: "The spec is not in a state that allows the step.",
-	ops.CodeConflict:    "The user resolves the store; don't touch it to clear this.",
+	ops.CodeConflict:    "For a stale `--base`, take `spx rev` again, read the spec again and redo the edit. Otherwise the user resolves the store; don't touch it to clear this.",
 	ops.CodeTool:        "The tooling needs fixing first.",
 }
 
