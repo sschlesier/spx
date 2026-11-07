@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"strings"
 
 	"spx/store"
 )
@@ -36,7 +37,7 @@ func Rev(spec store.Spec) (string, error) {
 // checkBase refuses a replacement written from a version other than stored. An empty base
 // checks nothing.
 func checkBase(spec store.Spec, stored []byte, base string) error {
-	if base == "" || base == Revision(stored) {
+	if base == "" || strings.EqualFold(base, Revision(stored)) {
 		return nil
 	}
 	return fail(CodeConflict, "%s/%s changed since it was read (base %s, stored %s); read it again with `spx rev` and redo the edit",

@@ -90,6 +90,25 @@ func TestAmendBaseStaleIsRefusedForAnIdenticalFile(t *testing.T) {
 	untouched(t, root, before)
 }
 
+func TestBaseIsCaseInsensitiveButOtherwiseExact(t *testing.T) {
+	root := newStore(t)
+	spec := specAt(root, "draft", "one")
+	stored, _ := os.ReadFile(spec.Path)
+	rev := Revision(stored)
+	for base, want := range map[string]bool{
+		rev:                  true,
+		strings.ToUpper(rev): true,
+		rev[:6]:              false,
+		rev + "0":            false,
+		"0" + rev[1:]:        rev[0] == '0',
+	} {
+		err := checkBase(spec, stored, base)
+		if (err == nil) != want {
+			t.Errorf("base %q: err=%v, want match=%v", base, err, want)
+		}
+	}
+}
+
 func TestRevOfAMissingFileIsAToolFailure(t *testing.T) {
 	root := newStore(t)
 	_, err := Rev(specAt(root, "draft", "nope"))
