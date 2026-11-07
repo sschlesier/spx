@@ -62,13 +62,23 @@ var commands = []command{
 	},
 	{
 		Name:     "edit",
-		Synopsis: `spx edit <slug> <file>`,
+		Synopsis: `spx edit <slug> <file> [--base <rev>]`,
 		Effect:   "Replace a draft or approved spec's content with <file> and commit it.",
-		Rule:     "Refine a spec by editing a copy outside the store and passing it here. The file is the whole spec with a usable `title:` (exit 2 otherwise). Keep every existing Log line unchanged and in order, and the spx-filled fields as stored, or it exits 3. On an approved spec, changing the Outcome, Acceptance criteria, Design or Boundaries clears the approval and moves it to draft/.",
-		Usage: "usage: spx edit <slug> <file>\n" +
+		Rule:     "Refine a spec by editing a copy outside the store and passing it here. The file is the whole spec with a usable `title:` (exit 2 otherwise). Keep every existing Log line unchanged and in order, and the spx-filled fields as stored, or it exits 3. On an approved spec, changing the Outcome, Acceptance criteria, Design or Boundaries clears the approval and moves it to draft/. Take the spec's revision with `spx rev` before you read it and pass it as `--base`: if the spec changed since, nothing is written and it exits 4, so read the spec again and redo the edit.",
+		Usage: "usage: spx edit <slug> <file> [--base <rev>]\n" +
 			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.\n" +
-			"<file> is the spec's full new content.",
+			"<file> is the spec's full new content.\n" +
+			"<rev> is the revision `spx rev` printed before the spec was read.",
 		Run: runEdit,
+	},
+	{
+		Name:     "rev",
+		Synopsis: "spx rev <slug>",
+		Effect:   "Print the revision of the spec as stored now.",
+		Rule:     "Run before you read a spec you will hand back with `spx edit` or `spx amend`, and pass the revision as `--base`. It prints one line, changes whenever the stored file changes, and writes nothing. Dropped specs exit 1 like the other commands.",
+		Usage: "usage: spx rev <slug>\n" +
+			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.",
+		Run: runRev,
 	},
 	{
 		Name:     "approve",
@@ -138,12 +148,13 @@ var commands = []command{
 	},
 	{
 		Name:     "amend",
-		Synopsis: `spx amend <slug> <file> "<reason>"`,
+		Synopsis: `spx amend <slug> <file> "<reason>" [--base <rev>]`,
 		Effect:   "Replace a started spec's content with <file>, log why, and commit it.",
-		Rule:     "Run only after the user said yes to changing the Outcome, criteria, Design or Boundaries of a started spec; spx records the change, it never decides one. Edit a copy outside the store and pass it here with the reason as one line. Same file rules as `spx edit`; a spec that is not started exits 3.",
-		Usage: "usage: spx amend <slug> <file> \"<reason>\"\n" +
+		Rule:     "Run only after the user said yes to changing the Outcome, criteria, Design or Boundaries of a started spec; spx records the change, it never decides one. Edit a copy outside the store and pass it here with the reason as one line. Same file rules as `spx edit`, including `--base <rev>` from `spx rev`; a spec that is not started exits 3.",
+		Usage: "usage: spx amend <slug> <file> \"<reason>\" [--base <rev>]\n" +
 			"<slug> is a spec in the current checkout's project, or <project>/<slug> from anywhere.\n" +
-			"<file> is the spec's full new content; <reason> is one line.",
+			"<file> is the spec's full new content; <reason> is one line.\n" +
+			"<rev> is the revision `spx rev` printed before the spec was read.",
 		Run: runAmend,
 	},
 }
@@ -318,19 +329,52 @@ func runNew(c command, args []string, e env) int {
 	return ops.CodeOK
 }
 
-func runEdit(c command, args []string, e env) int {
-	if len(args) != 2 || args[0] == "" || args[1] == "" {
+// baseFlag splits a --base <rev> flag off args. ok is false for a --base without a value, an empty
+// value, a repeated flag or any other flag.
+func baseFlag(args []string) (pos []string, base string, ok bool) {
+	pos, flags, ok := splitFlags(args, "--base")
+	if !ok {
+		return nil, "", false
+	}
+	if v, set := flags["--base"]; set {
+		if v == "" {
+			return nil, "", false
+		}
+		base = v
+	}
+	return pos, base, true
+}
+
+func runRev(c command, args []string, e env) int {
+	if len(args) != 1 || args[0] == "" {
 		return usageError(c, e)
 	}
-	v, spec, err := resolve(e, args[0])
+	_, spec, err := resolve(e, args[0])
 	if err != nil {
 		return report(e, err)
 	}
-	data, err := ops.ReadInput(inputPath(e, args[1]))
+	rev, err := ops.Rev(spec)
 	if err != nil {
 		return report(e, err)
 	}
-	res, err := ops.Edit(v.root, spec, data)
+	fmt.Fprintln(e.stdout, rev)
+	return ops.CodeOK
+}
+
+func runEdit(c command, args []string, e env) int {
+	pos, base, ok := baseFlag(args)
+	if !ok || len(pos) != 2 || pos[0] == "" || pos[1] == "" {
+		return usageError(c, e)
+	}
+	v, spec, err := resolve(e, pos[0])
+	if err != nil {
+		return report(e, err)
+	}
+	data, err := ops.ReadInput(inputPath(e, pos[1]))
+	if err != nil {
+		return report(e, err)
+	}
+	res, err := ops.EditBase(v.root, spec, data, base)
 	if err != nil {
 		return report(e, err)
 	}
