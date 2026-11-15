@@ -20,7 +20,7 @@ Out of scope:
 
 ## Acceptance criteria
 
-- [ ] `n` in the list shows the attention view; `n` again, or `esc`, returns to the list with the same spec selected. `n` does nothing while the query input or project popup has the keys.
+- [ ] `n` in the list shows the attention view; `n` again, or `esc`, returns to the list with the same spec selected. `n` does nothing while the query input, the project popup or a scratch prompt has the keys (the reopen prompt in `ui/scratch.go` already answers `n`).
 - [ ] The view has groups in this order: `NEEDS ME`, `AGENT WORKING`, `BLOCKED`, `READY`. Each group header shows its glyph, name and count. An empty group is not shown.
 - [ ] `NEEDS ME` and `AGENT WORKING` start unfolded; `BLOCKED` and `READY` start folded, showing only the header and `· enter to expand`.
 - [ ] A needs-me row shows the reason (`Accept`, `Review`, `Approve`, `Answer`), the project, the title, and the age of the last Log entry as `today`, `1d`, `6d` and so on, counted in days from the entry's date. Other rows show their status in place of the reason. A spec with no Log entry shows no age.
@@ -42,7 +42,8 @@ Out of scope:
 
 ## Design
 
-- Model it on the board: a flag on the model, `ui/attention.go` for layout and keys, a case in `render` and in the key switch, `m.visible()` as the source of rows.
+- Model it on the board: a flag on the model, `ui/attention.go` for layout and keys, a case in `render` and in the key switch, `m.flat()` as the source of rows. `flat()` ignores the status filter while `m.board` is on; do the same for the attention flag (or generalize that check) so the filter doesn't hide groups. The existing `r` (ready) filter then applies again on return.
+- `visible()` has board and tree branches; the attention view gets its own grouped order the same way `boardRows` does, so `m.cursor` indexes rows consistently. Header rows are not specs, so keep them out of `m.specs` and track the cursor over rows-and-headers separately.
 - Group by calling `State`; do not restate its rules here.
 - Age is computed from `LastLog.Date` and today's date, passed in so tests don't depend on the clock.
 - Add `ui/attention.go` to the project structure in CLAUDE.md, and `n` to the keys it documents.

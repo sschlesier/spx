@@ -31,7 +31,8 @@ Out of scope:
 
 ## Design
 
-- Move `criteria()` and its fence helper into `store/` and export what `ops` needs; `ops` keeps the line numbers it needs for ticking, so the store type includes the line index, unexported or documented as the file's line.
+- Move `criteria()` into `store/` and export what `ops` needs. Its fence helper `fenceMarker` (`ops/edit.go`) goes with it as `store.FenceMarker`, unless `read-the-last-log-entry-into-the-store` has already moved it; either order works, and `ops` keeps no copy.
+- `ops` keeps the line numbers it needs for ticking, so the store type includes the line index, unexported or documented as the file's line.
 - Parse at load time with the other frontmatter and body reading.
 - Not a flag: no data migration, public API or config change.
 

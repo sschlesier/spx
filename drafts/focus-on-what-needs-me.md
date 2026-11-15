@@ -1,6 +1,6 @@
 ---
 title: Focus on what needs me
-type: feature
+type: epic
 priority: 1
 depends-on: []
 parent:

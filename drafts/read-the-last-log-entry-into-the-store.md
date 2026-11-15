@@ -32,7 +32,8 @@ Out of scope:
 
 ## Design
 
-- Parse in `store/` when the spec is loaded, next to the `parent` and `depends-on` reading. Reuse the fence handling the criteria parser in `ops/status.go` uses; do not copy a second version (see `read-acceptance-criteria-counts-into-the-store`, which moves that parser into `store/`; whichever lands first extracts the shared fence helper).
+- Parse in `store/` when the spec is loaded, next to the `parent` and `depends-on` reading (`read` in `store/store.go`, which already holds the whole body).
+- Fences: `fenceMarker` is unexported in `ops/edit.go`. Use `store.FenceMarker` if `read-acceptance-criteria-counts-into-the-store` has already moved it there; otherwise move it to `store/` (exported) in this ticket and have `ops` call it. Either order works; do not keep two copies.
 - `Date` stays a string so nothing here depends on the clock or the time zone.
 - Not a flag: no data migration, public API or config change.
 

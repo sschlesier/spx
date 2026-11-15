@@ -31,7 +31,7 @@ Out of scope:
 
 ## Design
 
-- Add the cell in `layoutRows`; compute the title's available width after the other cells and the count.
+- `layoutRows` cuts nothing today; `listView` truncates each row to the pane width with `ansi.Truncate`. Add the count in `listView`, after truncating the plain row to `width - len(count) - 1`, so `rowLayout` offsets used for highlighting stay valid and the count is outside the fuzzy-match text.
 - Not a flag: no data migration, public API or config change.
 
 ## Boundaries

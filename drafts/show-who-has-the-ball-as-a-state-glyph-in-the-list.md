@@ -23,7 +23,7 @@ Out of scope:
 - [ ] An approved spec is `ready` when every `depends-on` resolves to a done spec (the existing `Ready` rule), else `blocked`.
 - [ ] A started spec with `status: in-review` is `needs me`, reason `Review`; with `status: done` it is `needs me`, reason `Accept`, unless its last Log entry starts with `Accepted:` (waiting on the PR merge), when it is `working`. Any other started spec, including one without a `status:`, is `working`.
 - [ ] A dropped spec has no state and no glyph.
-- [ ] Every list row starts with its state's glyph and a space: `●` needs me, `◐` working, `⊘` blocked, `○` ready, a blank for none. The glyphs differ in shape, so the state reads without colour; colour is added from the terminal's 16 ANSI colours (yellow, blue, red, green) so it follows the terminal theme.
+- [ ] Every list row gets a one-cell glyph column, first in the row and followed by a space (before the project cell, or before the status letter when the list is scoped to one project): `●` needs me, `◐` working, `⊘` blocked, `○` ready, a blank for none. The existing status letter (`d`, `a`, `s`, `x`) stays. The glyphs differ in shape, so the state reads without colour; colour is added from the terminal's 16 ANSI colours (yellow, blue, red, green) so it follows the terminal theme.
 - [ ] The glyph column shifts the other columns by two cells without breaking them: tree prefixes, query match highlighting, the selected row's reverse video and truncation with `…` all still land on the right characters.
 - [ ] The detail header shows a state line, `● needs me · Approve` (the glyph, the state, the reason when there is one), and a `Last log` line with the entry's date and text, truncated with `…` to the pane width. A spec with no Log entry shows no `Last log` line.
 - [ ] The `?` help popup lists the five glyphs and what they mean.
@@ -40,7 +40,8 @@ Out of scope:
 
 - `Ready` in `ui/deps.go` already answers the approved case; reuse it instead of restating the rule.
 - Keep `State` free of `lipgloss` and I/O so it tests as a table; styling happens in `render.go`.
-- Rows get the glyph in `layoutRows`; `rowLayout`'s `projectAt`, `typeAt`, `titleAt` offsets shift with it.
+- Rows get the glyph in `layoutRows` (`ui/render.go`), whose `head` is `project S T P# ` today; `rowLayout`'s `typeAt` and `titleAt` shift by two cells, and so does the project cell's start (used by the match highlighting). `Rows()` is exported and used by tests, so its callers change with it. `StatusRows`, which the CLI flags print, is a separate function and stays as is.
+- `ui` already has `m.all` (every spec) and `m.done` (receipts) for `State`'s arguments.
 - Add `ui/state.go` to the project structure in CLAUDE.md.
 - Not a flag: no data migration, public API or config change.
 
