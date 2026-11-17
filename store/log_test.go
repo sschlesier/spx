@@ -30,6 +30,13 @@ func TestLastLog(t *testing.T) {
 		{"Logs heading", "## Logs\n\n- 2026-01-02: a\n", LogEntry{}},
 		{"h3 does not end", "## Log\n\n- 2026-01-02: a\n\n### Sub\n\n- 2026-01-03: b\n", LogEntry{"2026-01-03", "b"}},
 		{"no body", "", LogEntry{}},
+		{"one space is not a continuation", "## Log\n\n- 2026-01-02: a\n b\n", LogEntry{"2026-01-02", "a"}},
+		{"fence ends continuation", "## Log\n\n- 2026-01-02: a\n```\nx\n```\n  c\n", LogEntry{"2026-01-02", "a"}},
+		{"separator needs a space", "## Log\n\n- 2026-01-02: a\n- 2026-01-03:x\n", LogEntry{"2026-01-02", "a"}},
+		{"slashes in date", "## Log\n\n- 2026-01-02: a\n- 2026/01/03: b\n", LogEntry{"2026-01-02", "a"}},
+		{"letter in date", "## Log\n\n- 2026-01-02: a\n- 2026-0a-03: b\n", LogEntry{"2026-01-02", "a"}},
+		{"indented fence", "## Log\n\n- 2026-01-02: a\n\n  ```\n- 2026-01-03: b\n  ```\n", LogEntry{"2026-01-02", "a"}},
+		{"backticks mid-line", "## Log\n\n- 2026-01-02: use ``` here\n- 2026-01-03: b\n", LogEntry{"2026-01-03", "b"}},
 	}
 	for _, c := range cases {
 		if got := lastLog(c.body); got != c.want {
