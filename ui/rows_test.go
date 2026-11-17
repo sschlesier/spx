@@ -234,3 +234,13 @@ func TestDetailHeaderTypeLineHasNoID(t *testing.T) {
 		t.Errorf("detail header:\n%s", s)
 	}
 }
+
+// stateOfGlyph is the state whose glyph is g, StateNone for anything else.
+func stateOfGlyph(g string) StateKind {
+	for k, v := range stateGlyphs {
+		if v == g {
+			return k
+		}
+	}
+	return StateNone
+}
