@@ -36,6 +36,9 @@ func TestLastLog(t *testing.T) {
 		{"slashes in date", "## Log\n\n- 2026-01-02: a\n- 2026/01/03: b\n", LogEntry{"2026-01-02", "a"}},
 		{"letter in date", "## Log\n\n- 2026-01-02: a\n- 2026-0a-03: b\n", LogEntry{"2026-01-02", "a"}},
 		{"indented fence", "## Log\n\n- 2026-01-02: a\n\n  ```\n- 2026-01-03: b\n  ```\n", LogEntry{"2026-01-02", "a"}},
+		{"mixed fence markers", "## Log\n\n- 2026-01-02: a\n\n```\n~~~\n- 2026-01-03: b\n```\n", LogEntry{"2026-01-02", "a"}},
+		{"other separator", "## Log\n\n- 2026-01-02: a\n- 2026-01-03;x b\n", LogEntry{"2026-01-02", "a"}},
+		{"no dash prefix", "## Log\n\n- 2026-01-02: a\nx 2026-01-03: b\n", LogEntry{"2026-01-02", "a"}},
 		{"backticks mid-line", "## Log\n\n- 2026-01-02: use ``` here\n- 2026-01-03: b\n", LogEntry{"2026-01-03", "b"}},
 	}
 	for _, c := range cases {
