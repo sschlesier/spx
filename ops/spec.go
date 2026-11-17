@@ -147,7 +147,7 @@ func splitBody(data []byte) body {
 	heading, fence := "", ""
 	var preamble []string
 	for _, line := range lines {
-		if marker := fenceMarker(line); marker != "" {
+		if marker := store.FenceMarker(line); marker != "" {
 			switch fence {
 			case "":
 				fence = marker

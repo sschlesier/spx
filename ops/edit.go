@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"spx/store"
 )
 
 // fieldOrder is the frontmatter field order of a new spec.
@@ -142,7 +144,7 @@ func AppendLog(data []byte, date, text string) []byte {
 	heading, next := -1, len(lines)
 	fence := ""
 	for i, line := range lines {
-		if marker := fenceMarker(line); marker != "" {
+		if marker := store.FenceMarker(line); marker != "" {
 			switch fence {
 			case "":
 				fence = marker
@@ -182,15 +184,4 @@ func AppendLog(data []byte, date, text string) []byte {
 	}
 	lines = slices.Insert(lines, last+1, add...)
 	return []byte(strings.Join(lines, "\n") + "\n")
-}
-
-// fenceMarker is "```" or "~~~" when line opens or closes a fenced code block.
-func fenceMarker(line string) string {
-	t := strings.TrimLeft(line, " ")
-	for _, m := range []string{"```", "~~~"} {
-		if strings.HasPrefix(t, m) {
-			return m
-		}
-	}
-	return ""
 }
