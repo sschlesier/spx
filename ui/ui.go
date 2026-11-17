@@ -393,7 +393,7 @@ func (m *Model) renderDetail() {
 	}
 	s := m.specs[m.cursor]
 	depends, blocks := depEntries(s, m.all, m.done)
-	head := header(s, m.detail.Width(), depLines(depends, blocks, m.hl))
+	head := header(s, m.detail.Width(), stateLine(s, m.all, m.done), depLines(depends, blocks, m.hl))
 	m.detail.SetContent(head + "\n" + m.markdown(s.Body))
 	m.detail.SetYOffset(m.detail.YOffset())
 }

@@ -48,6 +48,11 @@ func spans(line string) (yellow []string, unreversed bool) {
 		}
 		rest = rest[loc[1]:]
 	}
+	// The state glyph is always the first rune of a row; tests of the match highlight leave it out.
+	if len(yellow) > 0 && strings.HasPrefix(line, "\x1b") && stateOfGlyph(yellow[0]) != StateNone &&
+		strings.HasPrefix(ansi.Strip(line), yellow[0]) {
+		yellow = yellow[1:]
+	}
 	return yellow, unreversed
 }
 
@@ -145,7 +150,7 @@ func TestFilterMapsMatchesPastMultibyteAndControlCharacters(t *testing.T) {
 func TestListWithoutAQueryHasNoYellowAndReadsAsTheRows(t *testing.T) {
 	specs := twoSpecs("One", "Two")
 	lines := listLines(start(t, specs, 80, 20))
-	for i, row := range Rows(specs) {
+	for i, row := range Rows(specs, specs, nil) {
 		if got, _ := spans(lines[i]); len(got) != 0 {
 			t.Errorf("row %d yellow %q", i, got)
 		}
@@ -169,7 +174,7 @@ func TestListRowsStartWithTheSharedRows(t *testing.T) {
 		{Project: "p", Status: "draft", Slug: "one", Title: "One", Type: "feature", Priority: 2},
 		{Project: "pq", Status: "approved", Slug: "two", Title: "Two", Priority: 1},
 	}
-	rows := Rows(specs)
+	rows := Rows(specs, specs, nil)
 	m := start(t, specs, 200, 20)
 	lines := strings.Split(screen(m), "\n")
 	for _, row := range rows {
@@ -188,10 +193,10 @@ func TestRowsDropControlCharactersInEveryCell(t *testing.T) {
 		{Project: "p\x1b[0m", Status: "draft", Priority: 1, Type: "bu\ng", Title: "T\tx"},
 		{Project: "q", Status: "draft", Priority: 1, Type: "\n", Title: "U"},
 	}
-	got := Rows(specs)
+	got := Rows(specs, specs, nil)
 	want := []string{
-		"p[0m d b P1 Tx",
-		"q    d - P1 U",
+		"● p[0m d b P1 Tx",
+		"● q    d - P1 U",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %q\nwant %q", got, want)
@@ -212,10 +217,10 @@ func TestRowsFormatsUntruncatedAlignedRowsStartingWithTheProject(t *testing.T) {
 		{Project: "a", Status: "draft", Priority: 1, Type: "bug", Title: "First"},
 		{Project: "bb", Status: "approved", Priority: store.NoPriority, Title: long + "\x1b[31m"},
 	}
-	got := Rows(shown)
+	got := Rows(shown, shown, nil)
 	want := []string{
-		"a  d b P1 First",
-		"bb a - -  " + long + "[31m",
+		"● a  d b P1 First",
+		"○ bb a - -  " + long + "[31m",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %q\nwant %q", got, want)

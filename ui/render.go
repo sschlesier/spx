@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"image/color"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -20,11 +21,18 @@ var (
 	dimStyle      = lipgloss.NewStyle().Faint(true)
 )
 
-func header(s store.Spec, width int, deps []string) string {
+func header(s store.Spec, width int, state string, deps []string) string {
 	lines := []string{
 		titleStyle.Render(s.Title),
 		s.Project + "/" + s.Status + "/" + s.Slug,
 		"type: " + orDash(s.Type) + "   priority: " + priority(s.Priority),
+	}
+	if state != "" {
+		lines = append(lines, state)
+	}
+	if s.LastLog.Date != "" {
+		line := "Last log  " + printable(s.LastLog.Date) + "  " + printable(s.LastLog.Text)
+		lines = append(lines, ansi.Truncate(line, max(1, width-4), "…"))
 	}
 	if s.Approved != "" {
 		lines = append(lines, "approved: "+s.Approved)
@@ -178,7 +186,7 @@ func (m Model) listView() string {
 			prefixes[i] = treePrefix(n)
 		}
 	}
-	layout := layoutRows(m.specs, prefixes, m.scope == "")
+	layout := layoutRows(m.specs, glyphs(m.specs, m.all, m.done), prefixes, m.scope == "")
 	w := m.listWidth()
 	end := min(len(m.specs), m.offset+m.bodyHeight())
 	rows := make([]string, 0, end-m.offset)
@@ -196,11 +204,17 @@ func (m Model) listView() string {
 		if i == m.cursor {
 			pad = strings.Repeat(" ", max(0, w-ansi.StringWidth(row)))
 		}
-		out := base.Render(row + pad)
-		if len(marked) > 0 {
-			out = highlight(row, marked, base) + base.Render(pad)
+		// The glyph is the row's first rune and is never marked.
+		g, rest := splitFirstRune(row)
+		shifted := make(map[int]bool, len(marked))
+		for pos := range marked {
+			shifted[pos-1] = true
 		}
-		rows = append(rows, out)
+		gstyle := base
+		if c, ok := glyphColors[stateOfGlyph(g)]; ok {
+			gstyle = base.Foreground(c)
+		}
+		rows = append(rows, gstyle.Render(g)+highlight(rest, shifted, base)+base.Render(pad))
 	}
 	return strings.Join(rows, "\n")
 }
@@ -240,7 +254,32 @@ func highlight(row string, marked map[int]bool, base lipgloss.Style) string {
 
 // Rows formats shown as list rows, one per spec, without the terminal-width cut or any styling.
 // Column widths come from shown.
-func Rows(shown []store.Spec) []string { return rows(shown, nil, true) }
+// all and done are as for State.
+func Rows(shown, all, done []store.Spec) []string {
+	return rows(shown, glyphs(shown, all, done), nil, true)
+}
+
+// glyphColors is the ANSI colour (of the terminal's 16) of each state's glyph in the list view.
+var glyphColors = map[StateKind]color.Color{
+	StateNeedsMe: lipgloss.Color("3"),
+	StateWorking: lipgloss.Color("4"),
+	StateBlocked: lipgloss.Color("1"),
+	StateReady:   lipgloss.Color("2"),
+}
+
+func stateOfGlyph(g string) StateKind {
+	for k, v := range stateGlyphs {
+		if v == g {
+			return k
+		}
+	}
+	return StateNone
+}
+
+func splitFirstRune(s string) (string, string) {
+	_, n := utf8.DecodeRuneInString(s)
+	return s[:n], s[n:]
+}
 
 // StatusRows formats shown as the lines `spx -d/-a/-s/-r` print: full words, project first,
 // columns widened to the longest value shown. The list uses the compact Rows instead.
@@ -260,9 +299,9 @@ func StatusRows(shown []store.Spec) []string {
 	return out
 }
 
-// rows is Rows with prefixes[i], when given, starting row i's title.
-func rows(shown []store.Spec, prefixes []string, showProject bool) []string {
-	layout := layoutRows(shown, prefixes, showProject)
+// rows is Rows with glyphs and with prefixes[i], when given, starting row i's title.
+func rows(shown []store.Spec, glyphs, prefixes []string, showProject bool) []string {
+	layout := layoutRows(shown, glyphs, prefixes, showProject)
 	out := make([]string, len(layout))
 	for i, l := range layout {
 		out[i] = l.text
@@ -360,9 +399,9 @@ func letter(letters map[string]string, v string) string {
 	return "-"
 }
 
-// layoutRows lays out shown as `project S T P# title` rows; without showProject the project
-// cell and its separator are left out.
-func layoutRows(shown []store.Spec, prefixes []string, showProject bool) []rowLayout {
+// layoutRows lays out shown as `G project S T P# title` rows, G being glyphs[i] (a space when
+// missing); without showProject the project cell and its separator are left out.
+func layoutRows(shown []store.Spec, glyphs, prefixes []string, showProject bool) []rowLayout {
 	projectW := 0
 	projects := make([]string, len(shown))
 	for i, s := range shown {
@@ -371,9 +410,14 @@ func layoutRows(shown []store.Spec, prefixes []string, showProject bool) []rowLa
 	}
 	rows := make([]rowLayout, len(shown))
 	for i, s := range shown {
-		head := ""
+		head := " "
+		if i < len(glyphs) {
+			head = glyphs[i]
+		}
+		head += " "
+		projectAt := len(head)
 		if showProject {
-			head = projects[i] + strings.Repeat(" ", projectW-utf8.RuneCountInString(projects[i])) + " "
+			head += projects[i] + strings.Repeat(" ", projectW-utf8.RuneCountInString(projects[i])) + " "
 		}
 		head += letter(statusLetters, printable(s.Status)) + " "
 		typeAt := len(head)
@@ -382,6 +426,7 @@ func layoutRows(shown []store.Spec, prefixes []string, showProject bool) []rowLa
 		rows[i] = rowLayout{
 			text:       head + prefix + printable(s.Title),
 			hasProject: showProject,
+			projectAt:  projectAt,
 			typeAt:     typeAt,
 			titleAt:    len(head) + len(prefix),
 		}

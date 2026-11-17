@@ -30,7 +30,7 @@ type helpRow struct {
 }
 
 // maxHelpRows is the tallest the help popup is drawn, border included.
-const maxHelpRows = 26
+const maxHelpRows = 27
 
 // legendRows explain the abbreviated cells of a list row, in row order, and head the list
 // view's popup. Status letters are the status filter keys, so the Filter row refers back here
@@ -40,6 +40,7 @@ var legendRows = []helpRow{
 	{viewList, "Columns", "S", "d draft · a approved · s started · x dropped"},
 	{viewList, "Columns", "T", "b bug · c chore · e epic · f feature · t task · - none"},
 	{viewList, "Columns", "P#", "P1 to P3, - none"},
+	{viewList, "Columns", "State", "● needs me · ◐ working · ⊘ blocked · ○ ready · blank none"},
 }
 
 // helpRows is the one table the popup is built from and the footers are checked against. A key
@@ -143,7 +144,7 @@ func (m Model) helpPopup() string {
 		key := r.key + strings.Repeat(" ", keyW-ansi.StringWidth(r.key))
 		lines = append(lines, dimStyle.Render(label)+" "+key+"  "+r.text)
 	}
-	lines = lines[:min(len(lines), max(1, min(maxHelpRows, m.height)-2))]
+	lines = lines[:min(len(lines), max(1, min(maxHelpRows, m.height-1)-2))]
 	for i, l := range lines {
 		lines[i] = ansi.Truncate(l, max(1, m.width-4), "")
 	}
