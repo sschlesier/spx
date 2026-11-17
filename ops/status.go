@@ -71,7 +71,7 @@ func criteria(data []byte) []criterion {
 	var out []criterion
 	inSection, fence := false, ""
 	for i, line := range strings.Split(string(data), "\n") {
-		if marker := fenceMarker(line); marker != "" {
+		if marker := store.FenceMarker(line); marker != "" {
 			switch fence {
 			case "":
 				fence = marker
