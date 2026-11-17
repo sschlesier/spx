@@ -6,7 +6,7 @@ priority: 1
 depends-on: []
 parent: focus-on-what-needs-me
 approved: "Scott Schlesier, 2026-11-16: Read the last Log entry into store.Spec as LastLog; first-wins Log heading, entry grammar fixed. Cold read: fresh agent built the intended design; 5 ambiguities found and fixed in the spec; not re-run"
-status: in-review
+status: done
 ---
 
 `store.Spec` carries the date and text of the spec's last Log entry, so the UI can say what happened last and tell a draft that needs my answers from one that needs my approval.
@@ -52,3 +52,5 @@ Don't touch: what `ops.AppendLog` writes (only its call to the moved fence helpe
 - 2026-11-16: Approved: Scott Schlesier, 2026-11-16: Read the last Log entry into store.Spec as LastLog; first-wins Log heading, entry grammar fixed. Cold read: fresh agent built the intended design; 5 ambiguities found and fixed in the spec; not re-run
 - 2026-11-16: Started on branch read-last-log-entry
 - 2026-11-16: Status: in-review
+- 2026-11-16: Review round 1: dismissed equivalent mutant (len(line) <= head vs <, empty text is rejected anyway) and the duplicated fence/heading walk (spec Design asks for the same walk as AppendLog).
+- 2026-11-16: Status: done: Reviewed round 1: all six criteria verified by cold verify; no open decisions or risks
