@@ -447,7 +447,7 @@ func TestQueryMatchingOnlyTheBodyMatchesNothing(t *testing.T) {
 
 func TestListRowsAreTheShownSpecsWhenFiltered(t *testing.T) {
 	m := typed(t, press(t, start(t, findable(), 120, 20), "/"), "zeb")
-	if row := rowOf(m, "Zebra stripes"); !strings.HasPrefix(row, "spx ") {
+	if row := rowOf(m, "Zebra stripes"); !strings.HasPrefix(row, "● spx ") {
 		t.Errorf("row %q, want beta's own row", row)
 	}
 	if strings.Contains(screen(m), "Render the grid") {

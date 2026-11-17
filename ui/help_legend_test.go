@@ -44,7 +44,10 @@ func TestHelpSpellsOutStatusWordsOnce(t *testing.T) {
 func TestHelpWithTheLegendFitsA24RowTerminal(t *testing.T) {
 	m := press(t, start(t, fixture(5), 120, 24), "?")
 	got := ansi.Strip(m.helpPopup())
-	if !strings.Contains(got, "quit") {
-		t.Errorf("last key row cut off:\n%s", got)
+	if strings.Contains(got, "quit") {
+		t.Errorf("last key row not cut off:\n%s", got)
+	}
+	if !strings.Contains(m.render(), "q quit") {
+		t.Errorf("q missing from the footer")
 	}
 }

@@ -267,7 +267,7 @@ func TestTreeEnterOpensTheSelectedChild(t *testing.T) {
 
 func TestRowsWithoutPrefixesMatchTheSharedRows(t *testing.T) {
 	specs := family()
-	if got, want := rows(specs, nil, true), Rows(specs); !reflect.DeepEqual(got, want) {
+	if got, want := rows(specs, glyphs(specs, specs, nil), nil, true), Rows(specs, specs, nil); !reflect.DeepEqual(got, want) {
 		t.Errorf("got %q want %q", got, want)
 	}
 }

@@ -76,10 +76,13 @@ func TestFilterTieBetweenFieldsHighlightsTheTitle(t *testing.T) {
 	if got, _ := spans(line); !reflect.DeepEqual(got, []string{"zebra"}) {
 		t.Fatalf("yellow %q, want one run in %q", got, line)
 	}
-	idx := strings.Index(line, "\x1b[33m")
+	// The glyph is yellow too and comes first; look after it.
+	from := strings.Index(line, "\x1b[m")
+	idx := strings.Index(line[from:], "\x1b[33m")
 	if idx < 0 {
-		idx = strings.Index(line, ";33m")
+		idx = strings.Index(line[from:], ";33m")
 	}
+	idx += from
 	// Title is the last cell; the project cell comes first.
 	if before := ansi.Strip(line[:idx]); !strings.Contains(before, "zebra") {
 		t.Errorf("highlight is on the project, not the title, in %q", line)

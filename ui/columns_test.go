@@ -35,30 +35,31 @@ func TestTitlesStartAtTheSameColumnWhateverTheProjects(t *testing.T) {
 	for _, p := range []string{"a", "abcdef", "abcdefg", "abcdefghijkl"} {
 		specs = append(specs, store.Spec{Project: p, Status: "draft", Title: "TITLE", Type: "bug", Priority: 1})
 	}
-	rows := Rows(specs)
+	rows := Rows(specs, specs, nil)
 	for i, r := range rows {
 		if got, want := ansi.StringWidth(r[:strings.Index(r, "TITLE")]), ansi.StringWidth(rows[0][:strings.Index(rows[0], "TITLE")]); got != want {
 			t.Errorf("row %d %q: title at cell %d, want %d", i, r, got, want)
 		}
 	}
-	if !strings.HasPrefix(rows[3], "abcde… d b P1 ") {
+	if !strings.HasPrefix(rows[3], "● abcde… d b P1 ") {
 		t.Errorf("cut project row %q", rows[3])
 	}
 }
 
-func TestTitleColumnForShortProjectsIsAtLeast16CellsEarlier(t *testing.T) {
+func TestTitleColumnForShortProjectsIsAtLeast14CellsEarlier(t *testing.T) {
 	specs := []store.Spec{{Project: "spx", Status: "approved", Title: "TITLE", Type: "feature", Priority: 1}}
 	old := strings.Index(StatusRows(specs)[0], "TITLE")
-	if got := strings.Index(Rows(specs)[0], "TITLE"); old-got < 16 {
+	row := Rows(specs, specs, nil)[0]
+	if got := ansi.StringWidth(row[:strings.Index(row, "TITLE")]); old-got < 14 {
 		t.Errorf("title at %d, was %d", got, old)
 	}
 }
 
 func TestScopedListDropsTheProjectCell(t *testing.T) {
 	specs := []store.Spec{{Project: "spx", Status: "draft", Slug: "a", Title: "Alpha", Type: "bug", Priority: 1}}
-	all := rows(specs, nil, true)[0]
-	scoped := rows(specs, nil, false)[0]
-	if scoped != "d b P1 Alpha" {
+	all := rows(specs, nil, nil, true)[0]
+	scoped := rows(specs, nil, nil, false)[0]
+	if scoped != "  d b P1 Alpha" {
 		t.Errorf("scoped row %q", scoped)
 	}
 	if strings.Index(all, "Alpha")-strings.Index(scoped, "Alpha") != 1+len("spx") {
