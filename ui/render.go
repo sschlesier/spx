@@ -186,7 +186,13 @@ func (m Model) listView() string {
 			prefixes[i] = treePrefix(n)
 		}
 	}
-	layout := layoutRows(m.specs, glyphs(m.specs, m.all, m.done), prefixes, m.scope == "")
+	kinds := make([]StateKind, len(m.specs))
+	glyphCells := make([]string, len(m.specs))
+	for i, sp := range m.specs {
+		kinds[i], _ = State(sp, m.all, m.done)
+		glyphCells[i] = kinds[i].Glyph()
+	}
+	layout := layoutRows(m.specs, glyphCells, prefixes, m.scope == "")
 	w := m.listWidth()
 	end := min(len(m.specs), m.offset+m.bodyHeight())
 	rows := make([]string, 0, end-m.offset)
@@ -211,7 +217,7 @@ func (m Model) listView() string {
 			shifted[pos-1] = true
 		}
 		gstyle := base
-		if c, ok := glyphColors[stateOfGlyph(g)]; ok {
+		if c, ok := glyphColors[kinds[i]]; ok {
 			gstyle = base.Foreground(c)
 		}
 		rows = append(rows, gstyle.Render(g)+highlight(rest, shifted, base)+base.Render(pad))
@@ -265,15 +271,6 @@ var glyphColors = map[StateKind]color.Color{
 	StateWorking: lipgloss.Color("4"),
 	StateBlocked: lipgloss.Color("1"),
 	StateReady:   lipgloss.Color("2"),
-}
-
-func stateOfGlyph(g string) StateKind {
-	for k, v := range stateGlyphs {
-		if v == g {
-			return k
-		}
-	}
-	return StateNone
 }
 
 func splitFirstRune(s string) (string, string) {
