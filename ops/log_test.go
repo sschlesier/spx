@@ -58,9 +58,7 @@ func specAt(root, status, slug string) store.Spec {
 
 func head(t *testing.T, root string) string { return gitIn(t, root, "rev-parse", "HEAD") }
 
-func commitCount(t *testing.T, root string) string {
-	return gitIn(t, root, "rev-list", "--count", "HEAD")
-}
+func commitCount(t *testing.T, root string) string { return gitIn(t, root, "rev-list", "--count", "HEAD") }
 
 func wantCode(t *testing.T, err error, code int) {
 	t.Helper()
