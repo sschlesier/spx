@@ -113,9 +113,17 @@ func TestGlyphIsColouredByStateAndRowsStayPlain(t *testing.T) {
 	specs := []store.Spec{
 		{Project: "p", Status: "draft", Slug: "a", Title: "A", Priority: 1},
 		{Project: "p", Status: "approved", Slug: "b", Title: "B", Priority: 2},
+		{Project: "p", Status: "approved", Slug: "c", Title: "C", Priority: 2, DependsOn: []string{"missing"}},
+		{Project: "p", Status: "started", Progress: "in-progress", Slug: "d", Title: "D", Priority: 2},
 	}
 	m := start(t, specs, 80, 10)
 	lines := listLines(m)
+	if !strings.Contains(lines[2], "\x1b[31m⊘") {
+		t.Errorf("blocked glyph: %q", lines[2])
+	}
+	if !strings.Contains(lines[3], "\x1b[34m◐") {
+		t.Errorf("working glyph: %q", lines[3])
+	}
 	if !strings.Contains(lines[0], "\x1b[7;33m●") {
 		t.Errorf("selected needs-me glyph: %q", lines[0])
 	}
@@ -211,5 +219,13 @@ func TestHelpLegendShowsTheStateRowAtThirtyRows(t *testing.T) {
 	}
 	if !strings.Contains(got, "quit") {
 		t.Errorf("last row cut at 30 rows:\n%s", got)
+	}
+}
+
+func TestListNarrowerThanTheGlyphColumnDoesNotPanic(t *testing.T) {
+	specs := []store.Spec{{Project: "p", Status: "draft", Slug: "a", Title: "A", Priority: 1}}
+	for _, w := range []int{1, 2, 3} {
+		m := filtered(t, specs, "a", w)
+		_ = listLines(m)
 	}
 }
