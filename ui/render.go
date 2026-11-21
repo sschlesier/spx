@@ -79,6 +79,8 @@ func (m Model) render() string {
 		body = fit(m.detail.View(), m.width, m.bodyHeight())
 	case m.board:
 		body = fit(m.boardView(), m.width, m.bodyHeight())
+	case m.attention:
+		body = fit(m.attentionView(), m.width, m.bodyHeight())
 	default:
 		body = fit(m.listView(), m.width, m.bodyHeight())
 	}
@@ -99,10 +101,12 @@ func (m Model) render() string {
 		if m.visibleCols() < len(boardStatuses) && len(m.specs) > 0 {
 			lead = append(lead, fmt.Sprintf("col %d/%d", m.selCol()+1, len(boardStatuses)))
 		}
+	} else if m.attention {
+		lead = append(lead, "attention")
 	} else if m.tree {
 		lead = append(lead, "tree")
 	}
-	if m.filter != "" && !m.board {
+	if m.filter != "" && !m.board && !m.attention {
 		active = append(active, m.filter)
 	}
 	if m.query != "" {
@@ -154,7 +158,7 @@ func (m Model) scopeLabel() string {
 // emptyMessage says why no spec is listed.
 func (m Model) emptyMessage() string {
 	filter := m.filter
-	if m.board {
+	if m.board || m.attention {
 		filter = ""
 	}
 	in := ""

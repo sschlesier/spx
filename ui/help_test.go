@@ -30,10 +30,11 @@ func TestHelpOpensAndCloses(t *testing.T) {
 
 func TestHelpOpensInEveryView(t *testing.T) {
 	views := map[string]Model{
-		"list":   start(t, fixture(5), 120, 30),
-		"narrow": start(t, fixture(5), 80, 24),
-		"detail": press(t, start(t, fixture(5), 80, 24), "enter"),
-		"board":  board(t, boardSpecs(), 120, 30),
+		"list":      start(t, fixture(5), 120, 30),
+		"narrow":    start(t, fixture(5), 80, 24),
+		"detail":    press(t, start(t, fixture(5), 80, 24), "enter"),
+		"board":     board(t, boardSpecs(), 120, 30),
+		"attention": press(t, start(t, fixture(5), 120, 30), "n"),
 	}
 	for name, m := range views {
 		if got := press(t, m, "?"); !got.helping {
@@ -138,7 +139,7 @@ func TestHelpPopupFitsAndIsCentered(t *testing.T) {
 
 func TestFooterStrings(t *testing.T) {
 	const lead = "all projects · "
-	if got, want := footer(start(t, fixture(5), 200, 30)), lead+"d/a/s/x/r status · ]/[ deps · v view · e edit · y/Y copy · c advance · p project · ? help"; got != want {
+	if got, want := footer(start(t, fixture(5), 200, 30)), lead+"d/a/s/x/r status · n attention · ]/[ deps · v view · e edit · y/Y copy · c advance · p project · ? help"; got != want {
 		t.Errorf("list footer %q, want %q", got, want)
 	}
 	if got, want := footer(press(t, start(t, fixture(5), 80, 24), "enter")), lead+"esc back · ]/[ deps · v view · e edit · c advance · ? help"; got != want {
@@ -147,8 +148,11 @@ func TestFooterStrings(t *testing.T) {
 	if got, want := footer(board(t, boardSpecs(), 200, 30)), lead+"board · h/l column · v view · e edit · y/Y copy · c advance · p project · ? help"; got != want {
 		t.Errorf("board footer %q, want %q", got, want)
 	}
-	for _, f := range []string{footerHelp, detailHelp, boardHelp} {
+	for _, f := range []string{footerHelp, detailHelp, boardHelp, attentionHelp} {
 		for _, gone := range []string{"j/k", "g/G", "ctrl+d/u", "quit", "enter", "tree", "filter"} {
+			if f == attentionHelp && gone == "enter" {
+				continue // the spec fixes this footer's enter fold/open
+			}
 			if strings.Contains(f, gone) {
 				t.Errorf("footer %q still lists %q", f, gone)
 			}
@@ -175,7 +179,7 @@ func TestFooterHintsAreInTheHelp(t *testing.T) {
 	for _, c := range []struct {
 		view helpView
 		foot string
-	}{{viewList, footerHelp}, {viewDetail, detailHelp}, {viewBoard, boardHelp}} {
+	}{{viewList, footerHelp}, {viewDetail, detailHelp}, {viewBoard, boardHelp}, {viewAttention, attentionHelp}} {
 		for _, hint := range strings.Split(c.foot, " · ") {
 			key := strings.Fields(hint)[0]
 			if !helpHas(c.view, key) {
@@ -261,7 +265,8 @@ func TestHelpCoversEveryKey(t *testing.T) {
 		}
 	}
 	board := caseKeys(funcDecl(t, "board.go", "boardKey"))
-	for name, ks := range map[string][]string{"global": global, "list": list, "detail": detail, "board": board} {
+	attention := caseKeys(funcDecl(t, "attention.go", "attentionKey"))
+	for name, ks := range map[string][]string{"global": global, "list": list, "detail": detail, "board": board, "attention": attention} {
 		if len(ks) == 0 {
 			t.Fatalf("found no %s keys in the handlers; the test no longer matches their shape", name)
 		}
@@ -269,7 +274,7 @@ func TestHelpCoversEveryKey(t *testing.T) {
 
 	// Aliases and no-ops that need no row of their own.
 	skip := map[string]bool{"down": true, "up": true}
-	boardNoop := map[string]bool{"t": true, "d": true, "a": true, "s": true, "x": true}
+	boardNoop := map[string]bool{"t": true, "b": true, "d": true, "a": true, "s": true, "x": true, "r": true}
 	// Global keys that do nothing on the board, which has no detail pane.
 	boardNone := map[string]bool{"]": true, "[": true, "enter": true, "ctrl+d": true, "ctrl+u": true}
 
@@ -289,6 +294,8 @@ func TestHelpCoversEveryKey(t *testing.T) {
 	check(viewList, "list", list, nil)
 	check(viewDetail, "detail", detail, nil)
 	check(viewBoard, "board", board, boardNoop)
+	check(viewAttention, "global", global, boardNone)
+	check(viewAttention, "attention", attention, boardNoop)
 
 	// The table has no row for a view it cannot be opened in.
 	for _, r := range helpRows {
