@@ -49,13 +49,13 @@ func TestAdvancePromptPerStage(t *testing.T) {
 	cases := []struct {
 		status, progress, want string
 	}{
-		{"draft", "", `Refine the draft spec "s" in project p. Its store copy is /x/s.md. Follow the spec-review skill.`},
-		{"approved", "", `Pick up the approved spec "s" in project p. Its store copy is /x/s.md. Follow the spec-review skill's Start step, then implement it.`},
-		{"started", "in-progress", `Continue the started spec "s" in project p. Its store copy is /x/s.md. Resume its worktree and branch from the Log, then implement the unticked acceptance criteria.`},
-		{"started", "", `Continue the started spec "s" in project p. Its store copy is /x/s.md. Resume its worktree and branch from the Log, then implement the unticked acceptance criteria.`},
-		{"started", "odd", `Continue the started spec "s" in project p. Its store copy is /x/s.md. Resume its worktree and branch from the Log, then implement the unticked acceptance criteria.`},
-		{"started", "in-review", `Review the started spec "s" in project p. Its store copy is /x/s.md. Follow the pr-review skill.`},
-		{"started", "done", `Review the started spec "s" in project p. Its store copy is /x/s.md. Follow the pr-review skill.`},
+		{"draft", "", `Refine the draft spec "s" in project p. Its store copy is /x/s.md. Follow the spec-review skill. This session is already named p/s.`},
+		{"approved", "", `Pick up the approved spec "s" in project p. Its store copy is /x/s.md. Follow the spec-review skill's Start step, then implement it. This session is already named p/s.`},
+		{"started", "in-progress", `Continue the started spec "s" in project p. Its store copy is /x/s.md. Resume its worktree and branch from the Log, then implement the unticked acceptance criteria. This session is already named p/s.`},
+		{"started", "", `Continue the started spec "s" in project p. Its store copy is /x/s.md. Resume its worktree and branch from the Log, then implement the unticked acceptance criteria. This session is already named p/s.`},
+		{"started", "odd", `Continue the started spec "s" in project p. Its store copy is /x/s.md. Resume its worktree and branch from the Log, then implement the unticked acceptance criteria. This session is already named p/s.`},
+		{"started", "in-review", `Review the started spec "s" in project p. Its store copy is /x/s.md. Follow the pr-review skill. This session is already named p/s.`},
+		{"started", "done", `Review the started spec "s" in project p. Its store copy is /x/s.md. Follow the pr-review skill. This session is already named p/s.`},
 	}
 	for _, c := range cases {
 		got, ok := advancePrompt(store.Spec{Project: "p", Slug: "s", Status: c.status, Progress: c.progress}, "/x/s.md")
@@ -80,7 +80,7 @@ func TestCStartsClaudeInTheRepoWithThePrompt(t *testing.T) {
 		}
 		cmdline, notice := m.advancePlan(m.specs[0])
 		want, _ := advancePrompt(m.specs[0], absPath(m.specs[0]))
-		if notice != "" || cmdline.Dir != e.repo || len(cmdline.Args) != 2 || cmdline.Args[0] != "claude" || cmdline.Args[1] != want {
+		if notice != "" || cmdline.Dir != e.repo || len(cmdline.Args) != 4 || cmdline.Args[0] != "claude" || cmdline.Args[1] != "--name" || cmdline.Args[2] != ref(m.specs[0]) || cmdline.Args[3] != want || !strings.HasSuffix(want, "This session is already named "+ref(m.specs[0])+".") {
 			t.Errorf("%s: dir %q args %q notice %q", c.status, cmdline.Dir, cmdline.Args, notice)
 		}
 	}
@@ -147,9 +147,16 @@ func TestClaudeDoneNoticesOnlyAFailureToStart(t *testing.T) {
 	}
 }
 
+func TestClaudeExecPutsTheNameBeforeThePrompt(t *testing.T) {
+	c := claudeExec("/r", "p/s", "do it")
+	if got := strings.Join(c.Args, "|"); got != "claude|--name|p/s|do it" || c.Dir != "/r" {
+		t.Errorf("args %q dir %q", got, c.Dir)
+	}
+}
+
 func TestMissingClaudeFailsToStart(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
-	if err := claudeExec(t.TempDir(), "hi").Run(); err == nil {
+	if err := claudeExec(t.TempDir(), "p/s", "hi").Run(); err == nil {
 		t.Fatal("ran without claude on PATH")
 	}
 }

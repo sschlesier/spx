@@ -115,7 +115,7 @@ func (m Model) copySelected(path bool) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	sp := m.specs[m.cursor]
-	text := sp.Project + "/" + sp.Slug
+	text := ref(sp)
 	if path {
 		text = absPath(sp)
 	}
