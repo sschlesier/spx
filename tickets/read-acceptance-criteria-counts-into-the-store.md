@@ -6,7 +6,7 @@ priority: 3
 depends-on: []
 parent: focus-on-what-needs-me
 approved: "Scott Schlesier, 2026-11-16: ParseCriteria and Spec.Criteria in store/; ops uses it; Text untrimmed, rules spelled out. Cold read: fresh agent planned the intended design; 6 gaps found and fixed in the spec; not re-run"
-status: in-review
+status: done
 ---
 
 `store.Spec` carries how many acceptance criteria it has and how many are ticked, and the text and position of each unticked one, so the UI can show progress and what is left without parsing markdown itself.
@@ -50,3 +50,5 @@ Don't touch: the store files; the CLI.
 - 2026-11-16: Approved: Scott Schlesier, 2026-11-16: ParseCriteria and Spec.Criteria in store/; ops uses it; Text untrimmed, rules spelled out. Cold read: fresh agent planned the intended design; 6 gaps found and fixed in the spec; not re-run
 - 2026-11-21: Started on branch read-acceptance-criteria-counts-into-the-store
 - 2026-11-21: Status: in-review
+- 2026-11-21: Review round 1: Scott accepted the CRLF risk (Spec.Criteria parses LF-normalised body; spx check/status parse raw bytes, as before this change)
+- 2026-11-21: Status: done: Reviewed round 1: all five criteria verified; CRLF divergence accepted
