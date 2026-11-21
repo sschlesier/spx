@@ -29,7 +29,7 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "q", "ctrl+c":
 		return m, tea.Quit
 	case "?":
-		m.helping = true
+		m.helping, m.helpOff = true, 0
 		return m, nil
 	case "v":
 		return m.viewSelected()

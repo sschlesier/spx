@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -30,12 +31,9 @@ type helpRow struct {
 	text       string
 }
 
-// maxHelpRows is the tallest the help popup is drawn, border included.
-const maxHelpRows = 27
-
-// legendRows explain the abbreviated cells of a list row, in row order, and head the list
-// view's popup. Status letters are the status filter keys, so the Filter row refers back here
-// instead of spelling the words out again.
+// legendRows explain the abbreviated cells of a list row, in row order, and head the
+// list view's popup; the board and detail panes have no such columns. Status letters are the
+// status filter keys, so the Filter row refers back here instead of spelling the words out again.
 var legendRows = []helpRow{
 	{viewList, "Columns", "project", "cut to 5 characters and … past 6; absent when scoped"},
 	{viewList, "Columns", "S", "d draft · a approved · s started · x dropped"},
@@ -91,7 +89,7 @@ const (
 	boardHelp     = "h/l column · v view · e edit · y/Y copy · c advance · p project · ? help"
 
 	// helpOpenHelp is the footer while the help popup is open.
-	helpOpenHelp = "q quit · ? or esc close"
+	helpOpenHelp = "ctrl+c quit · ? or esc close"
 )
 
 // helpView is the view that has the keys now.
@@ -120,21 +118,70 @@ func (m Model) footerHints() string {
 	return footerHelp
 }
 
-// helpKey handles a key while the help popup is open: ? and esc close it, quit quits and
-// nothing else gets through.
+// helpKey handles a key while the help popup is open: ? and esc close it, ctrl+c quits, the
+// scroll keys move the window and nothing else gets through.
 func (m Model) helpKey(k string) (tea.Model, tea.Cmd) {
 	switch k {
-	case "q", "ctrl+c":
+	case "ctrl+c":
 		return m, tea.Quit
 	case "?", "esc":
 		m.helping = false
+	case "j", "down":
+		m.helpOff++
+	case "k", "up":
+		m.helpOff--
+	case "ctrl+d":
+		m.helpOff += max(1, m.helpWindow()/2)
+	case "ctrl+u":
+		m.helpOff -= max(1, m.helpWindow()/2)
+	case "g":
+		m.helpOff = 0
+	case "G":
+		m.helpOff = len(m.helpLines())
 	}
+	m.helpOff = m.clampHelpOff()
 	return m, nil
 }
 
-// helpPopup is the bordered key list for the current view, at most maxHelpRows tall and
-// clipped to the terminal.
+// helpHeight is the most content rows the popup shows: the popup, border included, is at most the
+// terminal height less 2, so the footer stays visible.
+func (m Model) helpHeight() int { return max(1, m.height-4) }
+
+// helpWindow is how many content lines show at once. When the content is taller than
+// helpHeight, the last row is the position line.
+func (m Model) helpWindow() int {
+	total := len(m.helpLines())
+	if total <= m.helpHeight() {
+		return total
+	}
+	return max(1, m.helpHeight()-1)
+}
+
+// clampHelpOff is helpOff kept between the top and the last full window.
+func (m Model) clampHelpOff() int {
+	return min(max(m.helpOff, 0), max(0, len(m.helpLines())-m.helpWindow()))
+}
+
+// helpPopup is the bordered key list for the current view: a window of helpLines that scrolls,
+// with a dim n/m position line when the content doesn't all fit.
 func (m Model) helpPopup() string {
+	lines := m.helpLines()
+	win := m.helpWindow()
+	off := m.clampHelpOff()
+	shown := append([]string{}, lines[off:min(len(lines), off+win)]...)
+	if len(lines) > win {
+		shown = append(shown, dimStyle.Render(fmt.Sprintf("%d/%d", off+1, len(lines))))
+	}
+	for i, l := range shown {
+		shown[i] = ansi.Truncate(l, max(1, m.width-4), "")
+	}
+	return lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1).
+		Render(strings.Join(shown, "\n"))
+}
+
+// helpLines is every content line of the popup: the title, the legend, then the keys of the
+// current view.
+func (m Model) helpLines() []string {
 	v := m.helpView()
 	var rows []helpRow
 	keyW := 0
@@ -155,10 +202,5 @@ func (m Model) helpPopup() string {
 		key := r.key + strings.Repeat(" ", keyW-ansi.StringWidth(r.key))
 		lines = append(lines, dimStyle.Render(label)+" "+key+"  "+r.text)
 	}
-	lines = lines[:min(len(lines), max(1, min(maxHelpRows, m.height-1)-2))]
-	for i, l := range lines {
-		lines[i] = ansi.Truncate(l, max(1, m.width-4), "")
-	}
-	return lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1).
-		Render(strings.Join(lines, "\n"))
+	return lines
 }
