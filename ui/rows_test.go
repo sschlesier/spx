@@ -61,6 +61,11 @@ func filtered(t *testing.T, specs []store.Spec, query string, w int) Model {
 	return typed(t, press(t, start(t, specs, w, 20), "/"), query)
 }
 
+var countSuffix = regexp.MustCompile(` +(—|\d+/\d+)$`)
+
+// withoutCount drops the criteria count a list row ends with.
+func withoutCount(row string) string { return countSuffix.ReplaceAllString(row, "") }
+
 func listLines(m Model) []string { return strings.Split(m.listView(), "\n") }
 
 func twoSpecs(first, second string) []store.Spec {
@@ -154,7 +159,7 @@ func TestListWithoutAQueryHasNoYellowAndReadsAsTheRows(t *testing.T) {
 		if got, _ := spans(lines[i]); len(got) != 0 {
 			t.Errorf("row %d yellow %q", i, got)
 		}
-		if got := strings.TrimRight(ansi.Strip(lines[i]), " "); got != row {
+		if got := withoutCount(strings.TrimRight(ansi.Strip(lines[i]), " ")); got != row {
 			t.Errorf("row %d is %q, want %q", i, got, row)
 		}
 	}
@@ -206,7 +211,7 @@ func TestRowsDropControlCharactersInEveryCell(t *testing.T) {
 func TestListCutsALongRowWithAnEllipsis(t *testing.T) {
 	specs := []store.Spec{{Project: "p", Status: "draft", Slug: "long", Title: strings.Repeat("word ", 40), Priority: 2}}
 	m := start(t, specs, 60, 10)
-	if row := rowOf(m, "word"); !strings.HasSuffix(strings.TrimRight(row, " "), "…") {
+	if row := rowOf(m, "word"); !strings.HasSuffix(withoutCount(strings.TrimRight(row, " ")), "…") {
 		t.Fatalf("row %q does not end with an ellipsis", row)
 	}
 }

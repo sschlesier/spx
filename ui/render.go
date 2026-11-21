@@ -201,7 +201,14 @@ func (m Model) listView() string {
 	end := min(len(m.specs), m.offset+m.bodyHeight())
 	rows := make([]string, 0, end-m.offset)
 	for i := m.offset; i < end; i++ {
-		row := ansi.Truncate(layout[i].text, w, "…")
+		count, zero := criteriaCount(m.specs[i])
+		cw := ansi.StringWidth(count)
+		showCount := w-cw-1-utf8.RuneCountInString(layout[i].text[:layout[i].titleAt]) >= minTitleCells
+		cut := w
+		if showCount {
+			cut = w - cw - 1
+		}
+		row := ansi.Truncate(layout[i].text, cut, "…")
 		base := lipgloss.NewStyle()
 		if i == m.cursor {
 			base = selectedStyle
@@ -211,7 +218,9 @@ func (m Model) listView() string {
 			marked = layout[i].matched(m.query, m.specs[i], row)
 		}
 		pad := ""
-		if i == m.cursor {
+		if showCount {
+			pad = strings.Repeat(" ", max(0, cut-ansi.StringWidth(row)))
+		} else if i == m.cursor {
 			pad = strings.Repeat(" ", max(0, w-ansi.StringWidth(row)))
 		}
 		// The glyph is the row's first rune and is never marked.
@@ -224,9 +233,35 @@ func (m Model) listView() string {
 		if c, ok := glyphColors[kinds[i]]; ok {
 			gstyle = base.Foreground(c)
 		}
-		rows = append(rows, gstyle.Render(g)+highlight(rest, shifted, base)+base.Render(pad))
+		line := gstyle.Render(g) + highlight(rest, shifted, base) + base.Render(pad)
+		if showCount {
+			cstyle := base
+			if zero {
+				cstyle = base.Faint(true)
+			}
+			line += base.Render(" ") + cstyle.Render(count)
+		}
+		rows = append(rows, line)
 	}
 	return strings.Join(rows, "\n")
+}
+
+// minTitleCells is the fewest cells the title must get for the list to show the criteria count.
+const minTitleCells = 12
+
+// criteriaCount is the list's `n/m` for spec's acceptance criteria, or "—" when it has none;
+// zero is true when it has criteria and none is ticked.
+func criteriaCount(spec store.Spec) (text string, zero bool) {
+	if len(spec.Criteria) == 0 {
+		return "—", false
+	}
+	ticked := 0
+	for _, c := range spec.Criteria {
+		if c.Ticked {
+			ticked++
+		}
+	}
+	return fmt.Sprintf("%d/%d", ticked, len(spec.Criteria)), ticked == 0
 }
 
 // matchColor is ANSI yellow, for the characters of a field that matched the filter query.
