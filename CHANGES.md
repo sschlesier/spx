@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Make the `?` help popup scroll (`j`/`k`, `ctrl+d`/`ctrl+u`, `g`/`G`) when it is taller than the terminal, with an `n/m` position line; only `ctrl+c` quits from it
+
 ## 1.2.0
 
 - Add `spx reopen` to move a dropped spec back to draft

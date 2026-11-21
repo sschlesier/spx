@@ -47,7 +47,7 @@ func TestHelpWithTheLegendFitsA24RowTerminal(t *testing.T) {
 	if strings.Contains(got, "quit") {
 		t.Errorf("last key row not cut off:\n%s", got)
 	}
-	if !strings.Contains(m.render(), "q quit") {
-		t.Errorf("q missing from the footer")
+	if !strings.Contains(ansi.Strip(m.render()), "ctrl+c quit") {
+		t.Errorf("ctrl+c missing from the footer")
 	}
 }

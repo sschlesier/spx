@@ -43,14 +43,15 @@ func TestHelpOpensInEveryView(t *testing.T) {
 	}
 }
 
-func TestHelpQuitKeysStillQuit(t *testing.T) {
+func TestHelpCtrlCQuitsAndQDoesNot(t *testing.T) {
 	m := press(t, start(t, fixture(3), 120, 30), "?")
-	for _, k := range []tea.KeyPressMsg{keys["q"], {Code: 'c', Mod: tea.ModCtrl}} {
-		if _, cmd := m.Update(k); cmd == nil {
-			t.Errorf("%v did not quit from the help popup", k)
-		} else if _, ok := cmd().(tea.QuitMsg); !ok {
-			t.Errorf("%v did not return a quit", k)
-		}
+	if _, cmd := m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl}); cmd == nil {
+		t.Errorf("ctrl+c did not quit from the help popup")
+	} else if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Errorf("ctrl+c did not return a quit")
+	}
+	if _, cmd := m.Update(keys["q"]); cmd != nil {
+		t.Errorf("q returned a command from the help popup")
 	}
 }
 
@@ -118,8 +119,8 @@ func TestHelpPopupFitsAndIsCentered(t *testing.T) {
 		"board":  board(t, boardSpecs(), 80, 24),
 	} {
 		p := m.helpPopup()
-		if h := len(strings.Split(p, "\n")); h > maxHelpRows {
-			t.Errorf("%s: popup is %d rows, want at most %d", name, h, maxHelpRows)
+		if h := len(strings.Split(p, "\n")); h > 24 {
+			t.Errorf("%s: popup is %d rows, want at most 24", name, h)
 		}
 		for i, l := range strings.Split(screen(press(t, m, "?")), "\n") {
 			if w := ansi.StringWidth(l); w > 80 {
