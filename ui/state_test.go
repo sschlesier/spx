@@ -158,7 +158,7 @@ func TestCutRowKeepsItsGlyph(t *testing.T) {
 	specs := []store.Spec{{Project: "p", Status: "draft", Slug: "a", Title: strings.Repeat("word ", 40), Priority: 1}}
 	m := start(t, specs, 60, 10)
 	row := rowOf(m, "word")
-	if !strings.HasPrefix(row, "● p ") || !strings.HasSuffix(strings.TrimRight(row, " │"), "…") {
+	if !strings.HasPrefix(row, "● p ") || !strings.HasSuffix(withoutCount(strings.TrimRight(strings.TrimRight(row, " │"), " ")), "…") {
 		t.Errorf("row %q", row)
 	}
 }

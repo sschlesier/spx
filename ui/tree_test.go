@@ -28,7 +28,7 @@ func titleCol(m Model, slug string) string {
 		l = l[:i] // the divider; the guides in a title come before it
 	}
 	_, title, _ := strings.Cut(l, "P2 ")
-	return strings.TrimRight(title, " ")
+	return withoutCount(strings.TrimRight(title, " "))
 }
 
 func family() []store.Spec {
