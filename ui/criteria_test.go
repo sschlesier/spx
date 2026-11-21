@@ -110,6 +110,14 @@ func TestListCountFollowsAReloadAfterATick(t *testing.T) {
 	}
 }
 
+func TestListShowsTheCountForASingleCriterion(t *testing.T) {
+	specs := []store.Spec{withCriteria("a", "Alpha", "draft", 1, 1), withCriteria("b", "Beta", "draft", 0, 1)}
+	rows := plainRows(start(t, specs, 120, 20))
+	if !strings.HasSuffix(rows[0], " 1/1") || !strings.HasSuffix(rows[1], " 0/1") {
+		t.Errorf("rows %q, want 1/1 and 0/1", rows)
+	}
+}
+
 func TestListUnselectedRowHasNoPaddingWhenTheCountIsHidden(t *testing.T) {
 	specs := []store.Spec{withCriteria("a", "Alpha", "draft", 1, 2), withCriteria("b", "Beta", "draft", 1, 2)}
 	rows := plainRows(start(t, specs, 26, 20))
