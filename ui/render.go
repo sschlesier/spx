@@ -37,9 +37,54 @@ func header(s store.Spec, width int, state string, deps []string) string {
 	if s.Approved != "" {
 		lines = append(lines, "approved: "+s.Approved)
 	}
+	lines = append(lines, criteriaLines(s, max(1, width-4))...)
 	lines = append(lines, deps...)
 	style := lipgloss.NewStyle().Width(width).Padding(1, 2, 0)
 	return style.Render(strings.Join(lines, "\n"))
+}
+
+const (
+	barCells         = 18
+	maxRemainingRows = 8
+)
+
+// criteriaBar draws n ticked of total criteria as barCells cells.
+func criteriaBar(n, total int) string {
+	filled := n * barCells / total
+	if n > 0 {
+		filled = max(filled, 1)
+	}
+	if n < total {
+		filled = min(filled, barCells-1)
+	}
+	return strings.Repeat("█", filled) + strings.Repeat("░", barCells-filled)
+}
+
+// criteriaLines is the progress bar and the unticked criteria of a started spec.
+func criteriaLines(s store.Spec, width int) []string {
+	if s.Status != "started" || len(s.Criteria) == 0 {
+		return nil
+	}
+	var open []store.Criterion
+	for _, c := range s.Criteria {
+		if !c.Ticked {
+			open = append(open, c)
+		}
+	}
+	total := len(s.Criteria)
+	line := fmt.Sprintf("%s %d/%d criteria", criteriaBar(total-len(open), total), total-len(open), total)
+	if len(open) == 0 {
+		return []string{line + " ✓"}
+	}
+	lines := []string{line, titleStyle.Render("Remaining")}
+	for _, c := range open[:min(len(open), maxRemainingRows)] {
+		text := fmt.Sprintf("☐ %d  %s", c.Number, strings.TrimSpace(printable(c.Text)))
+		lines = append(lines, ansi.Truncate(text, width, "…"))
+	}
+	if more := len(open) - maxRemainingRows; more > 0 {
+		lines = append(lines, dimStyle.Render(fmt.Sprintf("… and %d more", more)))
+	}
+	return lines
 }
 
 func (m Model) markdown(body string) string {
