@@ -15,7 +15,7 @@ type CheckResult struct {
 
 // tick returns data with the 1-based nth criteria ticked, or unticked when uncheck is set.
 func tick(spec store.Spec, data []byte, indexes []int, uncheck bool) ([]byte, error) {
-	crit := criteria(data)
+	crit := store.ParseCriteria(data)
 	lines := strings.Split(string(data), "\n")
 	for _, n := range indexes {
 		if n < 1 || n > len(crit) {
@@ -23,14 +23,14 @@ func tick(spec store.Spec, data []byte, indexes []int, uncheck bool) ([]byte, er
 				spec.Project, spec.Slug, len(crit), n)
 		}
 		c := crit[n-1]
-		if c.ticked != uncheck {
+		if c.Ticked != uncheck {
 			continue
 		}
 		mark := "- [x] "
 		if uncheck {
 			mark = "- [ ] "
 		}
-		lines[c.line] = mark + c.text
+		lines[c.Line] = mark + c.Text
 	}
 	return []byte(strings.Join(lines, "\n")), nil
 }

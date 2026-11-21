@@ -123,6 +123,19 @@ func TestStatusDoneListsUnticked(t *testing.T) {
 	}
 }
 
+func TestStatusDoneTrimsUntickedText(t *testing.T) {
+	root := startedStore(t)
+	write(t, filepath.Join(root, "p/started/s.md"), strings.Replace(startedSpec, "- [ ] first\n", "- [ ] first  \n", 1))
+	gitIn(t, root, "commit", "-qam", "trailing spaces")
+	open, err := Status(root, specAt(root, "started", "s"), "done", "", now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(open, "|") != "first|third" {
+		t.Fatalf("open = %q", open)
+	}
+}
+
 func TestStatusRefusalsLeaveTheStoreAlone(t *testing.T) {
 	root := startedStore(t)
 	headBefore := head(t, root)
@@ -156,6 +169,18 @@ func TestCheckTicksOnlyTopLevelCriteria(t *testing.T) {
 		t.Fatalf("file:\n%s", got)
 	}
 	onlyCommitted(t, root, "p: check s")
+}
+
+func TestCheckKeepsTrailingWhitespaceOfTheItem(t *testing.T) {
+	root := startedStore(t)
+	write(t, filepath.Join(root, "p/started/s.md"), strings.Replace(startedSpec, "- [ ] first\n", "- [ ] first  \n", 1))
+	gitIn(t, root, "commit", "-qam", "trailing spaces")
+	if _, err := Check(root, specAt(root, "started", "s"), []int{1}, false); err != nil {
+		t.Fatal(err)
+	}
+	if got := readSpec(t, root); !strings.Contains(got, "\n- [x] first  \n") {
+		t.Fatalf("file:\n%s", got)
+	}
 }
 
 func TestCheckUncheck(t *testing.T) {

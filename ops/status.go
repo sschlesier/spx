@@ -44,9 +44,9 @@ func Status(root string, spec store.Spec, value, note string, now time.Time) ([]
 			return nil, malformed(spec, err)
 		}
 		if value == "done" {
-			for _, c := range criteria(out) {
-				if !c.ticked {
-					open = append(open, strings.TrimSpace(c.text))
+			for _, c := range store.ParseCriteria(out) {
+				if !c.Ticked {
+					open = append(open, strings.TrimSpace(c.Text))
 				}
 			}
 		}
@@ -56,46 +56,4 @@ func Status(root string, spec store.Spec, value, note string, now time.Time) ([]
 		return nil, err
 	}
 	return open, nil
-}
-
-// criterion is one top-level item of the Acceptance criteria list.
-type criterion struct {
-	line   int // index in the file's lines
-	ticked bool
-	text   string // the item's first line after the checkbox
-}
-
-// criteria are the top-level "- [ ]" and "- [x]" items directly under "## Acceptance criteria".
-// Indented items, fenced code and other sections don't count.
-func criteria(data []byte) []criterion {
-	var out []criterion
-	inSection, fence := false, ""
-	for i, line := range strings.Split(string(data), "\n") {
-		if marker := store.FenceMarker(line); marker != "" {
-			switch fence {
-			case "":
-				fence = marker
-			case marker:
-				fence = ""
-			}
-			continue
-		}
-		if fence != "" {
-			continue
-		}
-		if strings.HasPrefix(line, "## ") {
-			inSection = strings.TrimRight(line, " \t") == "## Acceptance criteria"
-			continue
-		}
-		if !inSection {
-			continue
-		}
-		for _, box := range []string{"- [ ] ", "- [x] ", "- [X] "} {
-			if strings.HasPrefix(line, box) {
-				out = append(out, criterion{line: i, ticked: box != "- [ ] ", text: line[len(box):]})
-				break
-			}
-		}
-	}
-	return out
 }
