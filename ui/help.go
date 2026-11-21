@@ -32,8 +32,8 @@ type helpRow struct {
 }
 
 // legendRows explain the abbreviated cells of a list row, in row order, and head the
-// list view's popup; the board and detail panes have no such columns. Status letters are the status filter keys, so the Filter row refers back here
-// instead of spelling the words out again.
+// list view's popup; the board and detail panes have no such columns. Status letters are the
+// status filter keys, so the Filter row refers back here instead of spelling the words out again.
 var legendRows = []helpRow{
 	{viewList, "Columns", "project", "cut to 5 characters and … past 6; absent when scoped"},
 	{viewList, "Columns", "S", "d draft · a approved · s started · x dropped"},
