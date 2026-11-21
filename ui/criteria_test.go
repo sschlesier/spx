@@ -109,3 +109,29 @@ func TestListCountFollowsAReloadAfterATick(t *testing.T) {
 		t.Errorf("row %q after the reload, want 2/3", row)
 	}
 }
+
+func TestListUnselectedRowHasNoPaddingWhenTheCountIsHidden(t *testing.T) {
+	specs := []store.Spec{withCriteria("a", "Alpha", "draft", 1, 2), withCriteria("b", "Beta", "draft", 1, 2)}
+	rows := plainRows(start(t, specs, 26, 20))
+	if strings.HasSuffix(rows[1], " ") || strings.Contains(rows[1], "1/2") {
+		t.Errorf("unselected narrow row %q, want no count and no trailing padding", rows[1])
+	}
+}
+
+func TestListShowsTheCountOnDroppedSpecs(t *testing.T) {
+	specs := []store.Spec{withCriteria("a", "Alpha", "dropped", 1, 4)}
+	m := press(t, start(t, specs, 120, 20), "x")
+	if rows := plainRows(m); len(rows) != 1 || !strings.HasSuffix(rows[0], " 1/4") {
+		t.Errorf("rows %q, want the dropped spec ending in 1/4", rows)
+	}
+}
+
+func TestListPadsARowCutBeforeAWideCharacter(t *testing.T) {
+	title := strings.Repeat("字", 40)
+	m := start(t, []store.Spec{withCriteria("a", title, "draft", 3, 12)}, 120, 20)
+	for _, row := range plainRows(m) {
+		if w := ansi.StringWidth(row); w != m.listWidth() || !strings.HasSuffix(row, " 3/12") {
+			t.Errorf("row %q width %d, want %d ending in 3/12", row, w, m.listWidth())
+		}
+	}
+}
