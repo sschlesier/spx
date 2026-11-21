@@ -216,19 +216,33 @@ func (m *Model) resetAttention() {
 	m.scrollAttention()
 }
 
-// showAttention lists rows, keeping the selected spec (or header) and each group's fold. A
-// spec that is gone or sits in a folded group gives way to the line at the same index.
-func (m *Model) showAttention(rows []store.Spec) {
-	l, hadLine := m.selectedLine()
-	var oldSel, oldCur store.Spec
-	var hadSpec, hadCur bool
-	if hadLine && l.spec >= 0 {
-		oldSel, hadSpec = m.specs[l.spec], true
+// attSnapshot is what showAttention needs of the view before its rows, all or done change.
+type attSnapshot struct {
+	line           attLine
+	hadLine        bool
+	sel, cur       store.Spec // the selected spec, and the last selected spec
+	hadSel, hadCur bool
+	index          int
+}
+
+// snapshot reads the selection from the current rows, grouped by the current all and done.
+func (m Model) snapshot() attSnapshot {
+	l, ok := m.selectedLine()
+	a := attSnapshot{line: l, hadLine: ok, index: m.sel}
+	if ok && l.spec >= 0 {
+		a.sel, a.hadSel = m.specs[l.spec], true
 	}
 	if len(m.specs) > 0 {
-		oldCur, hadCur = m.specs[m.cursor], true
+		a.cur, a.hadCur = m.specs[m.cursor], true
 	}
-	index := m.sel
+	return a
+}
+
+// showAttention lists rows, keeping the selected spec (or header) and each group's fold. A
+// spec that is gone or sits in a folded group gives way to the line at the same index.
+func (m *Model) showAttention(rows []store.Spec, snap attSnapshot) {
+	l, hadLine, oldSel, oldCur, hadSpec, hadCur := snap.line, snap.hadLine, snap.sel, snap.cur, snap.hadSel, snap.hadCur
+	index := snap.index
 	m.specs = rows
 	lines := m.attLines()
 	sel := -1

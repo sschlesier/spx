@@ -308,7 +308,7 @@ func (m *Model) setFilter(status string) {
 // When it's gone, row fallback is selected and its detail shows from the top.
 func (m *Model) show(rows []store.Spec, fallback int) {
 	if m.attention {
-		m.showAttention(rows)
+		m.showAttention(rows, m.snapshot())
 		return
 	}
 	if reflect.DeepEqual(rows, m.specs) {

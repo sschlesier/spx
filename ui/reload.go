@@ -131,7 +131,12 @@ func (m *Model) apply(specs, done []store.Spec) {
 	if reflect.DeepEqual(specs, m.all) && reflect.DeepEqual(done, m.done) {
 		return
 	}
+	snap := m.snapshot()
 	m.all, m.done = specs, done
-	m.show(m.visible(), m.cursor)
+	if m.attention {
+		m.showAttention(m.visible(), snap)
+	} else {
+		m.show(m.visible(), m.cursor)
+	}
 	m.renderDetail()
 }

@@ -673,3 +673,87 @@ func TestAttentionSurvivesResize(t *testing.T) {
 		t.Errorf("selection scrolled out after a resize:\n%s", screen(m))
 	}
 }
+
+func TestAttentionReloadKeepsSelectionWhenItsGroupChanges(t *testing.T) {
+	specs := attSpecs()
+	specs[2].DependsOn = []string{"fin"} // blocked until fin is done
+	m := attModel(t, specs, 120, 30)
+	m = press(t, m, "G", "enter", "k", "enter", "j") // unfold READY and BLOCKED, select blocked
+	if selSlug(m) != "blocked" {
+		t.Fatalf("setup: selected %q", selSlug(m))
+	}
+	m.apply(specs, []store.Spec{{Project: "proj", Status: store.Done, Slug: "fin"}})
+	if selSlug(m) != "blocked" {
+		t.Errorf("selected %q after its dependency finished, want blocked (now ready, in an unfolded group)", selSlug(m))
+	}
+}
+
+func TestAttentionReloadClearsHighlightWhenSelectionGoes(t *testing.T) {
+	m := attModel(t, attSpecs(), 120, 30)
+	m = press(t, m, "j")
+	m.hl = "x"
+	m.apply(attSpecs()[2:], nil) // approve is gone
+	if m.hl != "" {
+		t.Errorf("highlight %q kept for a spec that is gone", m.hl)
+	}
+}
+
+func TestAttentionTitleMinimumIsTwelveCells(t *testing.T) {
+	// The head is 8+2+4+2 = 16 cells and the age "5d" with its gap takes 4: width 32 leaves 12.
+	specs := attSpecs()
+	specs[1].Title = strings.Repeat("a", 30)
+	if line := lineWith(t, attModel(t, specs, 32, 30), "aaaa"); !strings.HasSuffix(strings.TrimRight(line, " "), "…  5d") {
+		t.Errorf("12 cells for the title should keep the age: %q", line)
+	}
+	if line := lineWith(t, attModel(t, specs, 31, 30), "aaaa"); strings.Contains(line, "5d") {
+		t.Errorf("11 cells for the title should drop the age: %q", line)
+	}
+}
+
+func TestAttentionScrollMovesByExactlyOne(t *testing.T) {
+	m := attModel(t, manySpecs(40), 120, 12) // 10 lines under the summary
+	m = press(t, m, "g")
+	for range 9 {
+		m = press(t, m, "j")
+	}
+	if m.aoff != 0 {
+		t.Fatalf("offset %d with the selection on the last visible line", m.aoff)
+	}
+	if m = press(t, m, "j"); m.aoff != 1 {
+		t.Errorf("offset %d after one line past the edge, want 1", m.aoff)
+	}
+}
+
+func TestAttentionPeekStateLineCutToWidth(t *testing.T) {
+	m := press(t, attModel(t, attSpecs(), 8, 30), "j")
+	if l := m.peek()[1]; len([]rune(l)) > 8 {
+		t.Errorf("peek state line is %d cells at width 8: %q", len([]rune(l)), l)
+	}
+}
+
+func TestAttentionScopeChangeSelectsFirstLine(t *testing.T) {
+	specs := attSpecs()
+	specs[5].Project = "other"
+	m := press(t, attModel(t, specs, 120, 30), "G")
+	m.setScope("proj")
+	if m.sel != 0 || m.aoff != 0 {
+		t.Errorf("after a scope change: sel %d offset %d, want the first line", m.sel, m.aoff)
+	}
+}
+
+func TestAttentionEmptyMessageIgnoresTheStatusFilter(t *testing.T) {
+	m := press(t, start(t, nil, 120, 30), "d", "n")
+	if got := screen(m); !strings.Contains(got, "No specs in /store") || strings.Contains(got, "draft") {
+		t.Errorf("empty view under a status filter:\n%s", got)
+	}
+}
+
+func TestAttentionQueryInputArrowsMoveLines(t *testing.T) {
+	m := press(t, attModel(t, attSpecs(), 120, 30), "/", "down", "down")
+	if m.sel != 2 || selSlug(m) != "answer" {
+		t.Errorf("down in the query input: line %d (%q)", m.sel, selSlug(m))
+	}
+	if m = press(t, m, "up"); m.sel != 1 {
+		t.Errorf("up in the query input: line %d", m.sel)
+	}
+}
