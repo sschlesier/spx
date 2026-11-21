@@ -6,7 +6,7 @@ priority: 3
 depends-on: [read-acceptance-criteria-counts-into-the-store]
 parent: focus-on-what-needs-me
 approved: "Scott Schlesier, 2026-11-18: n/m criteria count at the right of each list row; cut order and cell widths fixed. Cold read: fresh agent planned the intended design; 2 Design contradictions and the 12-cell rule fixed; not re-run"
-status: in-review
+status: done
 ---
 
 Each row ends with how many acceptance criteria are ticked, like `7/9`, so I can see how close a spec is without opening it.
@@ -49,3 +49,5 @@ Don't touch: the store files; `StatusRows`.
 - 2026-11-18: Approved: Scott Schlesier, 2026-11-18: n/m criteria count at the right of each list row; cut order and cell widths fixed. Cold read: fresh agent planned the intended design; 2 Design contradictions and the 12-cell rule fixed; not re-run
 - 2026-11-21: Started on branch show-acceptance-criteria-progress-in-the-list
 - 2026-11-21: Status: in-review: Implemented in 2334d7d
+- 2026-11-21: Review round 1: dismissed two pass 1 open decisions as settled by the spec (unselected rows unpadded when the count is hidden: 'cut to the pane width as today'; no checkboxes shows —: 'no criteria shows —')
+- 2026-11-21: Status: done: Reviewed round 1: all 6 criteria verified by pass 1 (x2); no open decisions or unproven risks
