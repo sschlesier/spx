@@ -98,6 +98,12 @@ func TestHeaderMoreThanEightUnticked(t *testing.T) {
 	if got := strings.Join(plainHeader(startedWith("started", flags(8)), 60), "\n"); strings.Contains(got, "more") {
 		t.Errorf("exactly 8 shows a more line")
 	}
+	if got := strings.Join(plainHeader(startedWith("started", flags(9)), 60), "\n"); !strings.Contains(got, "☐ 8  c\n… and 1 more") {
+		t.Errorf("9 unticked lacks the one-more line:\n%s", got)
+	}
+	if n := len(criteriaLines(s, 56)); n != 11 {
+		t.Errorf("block is %d lines, want 11", n)
+	}
 }
 
 func TestHeaderTruncatesToContentWidth(t *testing.T) {
