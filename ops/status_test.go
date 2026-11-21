@@ -171,6 +171,18 @@ func TestCheckTicksOnlyTopLevelCriteria(t *testing.T) {
 	onlyCommitted(t, root, "p: check s")
 }
 
+func TestCheckKeepsTrailingWhitespaceOfTheItem(t *testing.T) {
+	root := startedStore(t)
+	write(t, filepath.Join(root, "p/started/s.md"), strings.Replace(startedSpec, "- [ ] first\n", "- [ ] first  \n", 1))
+	gitIn(t, root, "commit", "-qam", "trailing spaces")
+	if _, err := Check(root, specAt(root, "started", "s"), []int{1}, false); err != nil {
+		t.Fatal(err)
+	}
+	if got := readSpec(t, root); !strings.Contains(got, "\n- [x] first  \n") {
+		t.Fatalf("file:\n%s", got)
+	}
+}
+
 func TestCheckUncheck(t *testing.T) {
 	root := startedStore(t)
 	if _, err := Check(root, specAt(root, "started", "s"), []int{2}, true); err != nil {
