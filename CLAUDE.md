@@ -80,7 +80,7 @@ Invariants:
   `git rev-parse` at startup, to scope to the current repo's project; `git` in the store root
   for the commands other than `rev`, including `git push <remote> main` after each commit; `gh pr view <url> --json state` (read-only) for `spx sweep`, which `spx start` also
   runs first (a gh failure only warns there); the editor on `v` (a read-only copy) and `e` (a scratch copy);
-  this binary's `spx edit`, `spx amend` and `spx reopen` after `e`; `claude` on `c`, in the project's repo, with the prompt for the spec's stage, and on `a` after `e`, with a prompt to review the edit; and one clipboard tool (pbcopy, wl-copy or xclip) on `y`/`Y`. In a project repo a command
+  this binary's `spx edit`, `spx amend` and `spx reopen` after `e`; `claude --name <project>/<slug>` on `c`, in the project's repo, with the prompt for the spec's stage, and on `a` after `e`, with a prompt to review the edit; and one clipboard tool (pbcopy, wl-copy or xclip) on `y`/`Y`. In a project repo a command
   runs only read-only `git rev-parse` (`place` and `accept` to find the checkout's top-level),
   never a git command that writes; `place --dir` runs no git in the repo. `accept` also reads the
   repo's copy of the spec (and AGENTS.md or CLAUDE.md for the ticket folder) without writing.

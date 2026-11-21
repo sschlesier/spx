@@ -323,7 +323,7 @@ func reviewPrompt(s store.Spec, sc *scratch) string {
 		"merge it into the stored spec with spx commands as you normally would (never by hand), "+
 		"say whether the Outcome, acceptance criteria, Design or Boundaries changed (which clears an approval), "+
 		"and never approve without the user's yes.",
-		s.Status, s.Slug, s.Project, absPath(s), sc.base, sc.edit)
+		s.Status, s.Slug, s.Project, absPath(s), sc.base, sc.edit) + namedSentence(s)
 }
 
 // reviewWithClaude suspends spx and starts Claude on the scratch copy.
@@ -337,7 +337,7 @@ func (m Model) reviewWithClaude() (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 	sc.mode = scratchEditing
-	c := claudeExec(repo, reviewPrompt(sc.spec, sc))
+	c := claudeExec(repo, ref(sc.spec), reviewPrompt(sc.spec, sc))
 	return m, tea.ExecProcess(c, func(err error) tea.Msg { return scratchClaude{err} })
 }
 

@@ -112,6 +112,7 @@ func TestReviewPromptCarriesTheMergeInstructions(t *testing.T) {
 		"merge it into the stored spec with spx commands as you normally would (never by hand)",
 		"say whether the Outcome, acceptance criteria, Design or Boundaries changed (which clears an approval)",
 		"never approve without the user's yes",
+		"This session is already named p/s.",
 	} {
 		if !strings.Contains(p, want) {
 			t.Errorf("prompt lacks %q", want)

@@ -33,13 +33,18 @@ func advancePrompt(s store.Spec, path string) (string, bool) {
 	default:
 		return "", false
 	}
-	return fmt.Sprintf(task, s.Slug, s.Project, path), true
+	return fmt.Sprintf(task, s.Slug, s.Project, path) + namedSentence(s), true
 }
 
-// claudeExec starts a Claude session in dir with prompt as its first message. It doesn't go
-// through a shell.
-func claudeExec(dir, prompt string) *exec.Cmd {
-	c := exec.Command("claude", prompt)
+// namedSentence ends a session's prompt: the agent can't see its own name.
+func namedSentence(s store.Spec) string {
+	return " This session is already named " + ref(s) + "."
+}
+
+// claudeExec starts a Claude session in dir, named name, with prompt as its first message. It
+// doesn't go through a shell.
+func claudeExec(dir, name, prompt string) *exec.Cmd {
+	c := exec.Command("claude", "--name", name, prompt)
 	c.Dir = dir
 	return c
 }
@@ -57,7 +62,7 @@ func (m Model) advancePlan(s store.Spec) (*exec.Cmd, string) {
 	if err != nil || home == "" {
 		return nil, "repo not found: " + ops.RepoGuess(m.root, s.Project)
 	}
-	return claudeExec(repo, prompt), ""
+	return claudeExec(repo, ref(s), prompt), ""
 }
 
 // advance suspends spx and starts Claude on the selected spec's next stage.
