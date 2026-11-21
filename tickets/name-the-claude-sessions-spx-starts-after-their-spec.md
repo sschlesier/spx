@@ -6,7 +6,7 @@ priority: 2
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-11-21: Name c and a Claude sessions <project>/<slug> via --name, with a naming sentence in each prompt. Cold read: not run"
-status: in-review
+status: done
 ---
 
 A Claude session that spx starts with `c` or `a` is named `<project>/<slug>` for its spec, so I can tell which session is working on which spec in `/resume`, agent view and the terminal title, without renaming it by hand.
@@ -52,3 +52,4 @@ Don't touch: the store; the CLI commands; the prompt wording other than the adde
 - 2026-11-21: Approved: Scott Schlesier, 2026-11-21: Name c and a Claude sessions <project>/<slug> via --name, with a naming sentence in each prompt. Cold read: not run
 - 2026-11-21: Started on branch name-claude-sessions-after-spec
 - 2026-11-21: Status: in-review
+- 2026-11-21: Status: done: Reviewed round 1: all criteria verified; interactive --name check accepted unverified by Scott
