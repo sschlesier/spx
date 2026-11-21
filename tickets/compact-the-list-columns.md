@@ -6,7 +6,7 @@ priority: 2
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-11-01: Compact list columns (project first, one-letter status/type, project hidden when scoped, 6-cell cap with …) and a scrollable ? help modal with a column legend. Cold read: not run"
-status: in-review
+status: done
 ---
 
 The list pane's rows spend fewer cells on project, status and type, so the title gets as much of the pane as possible, and a `?` help modal explains the abbreviations and the keys.
@@ -23,8 +23,8 @@ Context: `layoutRows` in `ui/ui.go` builds each plain list row as `project  stat
 - [x] The title starts at the same column in every row, whatever the project names, and in the all-projects list with project names of 6 or fewer characters it starts at least 16 cells earlier than before.
 - [x] Fuzzy-match highlighting (`/`) still marks the matched characters of the title and, in the all-projects list, the project, and marks only characters that are visible: in a cut project, none past the 5th, and never the `…`. In a scoped list the project cell is absent and marks nothing. A match on the type field marks the type letter only when the match includes the type's first character.
 - [x] The status filter, selection, scrolling and the board view behave as before; the board and `spx -d/-a/-s/-r` output are unchanged.
-- [ ] `?` opens a help modal, a bordered popup centered over the view like the project popup, in the list, the board and the open detail pane. It does not open while typing a `/` query or in the project popup, where `?` is text. `?` or `esc` closes it; `ctrl+c` still quits; while it is open `j`/`k` (or down/up) scroll one line, `ctrl+d`/`ctrl+u` half a page, `g`/`G` jump to the top/bottom, and other keys do nothing; nothing is written.
-- [ ] The modal opens with a "Columns" legend, then the key bindings. The legend lists the columns in row order with their values: project (cut to 6 cells with `…`, absent when scoped), status `d` draft · `a` approved · `s` started · `x` dropped, type `b` bug · `c` chore · `e` epic · `f` feature · `t` task · `-` none, priority `P1`..`P3` or `-` none. The key bindings are the ones in the footer help and the board help, each with a description (move, filter by status, tree, `/` filter, deps, edit, copy slug/path, advance, project, board, quit).
+- [x] `?` opens a help modal, a bordered popup centered over the view like the project popup, in the list, the board and the open detail pane. It does not open while typing a `/` query or in the project popup, where `?` is text. `?` or `esc` closes it; `ctrl+c` still quits; while it is open `j`/`k` (or down/up) scroll one line, `ctrl+d`/`ctrl+u` half a page, `g`/`G` jump to the top/bottom, and other keys do nothing; nothing is written.
+- [x] In the list view the modal opens with a "Columns" legend, then the key bindings. The legend lists the columns in row order with their values: project (cut to 6 cells with `…`, absent when scoped), status `d` draft · `a` approved · `s` started · `x` dropped, type `b` bug · `c` chore · `e` epic · `f` feature · `t` task · `-` none, priority `P1`..`P3` or `-` none. The key bindings are the ones in the footer help and the board help, each with a description (move, filter by status, tree, `/` filter, deps, edit, copy slug/path, advance, project, board, quit).
 - [x] The modal fits the terminal: its width is capped at the terminal width less the border and padding, and its height at the terminal height less 2. When the content is taller than that, it shows a window of the content that scrolls as above, starting at the top (legend first), never scrolls past the last line, and shows a dim `n/m` position line (first visible line of total) as its last row. When everything fits, there is no position line and the scroll keys do nothing. Opening it again starts at the top.
 - [x] The footer help lists `? help` in the list, board and detail views.
 - [x] `CHANGES.md` notes the new columns and the `?` help.
@@ -34,7 +34,7 @@ Context: `layoutRows` in `ui/ui.go` builds each plain list row as `project  stat
 - `go vet ./... && go test ./...`
 - Update the tests in `ui/rows_test.go` and `ui/highlight_edges_test.go` that assert the old row text, and add cases for: each status and type letter, an empty type, a project of exactly 6, 7 and 12 characters, a mix of project lengths in one list (asserting every title starts at the same column), and a scoped list with no project cell.
 - Test that `Rows` for a spec with project `spx` has the title at the same byte offset in every row.
-- Tests in `ui/` for the modal: `?` opens and `?`/`esc` close it in list, board and detail views; `?` typed in the `/` query and in the project popup is text; `ctrl+c` quits from it; the rendered modal contains every legend entry above; at a 24-row terminal it fits whole with no position line; at a 12-row terminal it opens on the legend, scrolls with each scroll key, stops at both ends, and shows the position line; resizing the terminal while it is open keeps the offset in range; `footerHelp` contains `? help`.
+- Tests in `ui/` for the modal: `?` opens and `?`/`esc` close it in list, board and detail views; `?` typed in the `/` query and in the project popup is text; `ctrl+c` quits from it; the rendered modal contains every legend entry above; at a 28-row terminal it fits whole with no position line; at a 12-row terminal it opens on the legend, scrolls with each scroll key, stops at both ends, and shows the position line; resizing the terminal while it is open keeps the offset in range; `footerHelp` contains `? help`.
 - Manual: `go run .` in a 80-column terminal. Titles that were cut before show more of their text; a project with a long name shows as `abcde…` with the status letters still in line with the other rows; `go run . spx` shows no project cell; `/` highlighting still follows the matched letters.
 
 ## Design
@@ -63,3 +63,6 @@ Context: `layoutRows` in `ui/ui.go` builds each plain list row as `project  stat
 - 2026-11-04: Status: in-review
 - 2026-11-21: Status: in-review: Review of PR 49
 - 2026-11-21: Review round 1: dismissed mutant help.go G sets offset to len-2 (equivalent, clampHelpOff clamps it to the same value); fixed 7 surviving mutants with tests (height cap, exact-fit, ctrl+u, dim position line)
+- 2026-11-21: Amended: Review round 1: legend is list-view only; the list popup is now 24 lines so it fits whole at 28 rows, not 24
+- 2026-11-21: Review round 1: accepted by Scott Schlesier: popups under 6 rows may be taller than the terminal; manual go run . check not run (the dependency-only accepted risk does not apply, the PR touches .go files)
+- 2026-11-21: Status: done: Reviewed round 1: scrolling help popup, only ctrl+c quits, legend list-view only; two risks accepted
