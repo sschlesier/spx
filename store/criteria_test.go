@@ -24,6 +24,7 @@ func TestParseCriteria(t *testing.T) {
 			[]Criterion{{1, false, "yes", 3}}},
 		{"heading with trailing spaces and tabs", "## Acceptance criteria \t\n- [ ] a\n",
 			[]Criterion{{1, false, "a", 1}}},
+		{"heading with other trailing whitespace does not match", "## Acceptance criteria\r\n- [ ] a\n", nil},
 		{"heading is case-sensitive", "## acceptance criteria\n- [ ] a\n", nil},
 		{"text untrimmed", "## Acceptance criteria\n- [ ] a  \n- [ ]  b\n",
 			[]Criterion{{1, false, "a  ", 1}, {2, false, " b", 2}}},
