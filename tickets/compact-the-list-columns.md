@@ -62,3 +62,4 @@ Context: `layoutRows` in `ui/ui.go` builds each plain list row as `project  stat
 - 2026-11-04: Correction: the open criteria are 9 and 10, not 10 and 13 (13, the CHANGES.md note, is done).
 - 2026-11-04: Status: in-review
 - 2026-11-21: Status: in-review: Review of PR 49
+- 2026-11-21: Review round 1: dismissed mutant help.go G sets offset to len-2 (equivalent, clampHelpOff clamps it to the same value); fixed 7 surviving mutants with tests (height cap, exact-fit, ctrl+u, dim position line)
