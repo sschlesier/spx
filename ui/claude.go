@@ -62,7 +62,7 @@ func (m Model) advancePlan(s store.Spec) (*exec.Cmd, string) {
 
 // advance suspends spx and starts Claude on the selected spec's next stage.
 func (m Model) advance() (tea.Model, tea.Cmd) {
-	if len(m.specs) == 0 {
+	if m.noSelection() {
 		return m, nil
 	}
 	c, notice := m.advancePlan(m.specs[m.cursor])

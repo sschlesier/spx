@@ -111,7 +111,7 @@ func (m Model) resumed(notice string) (tea.Model, tea.Cmd) {
 
 // copySelected copies the selected spec's <project>/<slug>, or its absolute path when path is set.
 func (m Model) copySelected(path bool) (tea.Model, tea.Cmd) {
-	if len(m.specs) == 0 {
+	if m.noSelection() {
 		return m, nil
 	}
 	sp := m.specs[m.cursor]

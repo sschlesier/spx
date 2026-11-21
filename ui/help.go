@@ -15,11 +15,12 @@ const (
 	viewList helpView = 1 << iota
 	viewDetail
 	viewBoard
+	viewAttention
 )
 
 const (
-	allViews  = viewList | viewDetail | viewBoard
-	listBoard = viewList | viewBoard
+	allViews  = viewList | viewDetail | viewBoard | viewAttention
+	listBoard = viewList | viewBoard | viewAttention
 )
 
 // helpRow is one line of the help popup: a key, what it does, and the views it applies to.
@@ -48,15 +49,18 @@ var legendRows = []helpRow{
 // fails otherwise.
 var helpRows = []helpRow{
 	{viewList, "Move", "j/k", "down / up"},
+	{viewAttention, "Move", "j/k", "down / up over headers and rows"},
 	{viewBoard, "Move", "h/l", "previous / next column"},
 	{viewBoard, "Move", "j/k", "down / up in the column"},
 	{viewDetail, "Move", "j/k", "scroll"},
 	{viewList, "Move", "g/G", "top / bottom"},
 	{viewBoard, "Move", "g/G", "top / bottom of the column"},
+	{viewAttention, "Move", "g/G", "first / last line"},
 	{viewList | viewDetail, "Move", "ctrl+d/u", "half page down / up in the detail"},
 	{viewList | viewDetail, "Move", "]/[", "next / previous dependency"},
 	{viewList, "Move", "enter", "open the spec, or jump to the highlighted dependency"},
 	{viewBoard, "Move", "enter", "open the spec"},
+	{viewAttention, "Move", "enter", "fold or unfold a group, or open the spec"},
 	{viewDetail, "Move", "enter", "jump to the highlighted dependency"},
 
 	{viewList, "Filter", "d/a/s/x/r", "by status (letters as S above); r is ready to start"},
@@ -71,7 +75,9 @@ var helpRows = []helpRow{
 
 	{viewList, "View", "t", "tree"},
 	{viewList, "View", "b", "board"},
+	{viewList, "View", "n", "attention"},
 	{viewBoard, "View", "b/esc", "back to the list"},
+	{viewAttention, "View", "n/esc", "back to the list"},
 	{viewDetail, "View", "esc", "back"},
 	{allViews, "View", "?", "close this help"},
 	{allViews, "View", "q/ctrl+c", "quit"},
@@ -79,9 +85,10 @@ var helpRows = []helpRow{
 
 // Footer hints, joined by " · ".
 const (
-	footerHelp = "d/a/s/x/r status · ]/[ deps · v view · e edit · y/Y copy · c advance · p project · ? help"
-	detailHelp = "esc back · ]/[ deps · v view · e edit · y/Y copy · c advance · ? help"
-	boardHelp  = "h/l column · v view · e edit · y/Y copy · c advance · p project · ? help"
+	footerHelp    = "d/a/s/x/r status · n attention · ]/[ deps · v view · e edit · y/Y copy · c advance · p project · ? help"
+	detailHelp    = "esc back · ]/[ deps · v view · e edit · y/Y copy · c advance · ? help"
+	attentionHelp = "n back · enter fold/open · v view · e edit · y/Y copy · c advance · p project · ? help"
+	boardHelp     = "h/l column · v view · e edit · y/Y copy · c advance · p project · ? help"
 
 	// helpOpenHelp is the footer while the help popup is open.
 	helpOpenHelp = "q quit · ? or esc close"
@@ -92,6 +99,8 @@ func (m Model) helpView() helpView {
 	switch {
 	case m.detailOpen:
 		return viewDetail
+	case m.attention:
+		return viewAttention
 	case m.board:
 		return viewBoard
 	}
@@ -105,6 +114,8 @@ func (m Model) footerHints() string {
 		return detailHelp
 	case viewBoard:
 		return boardHelp
+	case viewAttention:
+		return attentionHelp
 	}
 	return footerHelp
 }

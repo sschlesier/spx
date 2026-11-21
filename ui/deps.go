@@ -153,6 +153,10 @@ func (m *Model) jumpHighlight() (bool, tea.Cmd) {
 // jump selects t. A spec the query or the status filter hides clears what hides it; a
 // dropped one sets the dropped filter.
 func (m *Model) jump(t store.Spec) {
+	if m.attention {
+		m.jumpAttention(t)
+		return
+	}
 	if m.board && t.Status == store.Dropped {
 		return
 	}

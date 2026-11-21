@@ -115,6 +115,9 @@ func (m *Model) setScope(project string) {
 	m.scope = project
 	m.specs = m.visible()
 	m.cursor, m.hl = 0, ""
+	if m.attention {
+		m.resetAttention()
+	}
 	m.scrollList()
 	m.renderDetail()
 	m.detail.GotoTop()

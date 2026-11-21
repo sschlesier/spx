@@ -75,9 +75,16 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.board && m.boardKey(k) {
 		return m, nil
 	}
+	if m.attention && m.attentionKey(k) {
+		return m, nil
+	}
 	switch k {
 	case "b":
 		m.toggleBoard()
+	case "n":
+		if !m.board {
+			m.toggleAttention()
+		}
 	case "j", "down":
 		m.selectRow(m.cursor + 1)
 	case "k", "up":
@@ -138,9 +145,9 @@ func (m Model) typingKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.setQuery("")
 		}
 	case "up", "ctrl+p":
-		m.selectRow(m.cursor - 1)
+		m.stepSelection(-1)
 	case "down", "ctrl+n":
-		m.selectRow(m.cursor + 1)
+		m.stepSelection(1)
 	case "backspace":
 		if m.input.Value() == "" {
 			m.closeInput()
@@ -166,4 +173,13 @@ func (m Model) edit(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.setQuery(q)
 	}
 	return m, cmd
+}
+
+// stepSelection selects the row, or in the attention view the line, by away from the selected one.
+func (m *Model) stepSelection(by int) {
+	if m.attention {
+		m.moveLine(by)
+		return
+	}
+	m.selectRow(m.cursor + by)
 }

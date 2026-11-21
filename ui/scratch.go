@@ -77,7 +77,7 @@ func ref(s store.Spec) string { return s.Project + "/" + s.Slug }
 
 // viewSelected opens a read-only copy of the selected spec in the editor.
 func (m Model) viewSelected() (tea.Model, tea.Cmd) {
-	if len(m.specs) == 0 {
+	if m.noSelection() {
 		return m, nil
 	}
 	s := m.specs[m.cursor]
@@ -107,7 +107,7 @@ func (m Model) viewDone(msg viewDoneMsg) (tea.Model, tea.Cmd) {
 
 // openEditor handles `e`: edit the selected spec on a scratch copy.
 func (m Model) openEditor() (tea.Model, tea.Cmd) {
-	if len(m.specs) == 0 {
+	if m.noSelection() {
 		return m, nil
 	}
 	s := m.specs[m.cursor]

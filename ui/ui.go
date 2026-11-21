@@ -46,9 +46,14 @@ type Model struct {
 	pickIn   textinput.Model // the popup's query; its text narrows the entries
 
 	width, height int
-	detailOpen    bool // narrow layout only: detail shown full-width
-	tree          bool // list each spec under its parent
-	board         bool // draw one column per live status instead of the list
+	detailOpen    bool                 // narrow layout only: detail shown full-width
+	tree          bool                 // list each spec under its parent
+	board         bool                 // draw one column per live status instead of the list
+	attention     bool                 // list only what waits on me, grouped by state, instead of the list
+	flipped       [StateReady + 1]bool // per group, whether its fold differs from its default
+	sel           int                  // attention view: the selected line (see attLines)
+	aoff          int                  // attention view: first line shown
+	now           func() time.Time     // the clock ages are counted from; nil is time.Now
 
 	detail   viewport.Model
 	style    string // glamour standard style name
@@ -195,6 +200,9 @@ func (m Model) visible() []store.Spec {
 	if m.board {
 		return boardRows(rows)
 	}
+	if m.attention {
+		return m.attentionRows(rows)
+	}
 	if m.tree {
 		rows, _ = treeLayout(rows)
 	}
@@ -205,7 +213,7 @@ func (m Model) visible() []store.Spec {
 // one) and the query leave, the matches best first.
 func (m Model) flat() []store.Spec {
 	filter := m.filter
-	if m.board {
+	if m.board || m.attention {
 		filter = ""
 	}
 	var out []store.Spec
@@ -281,6 +289,9 @@ func (m *Model) setQuery(query string) {
 	m.query = query
 	m.specs = m.visible()
 	m.cursor, m.hl = 0, ""
+	if m.attention {
+		m.resetAttention()
+	}
 	m.scrollList()
 	m.renderDetail()
 	m.detail.GotoTop()
@@ -296,6 +307,10 @@ func (m *Model) setFilter(status string) {
 // show lists rows, keeping the selected spec (by project and slug) and its detail scroll.
 // When it's gone, row fallback is selected and its detail shows from the top.
 func (m *Model) show(rows []store.Spec, fallback int) {
+	if m.attention {
+		m.showAttention(rows, m.snapshot())
+		return
+	}
 	if reflect.DeepEqual(rows, m.specs) {
 		return
 	}
@@ -343,8 +358,8 @@ func (m *Model) selectRow(i int) {
 	m.detail.GotoTop()
 }
 
-// split reports the list-and-detail layout. The board uses the whole width, so it never splits.
-func (m Model) split() bool { return m.width >= SplitWidth && !m.board }
+// split reports the list-and-detail layout. The board and the attention view use the whole width, so it never splits.
+func (m Model) split() bool { return m.width >= SplitWidth && !m.board && !m.attention }
 
 func (m Model) detailVisible() bool { return m.split() || m.detailOpen }
 
@@ -372,6 +387,10 @@ func (m *Model) layout() {
 }
 
 func (m *Model) scrollList() {
+	if m.attention {
+		m.scrollAttention()
+		return
+	}
 	if m.board {
 		m.scrollBoard()
 		return
