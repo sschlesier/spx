@@ -40,9 +40,10 @@ type Spec struct {
 	DependsOn []string
 	Parent    string // the parent: field as written; empty when missing
 	Approved  string
-	Progress  string   // the status: field of a started spec as written; empty when missing
-	Body      string   // the file without its frontmatter
-	LastLog   LogEntry // the last Log entry; empty when there is none
+	Progress  string      // the status: field of a started spec as written; empty when missing
+	Body      string      // the file without its frontmatter
+	LastLog   LogEntry    // the last Log entry; empty when there is none
+	Criteria  []Criterion // the acceptance criteria of Body; nil when there are none; Line is a body line
 }
 
 // Root returns $AGENT_SPECS_DIR when set and non-empty, otherwise ~/src/specs.
@@ -145,6 +146,7 @@ func read(project, status, path string) Spec {
 	front, body := splitFrontmatter(bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n")))
 	s.Body = string(body)
 	s.LastLog = lastLog(s.Body)
+	s.Criteria = ParseCriteria(body)
 	var fm map[string]yaml.Node
 	if front == nil || yaml.Unmarshal(front, &fm) != nil {
 		return s
