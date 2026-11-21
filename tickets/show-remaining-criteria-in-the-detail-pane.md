@@ -6,7 +6,7 @@ priority: 3
 depends-on: [read-acceptance-criteria-counts-into-the-store]
 parent: focus-on-what-needs-me
 approved: "Scott Schlesier, 2026-11-21: Detail-pane progress bar and Remaining criteria block for started specs. Cold read: not run"
-status: in-review
+status: done
 ---
 
 For a started spec, the detail header shows a progress bar and the acceptance criteria still to do, numbered as `spx check` numbers them, so I can see what is left before scrolling through the spec.
@@ -51,3 +51,5 @@ Don't touch: the store files; the markdown rendering of the body.
 - 2026-11-21: Approved: Scott Schlesier, 2026-11-21: Detail-pane progress bar and Remaining criteria block for started specs. Cold read: not run
 - 2026-11-21: Started on branch show-remaining-criteria-in-the-detail-pane
 - 2026-11-21: Status: in-review
+- 2026-11-21: Review round 1: dismissed surviving mutant min(filled, barCells-1) -> min(filled, barCells) in criteriaBar as equivalent (n<total gives at most 17 already).
+- 2026-11-21: Status: done: Reviewed round 1: all criteria verified, no open decisions
