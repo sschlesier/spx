@@ -63,3 +63,4 @@ Don't touch: the store files; the board and tree layouts beyond sharing helpers;
 - 2026-11-16: Approved: Scott Schlesier, 2026-11-16: n attention view: groups by state, folds, peek strip, keys and formats fixed. Cold read: fresh agent planned the intended design; ~25 guess points found, formats and selection rules added; not re-run
 - 2026-11-21: Started on branch attention-view
 - 2026-11-21: Status: in-review
+- 2026-11-21: Review round 1: up/down in the query input move attention lines, headers included (spec silent; assumption). Closing the detail when the selected spec vanishes on reload follows the list's behaviour. Manual go run check not run.
