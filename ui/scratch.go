@@ -337,8 +337,13 @@ func (m Model) reviewWithClaude() (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 	sc.mode = scratchEditing
-	c := claudeExec(repo, ref(sc.spec), reviewPrompt(sc.spec, sc))
+	c := reviewExec(repo, sc)
 	return m, tea.ExecProcess(c, func(err error) tea.Msg { return scratchClaude{err} })
+}
+
+// reviewExec is the Claude session that reviews sc's edit, started in repo.
+func reviewExec(repo string, sc *scratch) *exec.Cmd {
+	return claudeExec(repo, ref(sc.spec), reviewPrompt(sc.spec, sc))
 }
 
 func (m Model) scratchClaudeDone(msg scratchClaude) (tea.Model, tea.Cmd) {

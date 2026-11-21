@@ -105,6 +105,17 @@ func TestFailedSpxAmendShowsItsMessageAndKeepsTheDirectory(t *testing.T) {
 	}
 }
 
+func TestReviewSessionIsNamedAfterTheSpecAndRunsInTheRepo(t *testing.T) {
+	sc := &scratch{spec: store.Spec{Slug: "s", Project: "p", Status: "draft", Path: "/x/s.md"}, base: "/t/base.md", edit: "/t/edit.md"}
+	c := reviewExec("/repo", sc)
+	if len(c.Args) != 4 || c.Args[0] != "claude" || c.Args[1] != "--name" || c.Args[2] != "p/s" || c.Args[3] != reviewPrompt(sc.spec, sc) || c.Dir != "/repo" {
+		t.Errorf("args %q dir %q", c.Args, c.Dir)
+	}
+	if !strings.HasSuffix(c.Args[3], "This session is already named p/s.") {
+		t.Errorf("prompt does not end with the naming sentence: %q", c.Args[3])
+	}
+}
+
 func TestReviewPromptCarriesTheMergeInstructions(t *testing.T) {
 	p := reviewPrompt(store.Spec{Slug: "s", Project: "p", Status: "draft", Path: "/x/s.md"}, &scratch{base: "/t/base.md", edit: "/t/edit.md"})
 	for _, want := range []string{
