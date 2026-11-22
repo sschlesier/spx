@@ -267,3 +267,34 @@ func TestCloseEpicIgnoresDetachedChildren(t *testing.T) {
 		t.Fatalf("detached open child blocked close: %v", err)
 	}
 }
+
+func TestFinishedEpicsAreNotEditedByMoveOrDetach(t *testing.T) {
+	root := epicStore(t)
+	write(t, filepath.Join(root, "p/draft/orphan.md"), memberFile("Orphan", "feature", "edone", ""))
+	write(t, filepath.Join(root, "p/draft/orphan2.md"), memberFile("Orphan2", "feature", "edrop", ""))
+	gitIn(t, root, "add", "-A")
+	gitIn(t, root, "commit", "-q", "-m", "orphans")
+	all := allSpecs(t, root)
+	doneBefore := fileText(t, root, "p/done/edone.md")
+	dropBefore := fileText(t, root, "p/dropped/edrop.md")
+
+	if _, err := Adopt(root, all, pick(t, all, "p", "orphan"), pick(t, all, "p", "ep"), now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Detach(root, all, pick(t, all, "p", "orphan2"), now); err != nil {
+		t.Fatal(err)
+	}
+	if fileText(t, root, "p/done/edone.md") != doneBefore || fileText(t, root, "p/dropped/edrop.md") != dropBefore {
+		t.Error("a done or dropped epic was edited")
+	}
+}
+
+func TestCloseEpicRefusesADoneOrDroppedEpic(t *testing.T) {
+	root := epicStore(t)
+	all := allSpecs(t, root)
+	h := head(t, root)
+	for _, slug := range []string{"edone", "edrop"} {
+		wantCode(t, CloseEpic(root, all, pick(t, all, "p", slug), now), CodeWrongStatus)
+	}
+	untouched(t, root, h)
+}
