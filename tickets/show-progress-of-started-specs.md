@@ -6,7 +6,7 @@ priority: 3
 depends-on: [run-the-spec-lifecycle-as-spx-commands]
 parent:
 approved: "Scott Schlesier, 2026-11-22: Show the status: value in the detail state line and in spx -s with n/m; list rows unchanged. Cold read: not run"
-status: in-review
+status: done
 ---
 
 A started spec's exact `status:` value (in-progress, in-review, done) shows in the detail pane's state line and in `spx -s` next to its `n/m` criteria count, so I can see how far work has got without opening the PR.
@@ -57,3 +57,4 @@ Don't touch: how specs are listed, sorted or filtered; the list row layout.
 - 2026-11-22: Approved: Scott Schlesier, 2026-11-22: Show the status: value in the detail state line and in spx -s with n/m; list rows unchanged. Cold read: not run
 - 2026-11-22: Started on branch show-progress-of-started-specs
 - 2026-11-22: Status: in-review
+- 2026-11-22: Status: done: Reviewed round 1: all five criteria verified, cold verify passed with no findings
