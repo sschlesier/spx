@@ -134,11 +134,9 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // the input.
 func (m Model) typingKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
-	case "ctrl+c":
-		return m, tea.Quit
 	case "enter":
 		m.closeInput()
-	case "esc":
+	case "esc", "ctrl+c":
 		m.closeInput()
 		m.input.Reset()
 		if m.query != "" {

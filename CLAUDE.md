@@ -93,3 +93,7 @@ Accepted risks:
   keys, markdown rendering); an interactive `go run .` session is not required. Accepted by
   Scott Schlesier, 2026-10-17.
   Valid while: the diff touches no `.go` file.
+- Bubbletea delivering common keys (ctrl+c, esc, letters) as the key events the handlers match is
+  assumed. Don't suggest a manual `go run .` check, or flag it as an unproven risk, when it would
+  only show that; synthetic `KeyPressMsg` tests suffice. Accepted by Scott Schlesier, 2026-11-22.
+  Valid while: the diff adds no custom key parsing or raw terminal input.

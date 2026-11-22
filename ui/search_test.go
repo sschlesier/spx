@@ -246,14 +246,16 @@ func TestPrintableKeysGoIntoTheInput(t *testing.T) {
 	}
 }
 
-func TestCtrlCQuitsWhileTyping(t *testing.T) {
-	m := press(t, start(t, findable(), 120, 20), "/")
-	_, cmd := m.Update(keys["ctrl+c"])
-	if cmd == nil {
-		t.Fatal("ctrl+c returned no command")
+func TestCtrlCClosesTheInputLikeEscWithoutQuitting(t *testing.T) {
+	m := press(t, start(t, findable(), 120, 20), "/", "q", "x")
+	want := press(t, m, "esc")
+	next, cmd := m.Update(keys["ctrl+c"])
+	if cmd != nil {
+		t.Fatalf("ctrl+c returned a command")
 	}
-	if _, ok := cmd().(tea.QuitMsg); !ok {
-		t.Fatalf("ctrl+c returned %T, want tea.QuitMsg", cmd())
+	got := next.(Model)
+	if got.typing || got.query != want.query || got.input.Value() != want.input.Value() {
+		t.Fatalf("typing %v query %q input %q; esc gives query %q input %q", got.typing, got.query, got.input.Value(), want.query, want.input.Value())
 	}
 }
 
