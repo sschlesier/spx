@@ -377,7 +377,7 @@ func TestQuit(t *testing.T) {
 }
 
 func TestScratchDialogsNeverQuit(t *testing.T) {
-	for _, mode := range []scratchMode{scratchReopen, scratchClears, scratchAmend, scratchReason} {
+	for _, mode := range []scratchMode{scratchReopen, scratchClears, scratchAmend, scratchReason, scratchStale} {
 		for _, k := range []string{"q", "ctrl+c"} {
 			m := start(t, fixture(1), 120, 20)
 			m.sc = &scratch{mode: mode, dir: t.TempDir()}
