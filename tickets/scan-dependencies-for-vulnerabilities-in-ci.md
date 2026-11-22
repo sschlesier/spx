@@ -5,7 +5,7 @@ type: chore
 priority: 3
 depends-on: [fix-reported-vulnerabilities-in-x-text-and-goldmark]
 approved: "Scott Schlesier, 2026-11-04: Add a vulncheck workflow (push, PR, weekly, manual) and Dependabot for gomod and github-actions. Cold read: pass"
-status: in-review
+status: done
 ---
 
 A vulnerability reachable from spx fails a GitHub Actions run within a week of its disclosure, and Dependabot opens PRs for stale Go modules and workflow actions.
@@ -57,3 +57,4 @@ Stop and ask if: the repo needs secrets, permissions beyond read-only `contents`
 - 2026-11-22: Started on branch scan-dependencies-vulnerabilities-ci
 - 2026-11-22: YAML check used ruby's YAML.safe_load (no PyYAML here). govulncheck pinned @v1.10.0. Revert check: x/text v0.24.0 + goldmark v1.7.8 gave govulncheck exit 3 locally and a red run https://github.com/sschlesier/spx/actions/runs/45048147117 (scratch PR #53, closed, branch deleted). Schedule and Dependabot unprovable before merge; check Actions tab and Insights > Dependency graph > Dependabot after merge.
 - 2026-11-22: Status: in-review
+- 2026-11-22: Status: done: Reviewed round 1: all criteria verified; green run https://github.com/sschlesier/spx/actions/runs/45048242973, red run https://github.com/sschlesier/spx/actions/runs/45048147117. Accepted risk: GitHub may disable the schedule after 60 days of inactivity. Schedule and Dependabot unprovable before merge; check Actions tab and Insights, Dependency graph, Dependabot after merge.
