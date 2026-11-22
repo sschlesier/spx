@@ -6,7 +6,7 @@ priority: 2
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-11-22: Quit only from normal screens; q/ctrl+c close modals. Cold read: not run"
-status: in-review
+status: done
 ---
 
 In an open modal ctrl+c does what esc does instead of quitting spx, and q has no special meaning; quitting is possible only from a normal screen (list, detail, board, attention).
@@ -48,3 +48,4 @@ Don't touch: key handling on normal screens other than keeping q/ctrl+c quitting
 - 2026-11-22: Amended: In every modal ctrl+c does what esc does, q has no special meaning, footers name only esc
 - 2026-11-22: Restarted on branch modal-ctrl-c-mirrors-esc after the amend; PR #62 closed
 - 2026-11-22: Status: in-review
+- 2026-11-22: Status: done: Reviewed round 1: all criteria verified by tests; manual key check waived by profile
