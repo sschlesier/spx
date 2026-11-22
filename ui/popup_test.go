@@ -277,10 +277,10 @@ func TestReloadWithASingleMatchKeepsItSelected(t *testing.T) {
 	}
 }
 
-func TestPopupFooterKeepsEscAndCloseAt80Columns(t *testing.T) {
+func TestPopupFooterNamesOnlyEscAt80Columns(t *testing.T) {
 	m := press(t, scoped(t, "a-rather-long-project", 80), "p")
 	f := footer(m)
-	if w := ansi.StringWidth(f); w > 80 || !strings.HasSuffix(f, "ctrl+c close") || !strings.Contains(f, "esc clear/cancel") {
+	if w := ansi.StringWidth(f); w > 80 || !strings.HasSuffix(f, "esc clear/cancel") || strings.Contains(f, "ctrl+c") {
 		t.Fatalf("footer %q (%d columns)", f, w)
 	}
 }
