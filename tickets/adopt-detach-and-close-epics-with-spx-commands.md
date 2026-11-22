@@ -6,7 +6,7 @@ priority: 2
 depends-on: []
 parent: follow-an-epic-across-projects
 approved: "Scott Schlesier, 2026-11-22: adopt, detach and epic close commands: epics one level deep, close needs a done child, no-ops commit nothing, epic receipt without PR fields. Cold read: not run"
-status: in-review
+status: done
 ---
 
 I can move a spec into an epic, take it out again, and close an epic whose children are all finished, each with an `spx` command, so an epic's membership can change at any time and an epic can reach done.
@@ -32,7 +32,7 @@ Out of scope:
 - [x] A closed epic's file in done/ keeps `title`, `type`, `priority`, `depends-on`, `parent`, `approved` and the Outcome, with no `accepted`, `pr` or `path`. [you]
 - [x] `spx close` on a spec that is not an epic works as it does today. [repo]
 - [x] `spx help --skill` lists the new commands, saying `adopt` and `detach` need no yes and `close` on an epic runs only after the user's. [repo]
-- [ ] CLAUDE.md's lists of store-writing commands and its commit-message list include `adopt`, `detach` and the epic close. [repo]
+- [x] CLAUDE.md's lists of store-writing commands and its commit-message list include `adopt`, `detach` and the epic close. [repo]
 
 ## Verification
 
@@ -59,3 +59,4 @@ Don't touch: `spx edit`, `amend`, `sweep` behavior; the TUI.
 - 2026-11-22: Approved: Scott Schlesier, 2026-11-22: adopt, detach and epic close commands: epics one level deep, close needs a done child, no-ops commit nothing, epic receipt without PR fields. Cold read: not run
 - 2026-11-22: Started on branch adopt-detach-close-epics
 - 2026-11-22: Status: in-review: implemented; manual scratch-store run not done, covered by CLI tests
+- 2026-11-22: Status: done: Reviewed round 1: all criteria verified; manual scratch-store run not done, covered by CLI tests
