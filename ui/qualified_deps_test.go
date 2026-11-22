@@ -103,6 +103,44 @@ func TestEnterOnACrossProjectEntryWidensTheScope(t *testing.T) {
 	}
 }
 
+func TestBlocksListsASameSlugDependentInAnotherProject(t *testing.T) {
+	a := dspec("p", "approved", "main")
+	b := dspec("q", "approved", "main", "p/main")
+	_, blocks := depEntries(a, []store.Spec{a, b}, nil)
+	if len(blocks) != 1 || blocks[0].label != "q/main  Title main  (approved)" {
+		t.Errorf("blocks: %+v", blocks)
+	}
+}
+
+func TestJumpToAnotherProjectFromAttentionWidensTheScope(t *testing.T) {
+	m := press(t, qualModel(t, "p"), "n")
+	if !m.attention {
+		t.Fatal("attention view not shown")
+	}
+	for i := 0; i < 10 && selected(m) != "main"; i++ {
+		m = press(t, m, "j")
+	}
+	if selected(m) != "main" {
+		t.Fatalf("p/main not reachable, selected %s", selected(m))
+	}
+	all, _ := qualFixture()
+	m.jump(all[1]) // q/lib
+	if m.scope != "" || m.specs[m.cursor].Project != "q" || selected(m) != "lib" {
+		t.Errorf("scope %q, selected %s/%s", m.scope, m.specs[m.cursor].Project, selected(m))
+	}
+}
+
+func TestJumpThatCannotLandLeavesTheScope(t *testing.T) {
+	m := press(t, qualModel(t, "p"), "b")
+	if !m.board {
+		t.Fatal("board not shown")
+	}
+	m.jump(dspec("q", store.Dropped, "gone"))
+	if m.scope != "p" {
+		t.Errorf("scope = %q", m.scope)
+	}
+}
+
 func TestEnterOnASameProjectEntryKeepsTheScope(t *testing.T) {
 	m := press(t, depsModel(t, 140).WithScope("p", []string{"p", "q"}), "]", "enter")
 	if m.scope != "p" {

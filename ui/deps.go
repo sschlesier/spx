@@ -178,17 +178,17 @@ func (m *Model) jumpHighlight() (bool, tea.Cmd) {
 	return true, nil
 }
 
-// jump selects t. A spec outside the scope's project clears the scope. A spec the query or the status filter hides clears what hides it; a
-// dropped one sets the dropped filter.
+// jump selects t. A spec outside the scope's project clears the scope. A spec the query or
+// the status filter hides clears what hides it; a dropped one sets the dropped filter.
 func (m *Model) jump(t store.Spec) {
+	if m.board && !m.attention && t.Status == store.Dropped {
+		return
+	}
 	if m.scope != "" && t.Project != m.scope {
 		m.setScope("")
 	}
 	if m.attention {
 		m.jumpAttention(t)
-		return
-	}
-	if m.board && t.Status == store.Dropped {
 		return
 	}
 	rows := m.visible()
