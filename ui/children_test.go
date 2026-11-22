@@ -134,6 +134,47 @@ func TestNestedEpicListedButNotCounted(t *testing.T) {
 	}
 }
 
+func TestChildBuckets(t *testing.T) {
+	rev := kid("a", "started", "r", "e")
+	rev.Progress = "in-review"
+	fin := kid("a", "started", "f", "e")
+	fin.Progress = "done"
+	acc := kid("a", "started", "acc", "e")
+	acc.Progress = "done"
+	acc.LastLog = store.LogEntry{Text: "Accepted: ok"}
+	for _, tc := range []struct {
+		s    store.Spec
+		want childBucket
+	}{{rev, bucketReview}, {fin, bucketReview}, {acc, bucketWorking}, {kid("a", "started", "w", "e"), bucketWorking}} {
+		if got := bucketOf(tc.s, nil, nil); got != tc.want {
+			t.Errorf("%s: bucket %d, want %d", tc.s.Slug, got, tc.want)
+		}
+	}
+}
+
+func TestEpicNamingItselfHasNoChildren(t *testing.T) {
+	e := epicSpec("a", "e")
+	e.Parent = "e"
+	if kids, _ := childrenOf(e, []store.Spec{e}, nil); len(kids) != 0 {
+		t.Errorf("epic listed as its own child")
+	}
+}
+
+func TestNextActionNeedsMeNamesReason(t *testing.T) {
+	rev := kid("b", "started", "rev", "a/e")
+	rev.Progress = "in-review"
+	all := []store.Spec{epicSpec("a", "e"), rev}
+	k, _ := childrenOf(all[0], all, nil)
+	if got := nextAction(all[0], k, all, nil); got != "Next: review b/rev" {
+		t.Errorf("got %q", got)
+	}
+	all = []store.Spec{epicSpec("a", "e"), kid("a", "draft", "d", "e")}
+	k, _ = childrenOf(all[0], all, nil)
+	if got := nextAction(all[0], k, all, nil); got != "Next: approve a/d" {
+		t.Errorf("got %q", got)
+	}
+}
+
 func TestEnterOnChildJumpsAndDoneChildNotices(t *testing.T) {
 	all, done := epicFixture()
 	m := epicModel(t, all, done, "e")
