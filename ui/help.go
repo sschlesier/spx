@@ -89,7 +89,7 @@ const (
 	boardHelp     = "h/l column · v view · e edit · y/Y copy · c advance · p project · ? help"
 
 	// helpOpenHelp is the footer while the help popup is open.
-	helpOpenHelp = "ctrl+c quit · ? or esc close"
+	helpOpenHelp = "? or esc close"
 )
 
 // helpView is the view that has the keys now.
@@ -118,13 +118,11 @@ func (m Model) footerHints() string {
 	return footerHelp
 }
 
-// helpKey handles a key while the help popup is open: ? and esc close it, ctrl+c quits, the
+// helpKey handles a key while the help popup is open: ?, esc and ctrl+c close it, the
 // scroll keys move the window and nothing else gets through.
 func (m Model) helpKey(k string) (tea.Model, tea.Cmd) {
 	switch k {
-	case "ctrl+c":
-		return m, tea.Quit
-	case "?", "esc":
+	case "?", "esc", "ctrl+c":
 		m.helping = false
 	case "j", "down":
 		m.helpOff++

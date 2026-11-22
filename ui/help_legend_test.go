@@ -47,7 +47,7 @@ func TestHelpWithTheLegendFitsA24RowTerminal(t *testing.T) {
 	if strings.Contains(got, "quit") {
 		t.Errorf("last key row not cut off:\n%s", got)
 	}
-	if !strings.Contains(ansi.Strip(m.render()), "ctrl+c quit") {
-		t.Errorf("ctrl+c missing from the footer")
+	if f := ansi.Strip(m.render()); strings.Contains(f, "quit") || strings.Contains(f, "ctrl+c") {
+		t.Errorf("footer names more than esc while the help popup is open")
 	}
 }

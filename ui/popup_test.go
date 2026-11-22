@@ -121,14 +121,28 @@ func TestPopupEscClosesWithoutChange(t *testing.T) {
 	}
 }
 
-func TestPopupCtrlCQuits(t *testing.T) {
-	m := press(t, scoped(t, "", 140), "p")
-	_, cmd := m.Update(keys["ctrl+c"])
-	if cmd == nil {
-		t.Fatal("ctrl+c did not quit")
+func TestPopupCtrlCDoesWhatEscDoesWithoutQuitting(t *testing.T) {
+	for _, typedQuery := range []string{"", "bet"} {
+		m := press(t, scoped(t, "", 140), "p")
+		if typedQuery != "" {
+			m = typed(t, m, typedQuery)
+		}
+		want := press(t, m, "esc")
+		next, cmd := m.Update(keys["ctrl+c"])
+		if cmd != nil {
+			t.Errorf("query %q: ctrl+c returned a command", typedQuery)
+		}
+		got := next.(Model)
+		if got.picking != want.picking || got.pickIn.Value() != want.pickIn.Value() {
+			t.Errorf("query %q: ctrl+c picking %v query %q; esc picking %v query %q", typedQuery, got.picking, got.pickIn.Value(), want.picking, want.pickIn.Value())
+		}
 	}
-	if _, ok := cmd().(tea.QuitMsg); !ok {
-		t.Errorf("ctrl+c returned %T, want a quit", cmd())
+}
+
+func TestPopupQTypesIntoTheQuery(t *testing.T) {
+	m := press(t, scoped(t, "", 140), "p", "q")
+	if !m.picking || m.pickIn.Value() != "q" {
+		t.Errorf("picking %v, query %q", m.picking, m.pickIn.Value())
 	}
 }
 
@@ -270,10 +284,10 @@ func TestReloadWithASingleMatchKeepsItSelected(t *testing.T) {
 	}
 }
 
-func TestPopupFooterKeepsEscAndQuitAt80Columns(t *testing.T) {
+func TestPopupFooterNamesOnlyEscAt80Columns(t *testing.T) {
 	m := press(t, scoped(t, "a-rather-long-project", 80), "p")
 	f := footer(m)
-	if w := ansi.StringWidth(f); w > 80 || !strings.HasSuffix(f, "ctrl+c quit") || !strings.Contains(f, "esc clear/cancel") {
+	if w := ansi.StringWidth(f); w > 80 || !strings.HasSuffix(f, "esc clear/cancel") || strings.Contains(f, "ctrl+c") {
 		t.Fatalf("footer %q (%d columns)", f, w)
 	}
 }

@@ -19,13 +19,11 @@ func (m Model) pickerKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	query := m.pickIn.Value()
 	switch msg.String() {
-	case "ctrl+c":
-		return m, tea.Quit
 	case "down", "ctrl+j":
 		m.pick = min(m.pick+1, len(m.pickerEntries())-1)
 	case "up", "ctrl+k":
 		m.pick = max(m.pick-1, 0)
-	case "esc":
+	case "esc", "ctrl+c":
 		if query == "" {
 			m.closePicker()
 			return m, nil
