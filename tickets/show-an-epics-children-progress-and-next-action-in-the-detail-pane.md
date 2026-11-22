@@ -6,7 +6,7 @@ priority: 2
 depends-on: [resolve-project-qualified-depends-on-in-the-detail-pane-and-readiness, adopt-detach-and-close-epics-with-spx-commands]
 parent: follow-an-epic-across-projects
 approved: "Scott Schlesier, 2026-11-22: Epic detail pane: children across projects, progress header, next-action line; nested epics excluded; ready-to-close needs only all done or dropped. Cold read: not run"
-status: in-review
+status: done
 ---
 
 Selecting an epic shows its children across projects, how far along they are and what to do next, so I can follow a set of work in one place.
@@ -43,7 +43,7 @@ Out of scope:
 - **Next action order is needs me, then ready, then blocked.** It is a hint; it doesn't change a spec's state. [default]
 - **Each child falls in one bucket:** a draft is not yet approved; an approved spec is ready or blocked as `Ready` says; a started spec is in review when its progress is in-review or done and not yet accepted, otherwise working; a done spec is done. [default]
 - **Enter on a child uses the existing highlight cycle** (Depends on, Blocks, then Children), with the scoped-view widening of `resolve-project-qualified-depends-on-in-the-detail-pane-and-readiness`; enter on a done child shows a notice, as it does for a done dependency. [repo]
-- **"Ready to close" needs only that every child is done or dropped,** even when none is done. `spx close` on an epic may still refuse an epic with no done child (see `adopt-detach-and-close-epics-with-spx-commands`); this pane does not check it. [you]
+- **"Ready to close" needs every counted child to be done,** and at least one counted child; an open nested epic does not stop it. An epic whose children are all dropped shows "No children", since dropped children are not listed. `spx close` on an epic may still refuse an epic with no done child (see `adopt-detach-and-close-epics-with-spx-commands`); this pane does not check it. [you]
 - **Read-only:** the pane never writes to the store. [repo]
 
 ## Boundaries
@@ -56,3 +56,5 @@ Don't touch: the store; the CLI commands; `ui/state.go` rules.
 - 2026-11-22: Approved: Scott Schlesier, 2026-11-22: Epic detail pane: children across projects, progress header, next-action line; nested epics excluded; ready-to-close needs only all done or dropped. Cold read: not run
 - 2026-11-22: Started on branch show-epic-children-in-detail-pane
 - 2026-11-22: Status: in-review: Implemented; go vet and go test -race pass; manual go run not done
+- 2026-11-22: Amended: User chose at review: open nested epics don't block Ready to close; all-dropped epic shows No children
+- 2026-11-22: Status: done: Reviewed round 1: all criteria verified; manual go run not done (accepted risk)
