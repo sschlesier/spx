@@ -4,13 +4,14 @@ A terminal browser for the spec store (`$AGENT_SPECS_DIR`, or `~/src/specs`): a 
 specs beside the selected spec's rendered markdown. The UI is read-only; the only writes are by
 the Claude session you start with `c` or from `e`'s review, by `e`'s scratch copy committed through `spx edit`, `amend` or `reopen`
 (`v` opens a read-only copy), by the store-writing CLI commands (`spx log`, `new`, `edit`,
-`approve`, `start`, `send-back`, `drop`, `reopen`, `status`, `check`, `amend`, `repo --set`, `accept`, `close`,
+`approve`, `start`, `send-back`, `drop`, `reopen`, `status`, `check`, `amend`, `adopt`, `detach`, `repo --set`, `accept`, `close`,
 `sweep`) and by `spx place`, which writes one file into a project repo.
 
 ## Project Structure
 
 - `main.go` - Entry point: resolves the store root, runs the UI
 - `cli.go` - Command table (name, synopsis, effect, guide rule, usage, handler) and dispatch
+- `cli_epic.go` - The `adopt` and `detach` entries and handlers (an epic's close is in `cli_finish.go`)
 - `cli_finish.go` - The `place`, `accept`, `close` and `sweep` entries and handlers (the sweep core is `sweep`)
 - `guide.go` - `spx help`: the store guide (`--skill`), generated from the command table
 - `ops/` - Store-writing operations: exit codes, spec resolution, line-level edits, git commit with rollback
@@ -46,9 +47,9 @@ Staleness: Changes under the store show within about a second (fsnotify, 100 ms 
 
 Invariants:
 - spx writes, moves or deletes under the store root only through the CLI commands (`spx log`,
-  `new`, `edit`, `approve`, `start`, `send-back`, `drop`, `reopen`, `status`, `check`, `amend`, `repo --set`, `accept`,
+  `new`, `edit`, `approve`, `start`, `send-back`, `drop`, `reopen`, `status`, `check`, `amend`, `adopt`, `detach`, `repo --set`, `accept`,
   `close`, `sweep`), each of which commits just the paths it touched as `<project>: <verb> <slug>`
-  (`<project>: reopen <slug>` for `reopen`, `<project>: map repo` for `repo --set`, `<project>: done <slug>` for `close`, which `sweep` runs
+  (`adopt` and `detach` commit the child's file and its epic's together, named for the child's project; `<project>: reopen <slug>` for `reopen`, `<project>: map repo` for `repo --set`, `<project>: done <slug>` for `close`, which for an epic needs every child done or dropped and one done, and which `sweep` runs
   for each merged pull request), then pushes `main` (never forced) to the store's `origin`, else its only remote, warning on stderr if the push fails or times out (15 s) and keeping the commit (later commits in that process are not pushed; git and ssh never prompt); never stashes, and restores the tree on failure. The TUI itself never writes
   under the store root: `e` edits a copy in a temporary directory and commits it only by starting this
   binary's `spx edit` or `spx amend` (and `spx reopen` for a dropped spec), and only a Claude session the
@@ -68,7 +69,8 @@ Invariants:
   `spx rev <slug>` (read-only: prints the spec's revision, starts no process),
   `spx approve <slug> "<one line>" [--cold-read <result>]`, `spx start <slug> --branch <name>`, `spx send-back <slug> "<questions>"`,
   `spx drop <slug> "<why>"`, `spx reopen <slug> "<why>"`, `spx status <slug> <in-progress|in-review|done> ["<note>"]`,
-  `spx check <slug> <n>... [--uncheck]`, `spx amend <slug> <file> "<reason>" [--base <rev>]`, `spx repo [project]`,
+  `spx check <slug> <n>... [--uncheck]`, `spx amend <slug> <file> "<reason>" [--base <rev>]`,
+  `spx adopt <slug> <epic>`, `spx detach <slug>`, `spx repo [project]`,
   `spx repo --set <project> <path>`, `spx place <slug> [--dir <repo>]`,
   `spx accept <slug> --pr <url> "<note>" [--round <n>]`, `spx close <slug>`,
   `spx sweep [project]` and `spx help [--skill [--body]]`; a command name is

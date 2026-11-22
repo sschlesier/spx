@@ -62,7 +62,10 @@ var transitions = []transition{
 	{"a spec that needs the user's answers goes back to draft/", "send-back", byAgent},
 	{"approved → started, once its dependencies are done", "start", byAgent},
 	{"started → done: the user accepts the work", "accept", byUser},
+	{"a spec moves into an epic, to another epic, or out of its epic", "adopt", byAgent},
+	{"a spec moves into an epic, to another epic, or out of its epic", "detach", byAgent},
 	{"the accepted, merged spec is moved to done/", "close", byAgent},
+	{"an epic whose children are all done or dropped, at least one done, is moved to done/ with `spx close`", "close", byUser},
 	{"an abandoned spec moves to dropped/", "drop", byUser},
 	{"a dropped spec the user asks to reconsider goes back to draft/; it is not an approval", "reopen", byAgent},
 }

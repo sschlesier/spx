@@ -40,6 +40,15 @@ func receipt(spec store.Spec, data []byte) ([]byte, error) {
 	if pr == "" || path == "" {
 		return nil, fail(CodeWrongStatus, "%s/%s has no pr: or path:; run spx accept first", spec.Project, spec.Slug)
 	}
+	prValue := yamlScalar(pr)
+	if plainURL.MatchString(pr) {
+		prValue = pr
+	}
+	return trimToReceipt(spec, data, []string{"accepted: " + yamlScalar(accepted), "pr: " + prValue, "path: " + yamlScalar(path)})
+}
+
+// trimToReceipt is data cut to the kept frontmatter fields, then the extra lines, then the Outcome.
+func trimToReceipt(spec store.Spec, data []byte, extra []string) ([]byte, error) {
 	lines := strings.Split(string(data), "\n")
 	end := closingFence(lines)
 	if end < 0 {
@@ -51,11 +60,8 @@ func receipt(spec store.Spec, data []byte) ([]byte, error) {
 			out = append(out, lines[at:fieldEnd(lines, end, at)]...)
 		}
 	}
-	prValue := yamlScalar(pr)
-	if plainURL.MatchString(pr) {
-		prValue = pr
-	}
-	out = append(out, "accepted: "+yamlScalar(accepted), "pr: "+prValue, "path: "+yamlScalar(path), "---", "")
+	out = append(out, extra...)
+	out = append(out, "---", "")
 	if outcome := splitBody(data).outcome; len(outcome) > 0 {
 		out = append(out, outcome...)
 	}
