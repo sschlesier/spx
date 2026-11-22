@@ -4,6 +4,7 @@ package ui
 import (
 	"errors"
 	"reflect"
+	"slices"
 	"sort"
 	"time"
 
@@ -414,7 +415,7 @@ func (m *Model) renderDetail() {
 	}
 	s := m.specs[m.cursor]
 	depends, blocks := depEntries(s, m.all, m.done)
-	head := header(s, m.detail.Width(), stateLine(s, m.all, m.done), depLines(depends, blocks, m.hl))
+	head := header(s, m.detail.Width(), stateLine(s, m.all, m.done), slices.Concat(depLines(depends, blocks, m.hl), childrenLines(s, m.all, m.done, childEntries(s, m.all, m.done), m.hl)))
 	m.detail.SetContent(head + "\n" + m.markdown(s.Body))
 	m.detail.SetYOffset(m.detail.YOffset())
 }
