@@ -6,7 +6,7 @@ priority: 2
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-11-22: Start claude from c in a started spec's worktree, falling back to the repo. Cold read: not run"
-status: in-review
+status: done
 ---
 
 When you press `c` on a started spec, the Claude session starts in the worktree for that spec's branch rather than the project's main checkout.
@@ -45,3 +45,4 @@ Stop and ask if: finding the worktree needs anything beyond a read-only git comm
 - 2026-11-22: Started on branch c-starts-in-spec-worktree
 - 2026-11-22: Status: in-review
 - 2026-11-22: Review round 1 dismissed: TrimRight/TrimSpace mutants in loggedBranch (equivalent for normal input); newline-in-worktree-path risk (git porcelain quoting, not realistic here)
+- 2026-11-22: Status: done: Reviewed round 1: all criteria verified by tests; manual go run check confirmed by Scott
