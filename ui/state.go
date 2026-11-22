@@ -91,6 +91,9 @@ func stateLine(spec store.Spec, all, done []store.Spec) string {
 	if reason != "" {
 		line += " · " + reason
 	}
+	if spec.Status == "started" && spec.Progress != "" {
+		line += " · " + spec.Progress
+	}
 	return line
 }
 
