@@ -6,7 +6,7 @@ priority: 2
 depends-on: []
 parent: follow-an-epic-across-projects
 approved: "Scott Schlesier, 2026-11-22: Qualified depends-on resolved across projects in detail pane, readiness and Blocks; cross-project labels and scoped jump. Cold read: not run"
-status: in-review
+status: done
 ---
 
 A `depends-on` written as `<project>/<slug>` is resolved the way `spx start` already resolves it, so the detail pane, the ready filter (`r` and `spx -r`) and the attention view agree about what a spec is waiting on, across projects.
@@ -20,14 +20,14 @@ Out of scope:
 
 ## Acceptance criteria
 
-- [ ] A spec whose `depends-on` has `<project>/<slug>` shows that spec under Depends on with its title and status, and enter jumps to it. [you]
+- [x] A spec whose `depends-on` has `<project>/<slug>` shows that spec under Depends on with its title and status, and enter jumps to it. [you]
 - [x] A qualified `depends-on` naming a done spec shows as done, like a same-project one. [repo]
 - [x] A bare slug still means the spec's own project, and the same slug in another project is not matched by it. [repo]
-- [ ] An approved spec whose dependencies are all done, some of them qualified, is ready: it passes the ready filter (`r`, `spx -r`) and shows as ready in the attention view. [you]
+- [x] An approved spec whose dependencies are all done, some of them qualified, is ready: it passes the ready filter (`r`, `spx -r`) and shows as ready in the attention view. [you]
 - [x] An unresolved qualified reference shows as "(not in store)" and the spec is not ready. [repo]
-- [ ] The spec a qualified `depends-on` names lists its dependent under Blocks, even when the dependent is in another project. [you]
-- [ ] An entry for a spec in another project is labelled `<project>/<slug>  <title>  (<status>)`; an entry in the spec's own project is labelled as before. [you]
-- [ ] In a view scoped to one project, enter on a Blocks or Depends on entry in another project widens the view to all projects and selects that spec. [you]
+- [x] The spec a qualified `depends-on` names lists its dependent under Blocks, even when the dependent is in another project. [you]
+- [x] An entry for a spec in another project is labelled `<project>/<slug>  <title>  (<status>)`; an entry in the spec's own project is labelled as before. [you]
+- [x] In a view scoped to one project, enter on a Blocks or Depends on entry in another project widens the view to all projects and selects that spec. [you]
 - [x] Tree mode still groups a child under a parent in another project when both are listed (existing behavior, kept under test). [repo]
 
 ## Verification
@@ -53,3 +53,4 @@ Don't touch: `ops/`; the store.
 - 2026-11-22: Approved: Scott Schlesier, 2026-11-22: Qualified depends-on resolved across projects in detail pane, readiness and Blocks; cross-project labels and scoped jump. Cold read: not run
 - 2026-11-22: Started on branch resolve-qualified-depends-on
 - 2026-11-22: Status: in-review
+- 2026-11-22: Status: done: Reviewed round 1: all criteria verified by tests; manual TUI step not run, accepted by Scott
