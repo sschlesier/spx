@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -28,20 +29,29 @@ func TestCStartsInTheWorktreeOfTheLoggedBranch(t *testing.T) {
 	gitIn(t, e.repo, "worktree", "add", "-b", "feat-one", wt1)
 	gitIn(t, e.repo, "worktree", "add", "-b", "feat-two", wt2)
 	gitIn(t, e.repo, "branch", "unchecked")
+	gone := filepath.Join(t.TempDir(), "gone")
+	gitIn(t, e.repo, "worktree", "add", "-b", "feat-gone", gone)
+	if err := os.RemoveAll(gone); err != nil {
+		t.Fatal(err)
+	}
 	// git reports resolved paths; temp dirs may sit behind a symlink
 	wt1, _ = filepath.EvalSymlinks(wt1)
 	wt2, _ = filepath.EvalSymlinks(wt2)
 	repo, _ := filepath.EvalSymlinks(e.repo)
 
 	cases := map[string]struct{ status, body, want string }{
-		"worktree found":       {"started", logBody("- 2026-01-02: Started on branch feat-one"), wt1},
-		"not checked out":      {"started", logBody("- 2026-01-02: Started on branch unchecked"), e.repo},
-		"unknown branch":       {"started", logBody("- 2026-01-02: Started on branch nope"), e.repo},
-		"main checkout itself": {"started", logBody("- 2026-01-02: Started on branch main"), repo},
-		"no branch logged":     {"started", logBody(), e.repo},
-		"two branches":         {"started", logBody("- 2026-01-02: Started on branch feat-one", "- 2026-01-03: Started on branch feat-two"), wt2},
-		"approved":             {"approved", logBody("- 2026-01-02: Started on branch feat-one"), e.repo},
-		"draft":                {"draft", logBody("- 2026-01-02: Started on branch feat-one"), e.repo},
+		"worktree found":           {"started", logBody("- 2026-01-02: Started on branch feat-one"), wt1},
+		"not checked out":          {"started", logBody("- 2026-01-02: Started on branch unchecked"), e.repo},
+		"unknown branch":           {"started", logBody("- 2026-01-02: Started on branch nope"), e.repo},
+		"main checkout itself":     {"started", logBody("- 2026-01-02: Started on branch main"), repo},
+		"prefix of another branch": {"started", logBody("- 2026-01-02: Started on branch feat"), e.repo},
+		"worktree dir removed":     {"started", logBody("- 2026-01-02: Started on branch feat-gone"), e.repo},
+		"outside the Log":          {"started", "## Notes\n\n- 2026-01-02: Started on branch feat-one\n\n## Log\n\n- 2026-01-01: Approved: x\n", e.repo},
+		"not a bullet":             {"started", "## Log\n\n2026-01-02: Started on branch feat-one\n", e.repo},
+		"no branch logged":         {"started", logBody(), e.repo},
+		"two branches":             {"started", logBody("- 2026-01-02: Started on branch feat-one", "- 2026-01-03: Started on branch feat-two"), wt2},
+		"approved":                 {"approved", logBody("- 2026-01-02: Started on branch feat-one"), e.repo},
+		"draft":                    {"draft", logBody("- 2026-01-02: Started on branch feat-one"), e.repo},
 	}
 	for name, c := range cases {
 		specs := oneSpec(c.status, "in-progress")

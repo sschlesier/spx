@@ -117,6 +117,9 @@ func worktreeOf(repo, branch string) string {
 		case strings.HasPrefix(line, "worktree "):
 			dir = strings.TrimPrefix(line, "worktree ")
 		case line == "branch refs/heads/"+branch:
+			if info, err := os.Stat(dir); err != nil || !info.IsDir() {
+				return ""
+			}
 			return dir
 		}
 	}
