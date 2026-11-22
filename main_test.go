@@ -341,7 +341,7 @@ func TestReadyFlagPrintsReadySpecsOnce(t *testing.T) {
 func TestStatusFlagRowsMatchTheList(t *testing.T) {
 	printStore(t)
 	r := runCLI(t, t.TempDir(), "-s")
-	want := "alpha  started  P3  task     Started one\n"
+	want := "alpha  started  P3  task     —  Started one\n"
 	if r.stdout != want {
 		t.Fatalf("got %q, want %q", r.stdout, want)
 	}
@@ -431,5 +431,37 @@ func TestVersionPrintsTheVersionWithoutReadingTheStore(t *testing.T) {
 func TestHelpMentionsVersion(t *testing.T) {
 	if r := runCLI(t, t.TempDir(), "-h"); !strings.Contains(r.stdout, "--version") {
 		t.Errorf("help lacks --version: %q", r.stdout)
+	}
+}
+
+func TestStatusFlagShowsStatusValueAndCriteriaCount(t *testing.T) {
+	root := makeStore(t)
+	write := func(path, front, body string) {
+		full := filepath.Join(root, path)
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte("---\n"+front+"\n---\n\n"+body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("alpha/started/a.md", "title: One\ntype: task\npriority: 3\nstatus: in-progress", "## Acceptance criteria\n\n- [x] a\n- [ ] b\n")
+	write("alpha/started/b.md", "title: Two\ntype: task\npriority: 3\nstatus: in-review", "")
+	write("alpha/started/c.md", "title: Three\ntype: task\npriority: 3\nstatus: done", "## Acceptance criteria\n\n- [x] a\n")
+	write("alpha/started/d.md", "title: Four\ntype: task\npriority: 3", "")
+	write("alpha/draft/e.md", "title: Draft\ntype: task\npriority: 3", "")
+	r := runCLI(t, t.TempDir(), "-s")
+	for _, want := range []string{"in-progress P3  task     1/2  One", "in-review   P3  task     —    Two", "done        P3  task     1/1  Three", "started     P3  task     —    Four"} {
+		if !strings.Contains(r.stdout, want) {
+			t.Errorf("missing %q in %q", want, r.stdout)
+		}
+	}
+	r = runCLI(t, t.TempDir(), "-d")
+	if r.stdout != "alpha  draft    P3  task     Draft\n" {
+		t.Errorf("-d changed: %q", r.stdout)
+	}
+	r = runCLI(t, t.TempDir(), "-sd")
+	if !strings.Contains(r.stdout, "1/2  One") || !strings.Contains(r.stdout, "draft       P3  task          Draft") {
+		t.Errorf("-sd: %q", r.stdout)
 	}
 }

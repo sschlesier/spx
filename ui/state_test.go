@@ -229,3 +229,23 @@ func TestListNarrowerThanTheGlyphColumnDoesNotPanic(t *testing.T) {
 		_ = listLines(m)
 	}
 }
+
+func TestStateLineEndsWithTheStatusValue(t *testing.T) {
+	cases := []struct {
+		spec store.Spec
+		want string
+	}{
+		{stSpec("started", "in-progress", ""), "◐ working · in-progress"},
+		{stSpec("started", "in-review", ""), "● needs me · Review · in-review"},
+		{stSpec("started", "in-review", "Needs fixes: x"), "◐ working · in-review"},
+		{stSpec("started", "done", ""), "● needs me · Accept · done"},
+		{stSpec("started", "done", "Accepted: x"), "◐ working · done"},
+		{stSpec("started", "", ""), "◐ working"},
+		{stSpec("draft", "in-review", ""), "● needs me · Approve"},
+	}
+	for _, c := range cases {
+		if got := stateLine(c.spec, nil, nil); got != c.want {
+			t.Errorf("%v: got %q, want %q", c.spec.Progress, got, c.want)
+		}
+	}
+}

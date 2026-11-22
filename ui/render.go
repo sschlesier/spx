@@ -365,19 +365,39 @@ func splitFirstRune(s string) (string, string) {
 // StatusRows formats shown as the lines `spx -d/-a/-s/-r` print: full words, project first,
 // columns widened to the longest value shown. The list uses the compact Rows instead.
 func StatusRows(shown []store.Spec) []string {
-	projectW, typeW := 0, len("feature")
-	projects, types := make([]string, len(shown)), make([]string, len(shown))
+	projectW, statusW, typeW, countW := 0, len("approved"), len("feature"), 0
+	projects, statuses, types, counts := make([]string, len(shown)), make([]string, len(shown)), make([]string, len(shown)), make([]string, len(shown))
 	for i, s := range shown {
-		projects[i], types[i] = printable(s.Project), printable(s.Type)
+		projects[i], types[i], statuses[i] = printable(s.Project), printable(s.Type), s.Status
+		if s.Status == "started" {
+			if s.Progress != "" {
+				statuses[i] = printable(s.Progress)
+			}
+			counts[i], _ = criteriaCount(s)
+			countW = max(countW, len([]rune(counts[i])))
+		}
 		projectW = max(projectW, len(projects[i]))
+		statusW = max(statusW, len(statuses[i]))
 		typeW = max(typeW, len(types[i]))
 	}
 	out := make([]string, len(shown))
 	for i, s := range shown {
-		out[i] = fmt.Sprintf("%-*s  %-8s %-2s  %-*s  %s", projectW, projects[i], s.Status,
-			priority(s.Priority), typeW, orDash(types[i]), printable(s.Title))
+		count := ""
+		if countW > 0 {
+			count = padRunes(counts[i], countW) + "  "
+		}
+		out[i] = fmt.Sprintf("%-*s  %-*s %-2s  %-*s  %s%s", projectW, projects[i], statusW, statuses[i],
+			priority(s.Priority), typeW, orDash(types[i]), count, printable(s.Title))
 	}
 	return out
+}
+
+// padRunes pads s on the right with spaces to w runes.
+func padRunes(s string, w int) string {
+	if n := len([]rune(s)); n < w {
+		return s + strings.Repeat(" ", w-n)
+	}
+	return s
 }
 
 // rows is Rows with glyphs and with prefixes[i], when given, starting row i's title.

@@ -464,3 +464,25 @@ func TestMovedSelectionStaysVisible(t *testing.T) {
 		t.Fatalf("cursor %d offset %d height %d: selection off screen", m.cursor, m.offset, m.bodyHeight())
 	}
 }
+
+func TestReloadShowsANewProgressValueAndKeepsTheSelection(t *testing.T) {
+	specs := fixture(3)
+	specs[1].Status, specs[1].Progress = "started", "in-progress"
+	store.Sort(specs)
+	m := start(t, specs, 120, 20)
+	for i := range m.specs {
+		if m.specs[i].Progress != "" {
+			m.cursor = i
+		}
+	}
+	slug := selected(m)
+	next := append([]store.Spec(nil), m.specs...)
+	next[m.cursor].Progress = "in-review"
+	m = reload(t, m, next)
+	if selected(m) != slug {
+		t.Fatalf("selected %s, want %s", selected(m), slug)
+	}
+	if s := screen(m); !strings.Contains(s, "· in-review") {
+		t.Fatalf("detail should show in-review:\n%s", s)
+	}
+}
