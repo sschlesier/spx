@@ -100,11 +100,18 @@ func TestEpicNextActionTiers(t *testing.T) {
 func TestEpicReadyToClose(t *testing.T) {
 	all := []store.Spec{epicSpec("a", "e"), kid("a", store.Dropped, "gone", "e")}
 	c := epicModel(t, all, nil, "e").detail.GetContent()
-	if !strings.Contains(c, "Ready to close: `spx close e`") {
+	if !strings.Contains(c, "No children") || strings.Contains(c, "Ready to close") {
 		t.Errorf("all dropped:\n%s", c)
 	}
-	all = []store.Spec{epicSpec("a", "e")}
+	sub := epicSpec("a", "sub")
+	sub.Parent = "e"
+	all = []store.Spec{epicSpec("a", "e"), sub}
 	done := []store.Spec{kid("a", store.Done, "fin", "e")}
+	if c := epicModel(t, all, done, "e").detail.GetContent(); !strings.Contains(c, "Ready to close: `spx close e`") {
+		t.Errorf("open nested epic should not block:\n%s", c)
+	}
+	all = []store.Spec{epicSpec("a", "e")}
+	done = []store.Spec{kid("a", store.Done, "fin", "e")}
 	c = epicModel(t, all, done, "e").detail.GetContent()
 	if !strings.Contains(c, "Ready to close: `spx close e`") || !strings.Contains(c, "a/fin") {
 		t.Errorf("all done:\n%s", c)

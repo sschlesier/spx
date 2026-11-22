@@ -88,8 +88,8 @@ func childrenLines(s store.Spec, all, done []store.Spec, kids []depEntry, hl str
 		return nil
 	}
 	lines := []string{"Children"}
-	specs, dropped := childrenOf(s, all, done)
-	if len(specs) == 0 && dropped == 0 {
+	specs, _ := childrenOf(s, all, done)
+	if len(specs) == 0 {
 		return append(lines, "  No children")
 	}
 	lines = append(lines, "  "+childSummary(specs, all, done))
@@ -163,7 +163,7 @@ func nextAction(epic store.Spec, specs, all, done []store.Spec) string {
 	case len(blocked) > 0:
 		return "Next: " + ref(blocked[0]) + " is blocked, waiting on " + waitingOn(blocked[0], all, done) + more(len(blocked))
 	}
-	if !slices.ContainsFunc(specs, func(c store.Spec) bool { return c.Status != store.Done }) {
+	if len(kids) > 0 && !slices.ContainsFunc(kids, func(c store.Spec) bool { return c.Status != store.Done }) {
 		return "Ready to close: `spx close " + printable(epic.Slug) + "`"
 	}
 	return ""
