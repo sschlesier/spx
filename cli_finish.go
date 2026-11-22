@@ -38,10 +38,10 @@ var finishCommands = []command{
 	{
 		Name:     "close",
 		Synopsis: "spx close <slug>",
-		Effect:   "Move an accepted started spec to done/ trimmed to a receipt and commit it.",
-		Rule:     "Normally not run by hand: `spx sweep` does it after the PR merges. Moves the spec to done/ as a receipt. Exits 3 without an `Accepted:` Log entry, a `pr:` and a `path:`.",
+		Effect:   "Move an accepted started spec, or an epic whose children are finished, to done/ trimmed to a receipt and commit it.",
+		Rule:     "Normally not run by hand: `spx sweep` does it after the PR merges. Moves the spec to done/ as a receipt. Exits 3 without an `Accepted:` Log entry, a `pr:` and a `path:`. On an epic (`type: epic`) run it only after the user said yes: it needs every child done or dropped and at least one done, moves the epic to done/ and logs `Closed: all children done or dropped`; otherwise it exits 3, naming the open children, or saying the epic has no done child and can be dropped with `spx drop`.",
 		Usage: "usage: spx close <slug>\n" +
-			"<slug> is a started spec in the current checkout's project, or <project>/<slug> from anywhere.",
+			"<slug> is a started spec, or an epic, in the current checkout's project, or <project>/<slug> from anywhere.",
 		Run: runClose,
 	},
 	{
@@ -164,6 +164,12 @@ func runClose(c command, args []string, e env) int {
 	v, spec, err := resolve(e, args[0])
 	if err != nil {
 		return report(e, err)
+	}
+	if spec.Type == ops.EpicType {
+		if err := ops.CloseEpic(v.root, v.all, spec, time.Now()); err != nil {
+			return report(e, err)
+		}
+		return ops.CodeOK
 	}
 	if err := ops.Close(v.root, spec); err != nil {
 		return report(e, err)
