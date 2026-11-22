@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -17,9 +18,10 @@ type depEntry struct {
 	notice string      // shown on enter when target is nil
 }
 
-// depEntries lists what s depends on, one entry per depends-on slug, and what it blocks: the
-// specs of its project whose depends-on holds its slug. Slugs match exactly and only within
-// the project, over the loaded specs then the done receipts; the first match wins.
+// depEntries lists what s depends on, one entry per depends-on reference, and what it blocks:
+// the loaded specs of any project whose depends-on names s. A reference is a slug of s's
+// project or `<project>/<slug>`; it matches exactly, over the loaded specs then the done
+// receipts, and the first match wins.
 func depEntries(s store.Spec, all, done []store.Spec) (depends, blocks []depEntry) {
 	pool := slices.Concat(all, done)
 	for i, slug := range s.DependsOn {
@@ -31,7 +33,7 @@ func depEntries(s store.Spec, all, done []store.Spec) (depends, blocks []depEntr
 			e.label = shown + " (not in store)"
 			e.notice = shown + " is not in the store"
 		default:
-			e.label = entryLabel(first)
+			e.label = entryLabelFrom(s, first)
 			if first.Status == store.Done {
 				e.notice = shown + " is done"
 			} else {
@@ -41,23 +43,40 @@ func depEntries(s store.Spec, all, done []store.Spec) (depends, blocks []depEntr
 		depends = append(depends, e)
 	}
 	for _, t := range all {
-		if t.Project != s.Project || t.Slug == s.Slug || t.Status == store.Dropped || !slices.Contains(t.DependsOn, s.Slug) {
+		if (t.Project == s.Project && t.Slug == s.Slug) || t.Status == store.Dropped || !dependsOn(t, s) {
 			continue
 		}
 		t := t
 		blocks = append(blocks, depEntry{
 			key:    "blk:" + t.Project + "/" + t.Slug,
-			label:  entryLabel(t),
+			label:  entryLabelFrom(s, t),
 			target: &t,
 		})
 	}
 	return depends, blocks
 }
 
-// resolveDep finds the spec a depends-on slug of s names: the first spec of s's project with
-// that slug in pool.
-func resolveDep(s store.Spec, pool []store.Spec, slug string) (store.Spec, bool) {
-	j := slices.IndexFunc(pool, func(t store.Spec) bool { return t.Project == s.Project && t.Slug == slug })
+// depTarget splits a depends-on reference of s into the project and slug it names: a bare
+// slug is s's project, `<project>/<slug>` that project. This is how `spx start` reads it.
+func depTarget(s store.Spec, ref string) (project, slug string) {
+	if p, sl, ok := strings.Cut(ref, "/"); ok {
+		return p, sl
+	}
+	return s.Project, ref
+}
+
+// dependsOn reports whether a depends-on reference of t names d.
+func dependsOn(t, d store.Spec) bool {
+	return slices.ContainsFunc(t.DependsOn, func(ref string) bool {
+		p, slug := depTarget(t, ref)
+		return p == d.Project && slug == d.Slug
+	})
+}
+
+// resolveDep finds the spec a depends-on reference of s names in pool.
+func resolveDep(s store.Spec, pool []store.Spec, ref string) (store.Spec, bool) {
+	project, slug := depTarget(s, ref)
+	j := slices.IndexFunc(pool, func(t store.Spec) bool { return t.Project == project && t.Slug == slug })
 	if j < 0 {
 		return store.Spec{}, false
 	}
@@ -77,6 +96,15 @@ func Ready(s store.Spec, all, done []store.Spec) bool {
 		}
 	}
 	return true
+}
+
+// entryLabelFrom labels t as an entry of from's detail pane: `<slug>  <title>  (<status>)`,
+// with the project before the slug when t is in another project.
+func entryLabelFrom(from, t store.Spec) string {
+	if t.Project != from.Project {
+		return printable(t.Project) + "/" + entryLabel(t)
+	}
+	return entryLabel(t)
 }
 
 func entryLabel(s store.Spec) string {
@@ -150,9 +178,12 @@ func (m *Model) jumpHighlight() (bool, tea.Cmd) {
 	return true, nil
 }
 
-// jump selects t. A spec the query or the status filter hides clears what hides it; a
+// jump selects t. A spec outside the scope's project clears the scope. A spec the query or the status filter hides clears what hides it; a
 // dropped one sets the dropped filter.
 func (m *Model) jump(t store.Spec) {
+	if m.scope != "" && t.Project != m.scope {
+		m.setScope("")
+	}
 	if m.attention {
 		m.jumpAttention(t)
 		return
