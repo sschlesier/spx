@@ -133,13 +133,14 @@ func depLines(depends, blocks []depEntry, hl string) []string {
 	return lines
 }
 
-// entries is the selected spec's Depends on entries, then its Blocks.
+// entries is the selected spec's Depends on entries, then its Blocks, then its Children.
 func (m Model) entries() []depEntry {
 	if len(m.specs) == 0 {
 		return nil
 	}
-	depends, blocks := depEntries(m.specs[m.cursor], m.all, m.done)
-	return slices.Concat(depends, blocks)
+	s := m.specs[m.cursor]
+	depends, blocks := depEntries(s, m.all, m.done)
+	return slices.Concat(depends, blocks, childEntries(s, m.all, m.done))
 }
 
 // cycleHighlight moves the highlight by dir through the entries, wrapping. Without a
