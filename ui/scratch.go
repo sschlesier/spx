@@ -276,7 +276,7 @@ func (m Model) scratchKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		case "y":
 			sc.mode = scratchEditing
 			return m, m.runSpx("reopen", sc, ref(sc.spec), reopenReason)
-		case "n", "esc", "ctrl+c":
+		case "n", "q", "esc", "ctrl+c":
 			m.sc = nil
 		}
 		return m, nil
@@ -302,7 +302,7 @@ func (m Model) scratchKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch k {
 	case "a":
 		return m.reviewWithClaude()
-	case "k", "esc", "ctrl+c":
+	case "k", "q", "esc", "ctrl+c":
 		return keep()
 	case "c":
 		switch sc.mode {

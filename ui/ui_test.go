@@ -357,13 +357,46 @@ func TestResizeKeepsDetailScroll(t *testing.T) {
 }
 
 func TestQuit(t *testing.T) {
-	for _, k := range []string{"q", "ctrl+c"} {
-		_, cmd := start(t, fixture(1), 120, 20).Update(keys[k])
-		if cmd == nil {
-			t.Fatalf("%s: no command", k)
+	screens := map[string]Model{
+		"list":      start(t, fixture(3), 120, 20),
+		"detail":    press(t, start(t, fixture(3), 120, 20), "enter"),
+		"board":     board(t, boardSpecs(), 120, 30),
+		"attention": press(t, start(t, fixture(3), 120, 30), "n"),
+	}
+	for name, m := range screens {
+		for _, k := range []string{"q", "ctrl+c"} {
+			_, cmd := m.Update(keys[k])
+			if cmd == nil {
+				t.Fatalf("%s %s: no command", name, k)
+			}
+			if _, ok := cmd().(tea.QuitMsg); !ok {
+				t.Errorf("%s %s: want tea.QuitMsg", name, k)
+			}
 		}
-		if _, ok := cmd().(tea.QuitMsg); !ok {
-			t.Errorf("%s: want tea.QuitMsg", k)
+	}
+}
+
+func TestScratchDialogsNeverQuit(t *testing.T) {
+	for _, mode := range []scratchMode{scratchReopen, scratchClears, scratchAmend, scratchReason} {
+		for _, k := range []string{"q", "ctrl+c"} {
+			m := start(t, fixture(1), 120, 20)
+			m.sc = &scratch{mode: mode, dir: t.TempDir()}
+			next, cmd := m.Update(keys[k])
+			if cmd != nil {
+				if _, ok := cmd().(tea.QuitMsg); ok {
+					t.Errorf("mode %v %s quit", mode, k)
+				}
+			}
+			got := next.(Model)
+			switch {
+			case mode == scratchReason && k == "q":
+				if got.sc == nil || got.sc.reason != "q" {
+					t.Errorf("q did not type into the reason")
+				}
+			case got.sc == nil:
+			default:
+				t.Errorf("mode %v %s: dialog still open", mode, k)
+			}
 		}
 	}
 }

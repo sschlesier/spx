@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -43,15 +42,16 @@ func TestHelpOpensInEveryView(t *testing.T) {
 	}
 }
 
-func TestHelpCtrlCQuitsAndQDoesNot(t *testing.T) {
-	m := press(t, start(t, fixture(3), 120, 30), "?")
-	if _, cmd := m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl}); cmd == nil {
-		t.Errorf("ctrl+c did not quit from the help popup")
-	} else if _, ok := cmd().(tea.QuitMsg); !ok {
-		t.Errorf("ctrl+c did not return a quit")
-	}
-	if _, cmd := m.Update(keys["q"]); cmd != nil {
-		t.Errorf("q returned a command from the help popup")
+func TestHelpQAndCtrlCCloseItWithoutQuitting(t *testing.T) {
+	for _, k := range []string{"q", "ctrl+c", "esc", "?"} {
+		m := press(t, start(t, fixture(3), 120, 30), "?")
+		next, cmd := m.Update(keys[k])
+		if cmd != nil {
+			t.Errorf("%s returned a command from the help popup", k)
+		}
+		if next.(Model).helping {
+			t.Errorf("%s did not close the help popup", k)
+		}
 	}
 }
 

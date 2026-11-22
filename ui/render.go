@@ -134,7 +134,7 @@ func (m Model) render() string {
 		help = helpOpenHelp
 	}
 	if m.picking {
-		help = "type to filter · ctrl+j/k move · enter apply · esc clear/cancel · ctrl+c quit"
+		help = "type to filter · ctrl+j/k move · enter apply · esc clear/cancel · ctrl+c close"
 	}
 	var lead, active []string
 	if m.unreadable {
