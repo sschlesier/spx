@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -62,7 +63,67 @@ func (m Model) advancePlan(s store.Spec) (*exec.Cmd, string) {
 	if err != nil || home == "" {
 		return nil, "repo not found: " + ops.RepoGuess(m.root, s.Project)
 	}
-	return claudeExec(repo, ref(s), prompt), ""
+	return claudeExec(sessionDir(repo, s), ref(s), prompt), ""
+}
+
+// sessionDir is where a session for s starts: for a started spec, the worktree of the repo that
+// has its logged branch checked out; otherwise the repo.
+func sessionDir(repo string, s store.Spec) string {
+	if s.Status != "started" {
+		return repo
+	}
+	branch := loggedBranch(s.Body)
+	if branch == "" {
+		return repo
+	}
+	if dir := worktreeOf(repo, branch); dir != "" {
+		return dir
+	}
+	return repo
+}
+
+// loggedBranch is the branch of the last "Started on branch" Log line of body, or "".
+func loggedBranch(body string) string {
+	const marker = ": Started on branch "
+	branch := ""
+	inLog := false
+	for _, line := range strings.Split(body, "\n") {
+		line = strings.TrimRight(line, " \t\r")
+		if strings.HasPrefix(line, "## ") {
+			inLog = line == "## Log"
+			continue
+		}
+		if !inLog || !strings.HasPrefix(line, "- ") {
+			continue
+		}
+		if i := strings.Index(line, marker); i >= 0 {
+			branch = strings.TrimSpace(line[i+len(marker):])
+		}
+	}
+	return branch
+}
+
+// worktreeOf is the path of the worktree of repo that has branch checked out, or "" when there
+// is none or git fails. It runs read-only `git worktree list`.
+func worktreeOf(repo, branch string) string {
+	out, err := exec.Command("git", "-C", repo, "worktree", "list", "--porcelain").Output()
+	if err != nil {
+		return ""
+	}
+	dir := ""
+	for _, line := range strings.Split(string(out), "\n") {
+		line = strings.TrimRight(line, "\r")
+		switch {
+		case strings.HasPrefix(line, "worktree "):
+			dir = strings.TrimPrefix(line, "worktree ")
+		case line == "branch refs/heads/"+branch:
+			if info, err := os.Stat(dir); err != nil || !info.IsDir() {
+				return ""
+			}
+			return dir
+		}
+	}
+	return ""
 }
 
 // advance suspends spx and starts Claude on the selected spec's next stage.
