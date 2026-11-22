@@ -22,7 +22,7 @@ Out of scope:
 ## Acceptance criteria
 
 - [x] A workflow file runs `govulncheck ./...` on pushes to main, on pull requests to main, and on a weekly `schedule`, and can be started by hand (`workflow_dispatch`).
-- [ ] The run fails (non-zero exit) when `govulncheck` reports a reachable vulnerability, and passes on current main.
+- [x] The run fails (non-zero exit) when `govulncheck` reports a reachable vulnerability, and passes on current main.
 - [x] `.github/dependabot.yml` configures the `gomod` and `github-actions` ecosystems at `/`, with a weekly schedule.
 - [x] Both files pass a YAML parse, and the workflow's Go version comes from `go.mod` like the existing workflows.
 - [x] `ci.yml`, `release.yml` and application code are unchanged.
