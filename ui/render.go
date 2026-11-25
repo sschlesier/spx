@@ -122,6 +122,8 @@ func (m Model) render() string {
 			fit(m.detail.View(), m.detail.Width(), m.bodyHeight()))
 	case m.detailOpen:
 		body = fit(m.detail.View(), m.width, m.bodyHeight())
+	case m.waves != nil:
+		body = fit(m.wavesView(), m.width, m.bodyHeight())
 	case m.board:
 		body = fit(m.boardView(), m.width, m.bodyHeight())
 	case m.attention:
@@ -159,6 +161,9 @@ func (m Model) render() string {
 	}
 	if len(active) > 0 {
 		lead = append(lead, fmt.Sprintf("%s · %d shown", strings.Join(active, " · "), len(m.specs)))
+	}
+	if m.waves != nil {
+		lead = m.wavesLead()
 	}
 	if m.typing {
 		return body + "\n" + ansi.Truncate(m.input.View(), m.width, "")

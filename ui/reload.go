@@ -133,7 +133,9 @@ func (m *Model) apply(specs, done []store.Spec) {
 	}
 	snap := m.snapshot()
 	m.all, m.done = specs, done
-	if m.attention {
+	if m.waves != nil {
+		m.reflowWaves()
+	} else if m.attention {
 		m.showAttention(m.visible(), snap)
 	} else {
 		m.show(m.visible(), m.cursor)

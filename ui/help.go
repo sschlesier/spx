@@ -17,10 +17,11 @@ const (
 	viewDetail
 	viewBoard
 	viewAttention
+	viewWaves
 )
 
 const (
-	allViews  = viewList | viewDetail | viewBoard | viewAttention
+	allViews  = viewList | viewDetail | viewBoard | viewAttention | viewWaves
 	listBoard = viewList | viewBoard | viewAttention
 )
 
@@ -58,6 +59,10 @@ var helpRows = []helpRow{
 	{viewList | viewDetail, "Move", "]/[", "next / previous dependency or child"},
 	{viewList, "Move", "enter", "open the spec, or jump to the highlighted dependency or child"},
 	{viewBoard, "Move", "enter", "open the spec"},
+	{viewWaves, "Move", "enter", "open the spec"},
+	{viewWaves, "Move", "h/l", "previous / next wave"},
+	{viewWaves, "Move", "j/k", "down / up in the wave"},
+	{viewWaves, "Move", "g/G", "top / bottom of the wave"},
 	{viewAttention, "Move", "enter", "fold or unfold a group, or open the spec"},
 	{viewDetail, "Move", "enter", "jump to the highlighted dependency or child"},
 
@@ -75,6 +80,8 @@ var helpRows = []helpRow{
 	{viewList, "View", "t", "tree"},
 	{viewList, "View", "b", "board"},
 	{viewList, "View", "n", "attention"},
+	{listBoard, "View", "w", "waves of an epic, or of the epic a child belongs to"},
+	{viewWaves, "View", "w/esc", "back"},
 	{viewBoard, "View", "b/esc", "back to the list"},
 	{viewAttention, "View", "n/esc", "back to the list"},
 	{viewDetail, "View", "esc", "back"},
@@ -88,6 +95,7 @@ const (
 	detailHelp    = "esc back · ]/[ deps · v view · e edit · y/Y copy · c advance · ? help"
 	attentionHelp = "n back · enter fold/open · v view · e edit · y/Y copy · c advance · p project · ? help"
 	boardHelp     = "h/l column · v view · e edit · y/Y copy · c advance · p project · ? help"
+	wavesHelp     = "h/l wave · j/k card · enter open · v view · e edit · y/Y copy · c advance · w back · ? help"
 
 	// helpOpenHelp is the footer while the help popup is open.
 	helpOpenHelp = "? or esc close"
@@ -98,6 +106,8 @@ func (m Model) helpView() helpView {
 	switch {
 	case m.detailOpen:
 		return viewDetail
+	case m.waves != nil:
+		return viewWaves
 	case m.attention:
 		return viewAttention
 	case m.board:
@@ -113,6 +123,8 @@ func (m Model) footerHints() string {
 		return detailHelp
 	case viewBoard:
 		return boardHelp
+	case viewWaves:
+		return wavesHelp
 	case viewAttention:
 		return attentionHelp
 	}

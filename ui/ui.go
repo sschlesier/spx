@@ -54,6 +54,7 @@ type Model struct {
 	tree          bool                 // list each spec under its parent
 	board         bool                 // draw one column per live status instead of the list
 	attention     bool                 // list only what waits on me, grouped by state, instead of the list
+	waves         *wavesState          // an epic's children in dependency waves instead of the list; nil when closed
 	flipped       [StateReady + 1]bool // per group, whether its fold differs from its default
 	sel           int                  // attention view: the selected line (see attLines)
 	aoff          int                  // attention view: first line shown
@@ -201,6 +202,9 @@ func (m Model) WithDone(done []store.Spec) Model {
 
 // visible is the listed rows: flat, or with each spec under its parent in tree mode.
 func (m Model) visible() []store.Spec {
+	if m.waves != nil {
+		return m.wavePlan().cards
+	}
 	rows := m.flat()
 	if m.board {
 		return boardRows(rows)
@@ -315,6 +319,10 @@ func (m *Model) setFilter(status string) {
 // show lists rows, keeping the selected spec (by project and slug) and its detail scroll.
 // When it's gone, row fallback is selected and its detail shows from the top.
 func (m *Model) show(rows []store.Spec, fallback int) {
+	if m.waves != nil {
+		m.reflowWaves()
+		return
+	}
 	if m.attention {
 		m.showAttention(rows, m.snapshot())
 		return
@@ -367,7 +375,9 @@ func (m *Model) selectRow(i int) {
 }
 
 // split reports the list-and-detail layout. The board and the attention view use the whole width, so it never splits.
-func (m Model) split() bool { return m.width >= SplitWidth && !m.board && !m.attention }
+func (m Model) split() bool {
+	return m.width >= SplitWidth && !m.board && !m.attention && m.waves == nil
+}
 
 func (m Model) detailVisible() bool { return m.split() || m.detailOpen }
 
@@ -395,6 +405,10 @@ func (m *Model) layout() {
 }
 
 func (m *Model) scrollList() {
+	if m.waves != nil {
+		m.scrollWaves()
+		return
+	}
 	if m.attention {
 		m.scrollAttention()
 		return
