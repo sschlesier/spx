@@ -6,7 +6,7 @@ priority: 2
 depends-on: [lay-out-an-epics-children-in-dependency-waves-with-the-critical-path]
 parent: improve-epics
 approved: "Scott Schlesier, 2026-11-25: Read-only spx epic <slug> text summary sharing the waves model; c on a live epic starts a planner session (repo or home) that proposes and writes only after my yes. Cold read: pass"
-status: in-review
+status: done
 ---
 
 `spx epic <slug>` prints an epic's state as plain text (progress, waves, critical path, next action), and `c` on an epic starts a Claude planning session that reads it and proposes the next move and missing pieces, so I can decide what's next with an agent that sees the whole epic.
@@ -61,3 +61,5 @@ Don't touch: the store-writing commands; the prompts for non-epic specs.
 - 2026-11-25: Assumption: an epic with only nested-epic children (no counted children) prints No children, then its Nested epics group
 - 2026-11-25: Status: in-review: implemented; ready for pr-review
 - 2026-11-25: Review round 1: added tests for the cycle: line and for a done child off the critical path; dropped a redundant Status check in SummarizeEpic (the critical path never holds done children)
+- 2026-11-25: Decision: c on an epic starts the planner in home for any spx repo error (user, round 1)
+- 2026-11-25: Status: done: Reviewed round 1: all criteria verified, no open decisions
