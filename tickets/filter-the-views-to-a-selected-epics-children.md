@@ -6,7 +6,7 @@ priority: 2
 depends-on: []
 parent: improve-epics
 approved: "Scott Schlesier, 2026-11-25: E on an epic or child scopes list/tree/board/attention to the epic and its live children across projects; esc/E/picker clear it; header epic: <ref>. Cold read: pass"
-status: in-review
+status: done
 ---
 
 Pressing `E` on an epic narrows the list, board, tree and attention views to that epic and its children in every project, so I can work inside one cross-project epic with the views I already use; pressing it again widens back.
@@ -60,3 +60,5 @@ Don't touch: the CLI and its status flags; `ui/state.go`.
 - 2026-11-25: Status: in-review
 - 2026-11-25: Decision: following a dependency or child link to a spec outside the epic scope clears the epic scope (as a jump out of a project scope does); the earlier project scope is not restored. Chosen by Scott, round 1
 - 2026-11-25: Review round 1 dismissed: setScope not clearing epicPrev is equivalent (toggleEpic overwrites it on the next E); esc discarding toggleEpic's Cmd is harmless (the clear path returns nil); the empty-message wording 'in epic: <ref>' is as the header reads
+- 2026-11-25: Decision: E on a dropped epic scopes to it; only a child whose parent epic is done or dropped gets 'not an epic'. Chosen by Scott, round 1
+- 2026-11-25: Status: done: Reviewed round 1: 11/11 criteria verified by named tests; two cold-verify rounds, mutation gaps closed with tests; two decisions logged
