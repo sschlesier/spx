@@ -11,12 +11,12 @@ the Claude session you start with `c` or `C` or from `e`'s review, by `e`'s scra
 
 - `main.go` - Entry point: resolves the store root, runs the UI
 - `cli.go` - Command table (name, synopsis, effect, guide rule, usage, handler) and dispatch
-- `cli_epic.go` - The `adopt` and `detach` entries and handlers (an epic's close is in `cli_finish.go`)
+- `cli_epic.go` - The `adopt`, `detach` and `epic` entries and handlers (an epic's close is in `cli_finish.go`)
 - `cli_finish.go` - The `place`, `accept`, `close` and `sweep` entries and handlers (the sweep core is `sweep`)
 - `guide.go` - `spx help`: the store guide (`--skill`), generated from the command table
 - `ops/` - Store-writing operations: exit codes, spec resolution, line-level edits, git commit with rollback
 - `store/` - Store discovery, frontmatter parsing, sorting (read-only)
-- `ui/` - Bubble Tea model: list pane, detail pane, key handling (`ui.go` model and list state, `children.go` an epic's Children section, progress header and next action, `attention.go` the attention view (`n`): specs grouped by state with folds, a peek strip and its keys, `epic.go` the epic scope (`E`): the views narrowed to an epic and its children, `waves.go` and `waves_plan.go` the waves view (`w`): an epic's children in dependency-wave columns, the critical path and the chain lengths `Next:` picks by, `reload.go` store reloads, `keys.go` key handlers, `picker.go` project popup, `render.go` drawing, `state.go` whose turn a spec is: the list glyph and detail state line)
+- `ui/` - Bubble Tea model: list pane, detail pane, key handling (`ui.go` model and list state, `children.go` an epic's Children section, progress header and next action, `attention.go` the attention view (`n`): specs grouped by state with folds, a peek strip and its keys, `epic.go` the epic scope (`E`): the views narrowed to an epic and its children, `epic_summary.go` the epic's summary that `spx epic` prints, `waves.go` and `waves_plan.go` the waves view (`w`): an epic's children in dependency-wave columns, the critical path and the chain lengths `Next:` picks by, `reload.go` store reloads, `keys.go` key handlers, `picker.go` project popup, `render.go` drawing, `state.go` whose turn a spec is: the list glyph and detail state line)
 - `tickets/` - Specs for work in this repo
 - `.github/workflows/` - CI
 
@@ -67,6 +67,7 @@ Invariants:
 - The CLI is `spx [-d] [-a] [-s] [-r] [project]` (`spx --version` alone prints `spx <version>`) and
   the commands `spx log <slug> "<text>"`, `spx new <project> <file>`, `spx edit <slug> <file> [--base <rev>]`,
   `spx rev <slug>` (read-only: prints the spec's revision, starts no process),
+  `spx epic <slug>` (read-only: prints an epic's progress, waves, critical path and next action as text; like `rev`, its only process is the startup `git rev-parse`, and it writes nothing, runs no git in the store and no `gh`),
   `spx approve <slug> "<one line>" [--cold-read <result>]`, `spx start <slug> --branch <name>`, `spx send-back <slug> "<questions>"`,
   `spx drop <slug> "<why>"`, `spx reopen <slug> "<why>"`, `spx status <slug> <in-progress|in-review|done> ["<note>"]`,
   `spx check <slug> <n>... [--uncheck]`, `spx amend <slug> <file> "<reason>" [--base <rev>]`,
@@ -82,7 +83,7 @@ Invariants:
   `git rev-parse` at startup, to scope to the current repo's project; `git` in the store root
   for the commands other than `rev`, including `git push <remote> main` after each commit; `gh pr view <url> --json state` (read-only) for `spx sweep`, which `spx start` also
   runs first (a gh failure only warns there); the editor on `v` (a read-only copy), `e` (a scratch copy) and `C` (the prompt);
-  this binary's `spx edit`, `spx amend` and `spx reopen` after `e`; `claude --name <project>/<slug>` on `c`, in the project's repo (for a started spec, the worktree of that repo with its logged branch checked out, found by a read-only `git worktree list --porcelain` run in the repo), with the prompt for the spec's stage (on `C`, the prompt as the user edited it in the editor, from a scratch file in a temporary directory that is removed afterwards), and on `a` after `e`, with a prompt to review the edit; and one clipboard tool (pbcopy, wl-copy or xclip) on `y`/`Y`. In a project repo a command
+  this binary's `spx edit`, `spx amend` and `spx reopen` after `e`; `claude --name <project>/<slug>` on `c`, in the project's repo, or for an epic that is a draft, approved or started, the repo when `spx repo` finds one and else the home directory (for a started spec, the worktree of that repo with its logged branch checked out, found by a read-only `git worktree list --porcelain` run in the repo), with the prompt for the spec's stage (for an epic, a planning prompt that runs `spx epic` first and makes store changes only after the user agrees; on `C`, the prompt as the user edited it in the editor, from a scratch file in a temporary directory that is removed afterwards), and on `a` after `e`, with a prompt to review the edit; and one clipboard tool (pbcopy, wl-copy or xclip) on `y`/`Y`. In a project repo a command
   runs only read-only `git rev-parse` (`place` and `accept` to find the checkout's top-level) and, on `c`, `git worktree list`,
   never a git command that writes; `place --dir` runs no git in the repo. `accept` also reads the
   repo's copy of the spec (and AGENTS.md or CLAUDE.md for the ticket folder) without writing.
