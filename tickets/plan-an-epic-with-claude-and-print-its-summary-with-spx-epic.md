@@ -30,7 +30,7 @@ Out of scope:
 - [x] `c` on a draft, approved or started epic starts `claude --name <project>/<slug>` with the planning prompt: plan the epic, its store copy path, run `spx epic <project>/<slug>` first, report where it stands, propose the next move and any missing children, missing or wrong `depends-on` links and children too big for one PR, and make store changes (`spx new`, `adopt`, `detach`, `edit`) only after I agree, following the spec-review skill for any new child. It ends with the session name sentence as other prompts do.
 - [x] The planning session starts in the epic's project repo when `spx repo` finds one, otherwise in my home directory; `c` on an epic never shows `repo not found`.
 - [x] `c` on any spec that is not an epic behaves exactly as today.
-- [ ] The review profile in `CLAUDE.md` lists `spx epic` among the read-only commands and the planner session among the processes `c` starts.
+- [x] The review profile in `CLAUDE.md` lists `spx epic` among the read-only commands and the planner session among the processes `c` starts.
 
 ## Verification
 
