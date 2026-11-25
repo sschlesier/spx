@@ -233,6 +233,94 @@ func TestEpicTreeBoardAttentionApplyWithin(t *testing.T) {
 	}
 }
 
+func TestEpicFirstWhenSecondInStoreOrder(t *testing.T) {
+	all := scopeFixture()
+	// store order: c-a, ep, ...
+	i := slices.IndexFunc(all, func(s store.Spec) bool { return s.Slug == "ep" })
+	all[1], all[i] = all[i], all[1]
+	m, _ := pressE(t, selectSlug(t, scopeModelOf(t, all, ""), "ep"))
+	if got := listed(m); got[0] != "ep" {
+		t.Errorf("listed %v", got)
+	}
+}
+
+func TestEpicFirstUnderQueryWhenChildrenRankHigher(t *testing.T) {
+	all := scopeFixture()
+	for i := range all {
+		switch all[i].Slug {
+		case "ep":
+			all[i].Title = "An epic that mentions quarry late"
+		case "c-a", "c-b":
+			all[i].Title = "quarry " + all[i].Slug
+		}
+	}
+	m, _ := pressE(t, selectSlug(t, scopeModelOf(t, all, ""), "ep"))
+	m = press(t, typed(t, press(t, m, "/"), "quarry"), "enter")
+	got := listed(m)
+	if len(got) != 3 || got[0] != "ep" {
+		t.Errorf("listed %v", got)
+	}
+}
+
+func TestEpicJumpOutsideTheScopeClearsIt(t *testing.T) {
+	m, _ := pressE(t, selectSlug(t, scopeModel(t, ""), "ep"))
+	var target store.Spec
+	for _, s := range m.all {
+		if s.Slug == "o-a" {
+			target = s
+		}
+	}
+	m.jump(target)
+	if m.epic != nil || selected(m) != "o-a" {
+		t.Errorf("epic %v selected %s", m.epic, selected(m))
+	}
+	// a target inside the scope keeps it
+	m, _ = pressE(t, selectSlug(t, scopeModel(t, ""), "ep"))
+	for _, s := range m.all {
+		if s.Slug == "c-b" {
+			target = s
+		}
+	}
+	m.jump(target)
+	if m.epic == nil || selected(m) != "c-b" {
+		t.Errorf("epic %v selected %s", m.epic, selected(m))
+	}
+}
+
+func TestEpicEmptyMessages(t *testing.T) {
+	m, _ := pressE(t, selectSlug(t, scopeModel(t, ""), "ep"))
+	m2, _ := pressE(t, selectSlug(t, scopeModel(t, ""), "ep2"))
+	if got := screen(press(t, m2, "s")); !strings.Contains(got, "No started specs in epic: epics/ep2") {
+		t.Errorf("filter: %q", got)
+	}
+	if got := screen(press(t, typed(t, press(t, m, "/"), "zzzz"), "enter")); !strings.Contains(got, `No specs match "zzzz" in epic: epics/ep`) {
+		t.Errorf("query: %q", got)
+	}
+	var rest []store.Spec
+	for _, s := range scopeFixture() {
+		if s.Slug != "ep" && s.Slug != "c-a" && s.Slug != "c-b" && s.Slug != "c-x" {
+			rest = append(rest, s)
+		}
+	}
+	m = send(t, m, loadedMsg{seq: m.applied + 1, specs: rest})
+	if got := screen(m); !strings.Contains(got, "No specs in epic: epics/ep") {
+		t.Errorf("empty: %q", got)
+	}
+}
+
+func TestEpicKeepsStoreOrderInItsAttentionGroup(t *testing.T) {
+	all := scopeFixture()
+	i := slices.IndexFunc(all, func(s store.Spec) bool { return s.Slug == "ep2" })
+	j := slices.IndexFunc(all, func(s store.Spec) bool { return s.Slug == "c2" })
+	all[i], all[j] = all[j], all[i] // c2 before ep2, both drafts
+	m := selectSlug(t, scopeModelOf(t, all, ""), "ep2")
+	m, _ = pressE(t, m)
+	att := press(t, m, "n")
+	if got := listed(att); !reflect.DeepEqual(got, []string{"c2", "ep2"}) {
+		t.Errorf("attention order %v", got)
+	}
+}
+
 func TestEpicSitsByStatusInBoardNotFirst(t *testing.T) {
 	all := scopeFixture()
 	for i := range all {

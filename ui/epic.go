@@ -14,7 +14,7 @@ type epicRef struct{ project, slug string }
 
 func (e epicRef) String() string { return e.project + "/" + e.slug }
 
-// inEpic reports whether s is the epic or one of its direct children.
+// has reports whether s is the epic or one of its direct children.
 func (e epicRef) has(s store.Spec) bool {
 	if s.Project == e.project && s.Slug == e.slug {
 		return true
