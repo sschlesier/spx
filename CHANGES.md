@@ -1,8 +1,18 @@
 # Changelog
 
-## Unreleased
+## 2.0.0
 
-- Make the `?` help popup scroll (`j`/`k`, `ctrl+d`/`ctrl+u`, `g`/`G`) when it is taller than the terminal, with an `n/m` position line; only `ctrl+c` quits from it
+- Add the attention view (`n`): specs that need you, grouped by state with folds and a peek strip
+- Show who has the ball as a state glyph in the list, and each row's acceptance-criteria progress; add a progress bar and the remaining criteria to the detail header
+- Add `spx adopt`, `spx detach` and `spx close` for epics; show an epic's children, progress and next action in the detail pane
+- Add the waves view (`w`) and the epic scope (`E`); `Next:` picks by longest remaining chain
+- List every spec under its parent, with parents pulled in as dimmed context rows
+- Add `C` to edit the advance prompt in $EDITOR before starting Claude; `c` starts in a started spec's worktree, names the session after the spec, and points approved and in-progress prompts at the implement-spec skill
+- Resolve project-qualified `depends-on` in the detail pane and readiness
+- Show a started spec's status value in the state line and in `spx -s`
+- Show what is displayed on the top line and keep the footer for key hints
+- Make `ctrl+c` do what `esc` does in every modal; `q` is never special
+- Make the `?` help popup scroll (`j`/`k`, `ctrl+d`/`ctrl+u`, `g`/`G`) when it is taller than the terminal, with an `n/m` position line
 
 ## 1.2.0
 
