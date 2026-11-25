@@ -51,3 +51,4 @@ Don't touch: key handling, the store, the CLI.
 - 2026-11-25: Started on branch top-line-footer-hints
 - 2026-11-25: Assumed: no separate tree view exists, so the top line names only board, attention and waves; waves omit the status filter as before.
 - 2026-11-25: Status: in-review
+- 2026-11-25: Review round 1: fixed a one-column overflow when the top line's right part fills the width; added boundary, narrow detail, epic, waves-filter and empty-board tests. Dismissed: waves count uses the same N shown as the list in that scope.
