@@ -1,6 +1,7 @@
 package ui
 
 import (
+	tea "charm.land/bubbletea/v2"
 	"strings"
 	"testing"
 
@@ -68,6 +69,59 @@ func TestTopLineNamesTheViewAndTheDetailKeepsIt(t *testing.T) {
 	} {
 		if got := top(topLineViews(t, 200, 20)[name]); !strings.HasPrefix(got, want) {
 			t.Errorf("%s: top line %q, want prefix %q", name, got, want)
+		}
+	}
+}
+
+func TestTopLineNeverExceedsTheWidth(t *testing.T) {
+	for _, w := range []int{4, 8, 12, 20, 30, 38, 39, 40, 41, 60} {
+		for name, m := range topLineViews(t, w, 20) {
+			if name == "detail" {
+				continue
+			}
+			if got := ansi.StringWidth(strings.Split(screen(m), "\n")[0]); got > w {
+				t.Errorf("%s at %d columns: top line is %d wide", name, w, got)
+			}
+		}
+	}
+}
+
+func TestNarrowDetailKeepsTheTopLineAndHeight(t *testing.T) {
+	m := press(t, start(t, mixed(), 40, 20), "enter")
+	if !m.detailOpen {
+		t.Skip("detail did not open at this width")
+	}
+	lines := strings.Split(screen(m), "\n")
+	if len(lines) != 20 || ansi.StringWidth(lines[0]) > 40 || !strings.HasSuffix(strings.TrimRight(lines[0], " "), "shown") {
+		t.Errorf("%d rows, top line %q", len(lines), lines[0])
+	}
+}
+
+func TestWavesTopLineOmitsTheStatusFilter(t *testing.T) {
+	m := wavesModel(t, 200, 14)
+	m.filter = "draft"
+	if l := top(m); strings.Contains(l, "draft") {
+		t.Errorf("waves top line %q names the filter", l)
+	}
+}
+
+func TestEmptyBoardHasNoColumnPosition(t *testing.T) {
+	m := board(t, boardSpecs(), 60, 20)
+	m = typed(t, press(t, m, "/"), "no-such-spec")
+	m = press(t, m, "enter")
+	if l := top(m); strings.Contains(l, "col ") || !strings.HasSuffix(l, "0 shown") {
+		t.Errorf("empty board top line %q", l)
+	}
+}
+
+func TestEpicScopeTopLineAtNarrowWidths(t *testing.T) {
+	for _, w := range []int{120, 50} {
+		m := selectSlug(t, scopeModel(t, ""), "ep")
+		m = send(t, m, tea.WindowSizeMsg{Width: w, Height: 20})
+		m, _ = pressE(t, m)
+		lines := strings.Split(screen(m), "\n")
+		if len(lines) != 20 || !strings.HasPrefix(lines[0], "epic: epics/ep") || ansi.StringWidth(lines[0]) > w {
+			t.Errorf("width %d: %d rows, top line %q", w, len(lines), lines[0])
 		}
 	}
 }

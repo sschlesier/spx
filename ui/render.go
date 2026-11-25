@@ -200,7 +200,7 @@ func (m Model) topLine() string {
 	if ansi.StringWidth(l)+1+rw > m.width {
 		l = ansi.Truncate(l, max(0, m.width-rw-1), "…")
 	}
-	gap := max(1, m.width-ansi.StringWidth(l)-rw)
+	gap := max(0, m.width-ansi.StringWidth(l)-rw)
 	return dimStyle.Render(l + strings.Repeat(" ", gap) + r)
 }
 
