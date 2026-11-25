@@ -70,3 +70,5 @@ Don't touch: `ui/state.go`, `ui/deps.go` readiness rules, the CLI.
 - 2026-11-25: Started on branch waves-view
 - 2026-11-25: Assumed: an epic with only nested-epic children shows them in NESTED EPICS (No children only when there are no cards); cycle line arrows run dependency first, as the critical path does
 - 2026-11-25: Status: in-review: Waves view implemented; vet and race tests pass
+- 2026-11-25: Review round 1: dismissed two equivalent mutants (waves_plan.go wave-column !affected filter, since affected children have wave 0; the not-done guard before the diamond, since done children never reach the path) and one false code-review finding (a bare arrow when waitingOn is empty; it falls back to 'its dependencies')
+- 2026-11-25: Review round 1: a dependency jump from the waves detail now selects the card when the target is in the epic, else shows a notice, instead of clearing query, filter or scope
