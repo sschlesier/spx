@@ -72,7 +72,7 @@ func SummarizeEpic(epic store.Spec, all, done []store.Spec) EpicSummary {
 				Project: printable(c.Project),
 				Slug:    printable(c.Slug),
 				Title:   printable(c.Title),
-				OnPath:  p.onPath[ref(c)] && c.Status != store.Done,
+				OnPath:  p.onPath[ref(c)],
 			}
 			if b == bucketBlocked {
 				sc.WaitsOn = waitingOn(c, all, done)

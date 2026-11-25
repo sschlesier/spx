@@ -134,3 +134,25 @@ func TestEpicDoneAndEmpty(t *testing.T) {
 		t.Errorf("empty epic: code=%d stdout=%q", r.code, r.stdout)
 	}
 }
+
+func TestEpicPrintsACycle(t *testing.T) {
+	root := gitStore(t)
+	commitFile(t, root, "p/approved/big.md", specFile("Big", "type: epic\n"))
+	commitFile(t, root, "p/approved/one.md", specFile("One", "parent: big\ndepends-on: [two]\n"))
+	commitFile(t, root, "p/approved/two.md", specFile("Two", "parent: big\ndepends-on: [one]\n"))
+	r := runCLI(t, t.TempDir(), "epic", "p/big")
+	if r.code != 0 || !strings.Contains(r.stdout, "\ncycle: p/one → p/two → p/one\n") || !strings.Contains(r.stdout, "\nCycle\n  blocked  p/one  One") {
+		t.Errorf("code=%d stdout:\n%s", r.code, r.stdout)
+	}
+}
+
+func TestEpicDoneChildIsNeverOnTheCriticalPath(t *testing.T) {
+	root := gitStore(t)
+	commitFile(t, root, "p/approved/big.md", specFile("Big", "type: epic\n"))
+	commitFile(t, root, "p/done/fin.md", specFile("Fin", "parent: big\n"))
+	commitFile(t, root, "p/approved/next.md", specFile("Next", "parent: big\ndepends-on: [fin]\n"))
+	r := runCLI(t, t.TempDir(), "epic", "p/big")
+	if r.code != 0 || strings.Contains(r.stdout, "fin  Fin  (critical path)") || !strings.Contains(r.stdout, "ready  p/next  Next  (critical path)") {
+		t.Errorf("code=%d stdout:\n%s", r.code, r.stdout)
+	}
+}
