@@ -16,7 +16,7 @@ the Claude session you start with `c` or from `e`'s review, by `e`'s scratch cop
 - `guide.go` - `spx help`: the store guide (`--skill`), generated from the command table
 - `ops/` - Store-writing operations: exit codes, spec resolution, line-level edits, git commit with rollback
 - `store/` - Store discovery, frontmatter parsing, sorting (read-only)
-- `ui/` - Bubble Tea model: list pane, detail pane, key handling (`ui.go` model and list state, `children.go` an epic's Children section, progress header and next action, `attention.go` the attention view (`n`): specs grouped by state with folds, a peek strip and its keys, `reload.go` store reloads, `keys.go` key handlers, `picker.go` project popup, `render.go` drawing, `state.go` whose turn a spec is: the list glyph and detail state line)
+- `ui/` - Bubble Tea model: list pane, detail pane, key handling (`ui.go` model and list state, `children.go` an epic's Children section, progress header and next action, `attention.go` the attention view (`n`): specs grouped by state with folds, a peek strip and its keys, `waves.go` and `waves_plan.go` the waves view (`w`): an epic's children in dependency-wave columns, the critical path and the chain lengths `Next:` picks by, `reload.go` store reloads, `keys.go` key handlers, `picker.go` project popup, `render.go` drawing, `state.go` whose turn a spec is: the list glyph and detail state line)
 - `tickets/` - Specs for work in this repo
 - `.github/workflows/` - CI
 

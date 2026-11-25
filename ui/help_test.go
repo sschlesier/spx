@@ -272,7 +272,8 @@ func TestHelpCoversEveryKey(t *testing.T) {
 	}
 	board := caseKeys(funcDecl(t, "board.go", "boardKey"))
 	attention := caseKeys(funcDecl(t, "attention.go", "attentionKey"))
-	for name, ks := range map[string][]string{"global": global, "list": list, "detail": detail, "board": board, "attention": attention} {
+	waves := caseKeys(funcDecl(t, "waves.go", "wavesKey"))
+	for name, ks := range map[string][]string{"global": global, "list": list, "detail": detail, "board": board, "attention": attention, "waves": waves} {
 		if len(ks) == 0 {
 			t.Fatalf("found no %s keys in the handlers; the test no longer matches their shape", name)
 		}
@@ -302,6 +303,8 @@ func TestHelpCoversEveryKey(t *testing.T) {
 	check(viewBoard, "board", board, boardNoop)
 	check(viewAttention, "global", global, boardNone)
 	check(viewAttention, "attention", attention, boardNoop)
+	check(viewWaves, "global", global, boardNone)
+	check(viewWaves, "waves", waves, nil)
 
 	// The table has no row for a view it cannot be opened in.
 	for _, r := range helpRows {
