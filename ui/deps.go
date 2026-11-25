@@ -175,6 +175,17 @@ func (m *Model) jumpHighlight() (bool, tea.Cmd) {
 	if e.target == nil {
 		return true, m.setNotice(e.notice)
 	}
+	if m.waves != nil {
+		i := find(m.specs, *e.target)
+		if i < 0 {
+			return true, m.setNotice(printable(ref(*e.target)) + " is not in this epic")
+		}
+		m.cursor, m.hl = i, ""
+		m.scrollWaves()
+		m.renderDetail()
+		m.detail.GotoTop()
+		return true, nil
+	}
 	m.jump(*e.target)
 	return true, nil
 }
