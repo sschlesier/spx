@@ -298,18 +298,12 @@ func (p wavePlan) colOf(i int) int {
 
 // headLines is the view's heading: the epic and its progress, then the critical path and a
 // cycle when there are any. indicator is right-aligned on the first line.
-func (p wavePlan) headLines(width int, indicator string) []string {
+func (p wavePlan) headLines(width int) []string {
 	first := titleStyle.Render(printable(p.epic.Title)) + " · " + printable(ref(p.epic)) + fmt.Sprintf(" · %d/%d done", p.done, p.total)
 	if p.pathLen > 0 {
 		first += fmt.Sprintf(" · critical path %d to go", p.pathLen)
 	}
-	if indicator != "" {
-		w := ansi.StringWidth(indicator)
-		first = ansi.Truncate(first, max(1, width-w-1), "…")
-		first += strings.Repeat(" ", max(1, width-ansi.StringWidth(first)-w)) + indicator
-	} else {
-		first = ansi.Truncate(first, width, "…")
-	}
+	first = ansi.Truncate(first, width, "…")
 	lines := []string{first}
 	if p.pathLen > 0 {
 		lines = append(lines, ansi.Truncate("Critical path: "+strings.Join(p.pathRefs, " → "), width, "…"))

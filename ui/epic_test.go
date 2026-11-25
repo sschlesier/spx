@@ -67,8 +67,8 @@ func TestEpicScopesToEpicAndChildrenAcrossProjects(t *testing.T) {
 	if got := listed(m); !reflect.DeepEqual(got, []string{"ep", "c-a", "c-b"}) {
 		t.Fatalf("listed %v", got)
 	}
-	if f := footer(m); !strings.HasPrefix(f, "epic: epics/ep · ") {
-		t.Errorf("footer %q", f)
+	if f := top(m); !strings.HasPrefix(f, "epic: epics/ep") {
+		t.Errorf("top line %q", f)
 	}
 }
 
@@ -393,8 +393,8 @@ func TestEpicReload(t *testing.T) {
 	if m.epic == nil || !reflect.DeepEqual(listed(m), []string{"o-a", "c-b"}) {
 		t.Fatalf("epic gone: epic %v listed %v", m.epic, listed(m))
 	}
-	if !strings.Contains(footer(m), "epic: epics/ep") {
-		t.Errorf("footer %q", footer(m))
+	if !strings.Contains(top(m), "epic: epics/ep") {
+		t.Errorf("top line %q", top(m))
 	}
 }
 

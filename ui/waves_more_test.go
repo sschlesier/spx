@@ -83,7 +83,7 @@ func TestWavesCardWaitsOnTextFitsOrShortens(t *testing.T) {
 
 func TestWavesHeaderIndicatorEndsAtTheLastCell(t *testing.T) {
 	m := wavesModel(t, 60, 12)
-	if l := strings.Split(screen(m), "\n")[0]; !strings.HasSuffix(l, "wave 1/5") || len([]rune(l)) != 60 {
+	if l := strings.Split(screen(m), "\n")[0]; !strings.HasSuffix(l, "wave 1/5 · 8 shown") || len([]rune(l)) != 60 {
 		t.Errorf("header %q", l)
 	}
 }

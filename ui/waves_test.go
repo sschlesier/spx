@@ -140,8 +140,8 @@ func TestNextPicksTheLongerChainWithinATier(t *testing.T) {
 	if got := m.specs[m.cursor].Slug; got != "long" {
 		t.Errorf("opened on %q, want long", got)
 	}
-	if !strings.Contains(footer(m), "Next: start p/long (+1 more)") {
-		t.Errorf("footer %q", footer(m))
+	if !strings.Contains(top(m), "Next: start p/long (+1 more)") || strings.Contains(footer(m), "Next:") {
+		t.Errorf("top line %q, footer %q", top(m), footer(m))
 	}
 }
 
@@ -399,14 +399,17 @@ func wavesModel(t *testing.T, w, h int) Model {
 }
 
 func TestWavesRenderedWide(t *testing.T) {
-	m := wavesModel(t, 200, 12)
+	m := wavesModel(t, 200, 14)
 	pad := func(cells ...string) string {
 		for i, c := range cells {
 			cells[i] = c + strings.Repeat(" ", 39-len([]rune(c)))
 		}
 		return strings.Join(cells, "│")
 	}
+	const topRight = "Next: start a/base · 8 shown"
 	want := []string{
+		"all projects › waves" + strings.Repeat(" ", 200-len([]rune("all projects › waves"))-len([]rune(topRight))) + topRight,
+		strings.Repeat("─", 200),
 		"Title e · a/e · 1/8 done · critical path 3 to go",
 		"Critical path: a/base → b/api → c/ui",
 		"cycle: b/cyc1 → b/cyc2 → b/cyc1",
@@ -424,7 +427,7 @@ func TestWavesRenderedWide(t *testing.T) {
 			t.Errorf("line %d:\n got %q\nwant %q", i, got[i], w)
 		}
 	}
-	if f := footer(m); !strings.HasPrefix(f, "Next: start a/base · h/l wave") || !strings.HasSuffix(strings.TrimSpace(f), "? help") {
+	if f := footer(m); !strings.HasPrefix(f, "h/l wave") || !strings.HasSuffix(strings.TrimSpace(f), "? help") {
 		t.Errorf("footer %q", f)
 	}
 }
@@ -433,8 +436,8 @@ func TestWavesRenderedNarrowWindowsColumns(t *testing.T) {
 	m := wavesModel(t, 60, 12)
 	out := screen(m)
 	lines := strings.Split(out, "\n")
-	if !strings.HasSuffix(strings.TrimRight(lines[0], " "), "wave 1/5") {
-		t.Errorf("header %q lacks the wave indicator", lines[0])
+	if !strings.HasSuffix(strings.TrimRight(lines[0], " "), "wave 1/5 · 8 shown") {
+		t.Errorf("top line %q lacks the wave indicator", lines[0])
 	}
 	if !strings.Contains(out, "WAVE 1 · 0/1") || !strings.Contains(out, "WAVE 2 · 1/3") || strings.Contains(out, "WAVE 3") {
 		t.Errorf("window should hold waves 1 and 2:\n%s", out)
@@ -448,8 +451,8 @@ func TestWavesRenderedNarrowWindowsColumns(t *testing.T) {
 	if out := screen(m); !strings.Contains(out, "wave 3/5") || !strings.Contains(out, "WAVE 3") || strings.Contains(out, "WAVE 1") {
 		t.Errorf("window should centre on wave 3:\n%s", out)
 	}
-	if f := footer(m); !strings.HasPrefix(f, "Next:") {
-		t.Errorf("footer %q", f)
+	if f := top(m); !strings.Contains(f, "Next:") || !strings.Contains(f, "wave 3/5") {
+		t.Errorf("top line %q", f)
 	}
 	// The wide view doesn't show the indicator.
 	if strings.Contains(screen(wavesModel(t, 200, 12)), "wave 1/") {

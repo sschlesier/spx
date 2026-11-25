@@ -30,15 +30,15 @@ func runCLI(t *testing.T, dir string, args ...string) result {
 	return r
 }
 
-// footer is the last line of the started model's screen.
-func footer(t *testing.T, m tea.Model) string {
+// topLine is the first line of the started model's screen.
+func topLine(t *testing.T, m tea.Model) string {
 	t.Helper()
 	if m == nil {
 		t.Fatal("the UI did not start")
 	}
 	next, _ := m.Update(tea.WindowSizeMsg{Width: 140, Height: 20})
 	lines := strings.Split(ansi.Strip(next.View().Content), "\n")
-	return strings.TrimRight(lines[len(lines)-1], " ")
+	return strings.TrimRight(lines[0], " ")
 }
 
 // store makes a spec store holding one empty folder per project and points spx at it.
@@ -140,8 +140,8 @@ func TestProjectArgumentScopesTheList(t *testing.T) {
 	if r.code != 0 {
 		t.Fatalf("code=%d stderr=%q", r.code, r.stderr)
 	}
-	if f := footer(t, r.model); !strings.HasPrefix(f, "beta · ") {
-		t.Fatalf("footer %q", f)
+	if f := topLine(t, r.model); !strings.HasPrefix(f, "beta") {
+		t.Fatalf("top line %q", f)
 	}
 }
 
@@ -195,8 +195,8 @@ func TestRepoScopesTheListFromACheckoutAndAWorktree(t *testing.T) {
 	}
 	for _, dir := range []string{main, sub, worktree} {
 		r := runCLI(t, dir)
-		if f := footer(t, r.model); !strings.HasPrefix(f, "alpha · ") {
-			t.Errorf("from %s: footer %q", dir, f)
+		if f := topLine(t, r.model); !strings.HasPrefix(f, "alpha") {
+			t.Errorf("from %s: top line %q", dir, f)
 		}
 	}
 }
@@ -205,8 +205,8 @@ func TestRepoWithoutAProjectListsEverything(t *testing.T) {
 	main, _ := repo(t, "unrelated")
 	makeStore(t, "alpha", "beta")
 	r := runCLI(t, main)
-	if f := footer(t, r.model); !strings.HasPrefix(f, "all projects · ") {
-		t.Fatalf("footer %q", f)
+	if f := topLine(t, r.model); !strings.HasPrefix(f, "all projects") {
+		t.Fatalf("top line %q", f)
 	}
 }
 
@@ -215,8 +215,8 @@ func TestOutsideAnyRepoListsEverything(t *testing.T) {
 	t.Setenv("GIT_CEILING_DIRECTORIES", filepath.Dir(dir))
 	makeStore(t, "alpha")
 	r := runCLI(t, dir)
-	if f := footer(t, r.model); !strings.HasPrefix(f, "all projects · ") {
-		t.Fatalf("footer %q", f)
+	if f := topLine(t, r.model); !strings.HasPrefix(f, "all projects") {
+		t.Fatalf("top line %q", f)
 	}
 }
 
@@ -228,8 +228,8 @@ func TestWithoutGitOnThePathListsEverything(t *testing.T) {
 	if r.code != 0 {
 		t.Fatalf("code=%d stderr=%q", r.code, r.stderr)
 	}
-	if f := footer(t, r.model); !strings.HasPrefix(f, "all projects · ") {
-		t.Fatalf("footer %q", f)
+	if f := topLine(t, r.model); !strings.HasPrefix(f, "all projects") {
+		t.Fatalf("top line %q", f)
 	}
 }
 
@@ -237,8 +237,8 @@ func TestExplicitArgumentBeatsTheRepo(t *testing.T) {
 	main, _ := repo(t, "alpha")
 	makeStore(t, "alpha", "beta")
 	r := runCLI(t, main, "beta")
-	if f := footer(t, r.model); !strings.HasPrefix(f, "beta · ") {
-		t.Fatalf("footer %q", f)
+	if f := topLine(t, r.model); !strings.HasPrefix(f, "beta") {
+		t.Fatalf("top line %q", f)
 	}
 }
 

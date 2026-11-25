@@ -138,42 +138,18 @@ func (m Model) render() string {
 	if m.picking {
 		help = "type to filter · ctrl+j/k move · enter apply · esc clear/cancel"
 	}
-	var lead, active []string
-	if m.unreadable {
-		lead = append(lead, "store unreadable: "+m.root)
-	}
-	lead = append(lead, m.scopeLabel())
-	if m.board {
-		lead = append(lead, "board")
-		if m.visibleCols() < len(boardStatuses) && len(m.specs) > 0 {
-			lead = append(lead, fmt.Sprintf("col %d/%d", m.selCol()+1, len(boardStatuses)))
-		}
-	} else if m.attention {
-		lead = append(lead, "attention")
-	}
-	if m.filter != "" && !m.board && !m.attention {
-		active = append(active, m.filter)
-	}
-	if m.query != "" {
-		active = append(active, "/"+m.query)
-	}
-	if len(active) > 0 {
-		lead = append(lead, fmt.Sprintf("%s · %d shown", strings.Join(active, " · "), m.matchCount()))
-	}
-	if m.waves != nil {
-		lead = m.wavesLead()
-	}
+	top := m.topLine() + "\n" + dimStyle.Render(strings.Repeat("─", m.width)) + "\n"
 	if m.typing {
-		return body + "\n" + ansi.Truncate(m.input.View(), m.width, "")
+		return top + body + "\n" + ansi.Truncate(m.input.View(), m.width, "")
 	}
-	footer := footerLine(lead, strings.Split(help, " · "), m.width)
+	footer := footerLine(strings.Split(help, " · "), m.width)
 	if m.notice != "" {
 		footer = ansi.Truncate(m.notice, m.width, "…")
 	}
 	if p := m.scratchFooter(); p != "" {
 		footer = ansi.Truncate(p, m.width, "…")
 	}
-	out := body + "\n" + dimStyle.Render(footer)
+	out := top + body + "\n" + dimStyle.Render(footer)
 	switch {
 	case m.helping:
 		return m.overlay(out, m.helpPopup())
@@ -183,16 +159,49 @@ func (m Model) render() string {
 	return out
 }
 
-// footerLine joins lead and hints. When it is wider than width, it drops hints from the one
-// before the last two, so the last hint (? help) stays visible, and cuts what's left at
-// width.
-func footerLine(lead, hints []string, width int) string {
-	join := func() string { return strings.Join(append(append([]string{}, lead...), hints...), " · ") }
-	for len(hints) > 1 && ansi.StringWidth(join()) > width {
-		i := max(0, len(hints)-3)
-		hints = append(hints[:i], hints[i+1:]...)
+// topLine says what the screen shows: the scope, view, filter and search on the left, joined
+// by " › ", and the count, position and next action on the right. When it is wider than the
+// terminal, the left part is cut with "…" and the right part stays.
+func (m Model) topLine() string {
+	var left, right []string
+	if m.unreadable {
+		left = append(left, "store unreadable: "+m.root)
 	}
-	return ansi.Truncate(join(), width, "…")
+	left = append(left, m.scopeLabel())
+	switch {
+	case m.waves != nil:
+		left = append(left, "waves")
+	case m.board:
+		left = append(left, "board")
+	case m.attention:
+		left = append(left, "attention")
+	}
+	if m.filter != "" && !m.board && !m.attention && m.waves == nil {
+		left = append(left, m.filter)
+	}
+	if m.query != "" {
+		left = append(left, "/"+m.query)
+	}
+	if m.waves != nil {
+		p := m.wavePlan()
+		if p.next != "" {
+			right = append(right, p.next)
+		}
+		if len(p.cards) > 0 && m.visibleWaves(p) < len(p.cols) {
+			right = append(right, fmt.Sprintf("wave %d/%d", p.colOf(m.cursor)+1, len(p.cols)))
+		}
+	} else if m.board && m.visibleCols() < len(boardStatuses) && len(m.specs) > 0 {
+		right = append(right, fmt.Sprintf("col %d/%d", m.selCol()+1, len(boardStatuses)))
+	}
+	right = append(right, fmt.Sprintf("%d shown", m.matchCount()))
+	r := ansi.Truncate(strings.Join(right, " · "), m.width, "…")
+	rw := ansi.StringWidth(r)
+	l := strings.Join(left, " › ")
+	if ansi.StringWidth(l)+1+rw > m.width {
+		l = ansi.Truncate(l, max(0, m.width-rw-1), "…")
+	}
+	gap := max(1, m.width-ansi.StringWidth(l)-rw)
+	return dimStyle.Render(l + strings.Repeat(" ", gap) + r)
 }
 
 // scopeLabel is the project listed, or "all projects".
@@ -589,4 +598,16 @@ func orDash(s string) string {
 		return "-"
 	}
 	return s
+}
+
+// footerLine joins the hints. When they are wider than width, it drops hints from the one
+// before the last two, so the last hint (? help) stays visible, and cuts what's left at
+// width.
+func footerLine(hints []string, width int) string {
+	join := func() string { return strings.Join(hints, " · ") }
+	for len(hints) > 1 && ansi.StringWidth(join()) > width {
+		i := max(0, len(hints)-3)
+		hints = append(hints[:i], hints[i+1:]...)
+	}
+	return ansi.Truncate(join(), width, "…")
 }
