@@ -59,3 +59,4 @@ Don't touch: the CLI and its status flags; `ui/state.go`.
 - 2026-11-25: Started on branch filter-the-views-to-a-selected-epics-children
 - 2026-11-25: Status: in-review
 - 2026-11-25: Decision: following a dependency or child link to a spec outside the epic scope clears the epic scope (as a jump out of a project scope does); the earlier project scope is not restored. Chosen by Scott, round 1
+- 2026-11-25: Review round 1 dismissed: setScope not clearing epicPrev is equivalent (toggleEpic overwrites it on the next E); esc discarding toggleEpic's Cmd is harmless (the clear path returns nil); the empty-message wording 'in epic: <ref>' is as the header reads
