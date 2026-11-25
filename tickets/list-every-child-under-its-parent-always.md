@@ -6,7 +6,7 @@ priority: 2
 depends-on: []
 parent: improve-epics
 approved: "Scott Schlesier, 2026-11-25: Every spec listed under its parent, parents pulled in as dimmed context rows, t toggle removed; builds on the E-scope spec. Cold read: not run"
-status: in-review
+status: done
 ---
 
 The list always shows a spec under its parent: a spec with a parent is never listed without that parent above it, and the `t` toggle goes away, so I always see which epic a spec belongs to whatever filter or query is on.
@@ -33,7 +33,7 @@ Out of scope:
 - [x] A spec on a parent cycle is listed at top level, as today.
 - [x] `t` no longer toggles anything; it is gone from the help popup and the header no longer says `tree`.
 - [x] The empty message appears when no spec matches the filters, even when a context parent exists.
-- [x] The cursor stays on the same spec after a filter, query or scope change when that spec is still listed.
+- [x] The cursor stays on the same spec after a filter or scope change when that spec is still listed; a query change selects the best match, never a context row.
 
 ## Verification
 
@@ -63,3 +63,5 @@ Stop and ask if: the `E` scope spec's `flat()` changes conflict with adding cont
 - 2026-11-25: Status: in-review
 - 2026-11-25: Status: in-review
 - 2026-11-25: Review dismissed: firstMatch board/attention guard is an equivalent mutant (match keys unused in those views); kept to skip the work.
+- 2026-11-25: Amended: Query change selects the best match (existing tested behavior), skipping context rows; user agreed in review
+- 2026-11-25: Status: done: Reviewed round 1: 13/13 criteria verified, 13 mutants (1 test added, 1 equivalent), criterion 13 amended for queries
