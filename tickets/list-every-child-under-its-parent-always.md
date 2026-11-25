@@ -62,3 +62,4 @@ Stop and ask if: the `E` scope spec's `flat()` changes conflict with adding cont
 - 2026-11-25: Assumption: a query change selects the first matching row (existing behavior, tested), not the previously selected spec, so criterion 13 holds for filter, scope and reload changes.
 - 2026-11-25: Status: in-review
 - 2026-11-25: Status: in-review
+- 2026-11-25: Review dismissed: firstMatch board/attention guard is an equivalent mutant (match keys unused in those views); kept to skip the work.
