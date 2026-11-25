@@ -60,3 +60,4 @@ Don't touch: the store-writing commands; the prompts for non-epic specs.
 - 2026-11-25: Started on branch plan-an-epic-spx-epic
 - 2026-11-25: Assumption: an epic with only nested-epic children (no counted children) prints No children, then its Nested epics group
 - 2026-11-25: Status: in-review: implemented; ready for pr-review
+- 2026-11-25: Review round 1: added tests for the cycle: line and for a done child off the critical path; dropped a redundant Status check in SummarizeEpic (the critical path never holds done children)
