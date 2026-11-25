@@ -97,6 +97,31 @@ func TestEpicWithParentScopesToItself(t *testing.T) {
 	}
 }
 
+func TestEpicEmptyListChangesNothing(t *testing.T) {
+	m := press(t, typed(t, press(t, scopeModel(t, ""), "/"), "zzzz"), "enter")
+	if len(m.specs) != 0 {
+		t.Fatalf("listed %v", listed(m))
+	}
+	if m, cmd := pressE(t, m); m.epic != nil || m.notice != "" || cmd != nil {
+		t.Errorf("epic %v notice %q", m.epic, m.notice)
+	}
+}
+
+func TestEpicChildOfLiveNonEpicIsNotAnEpic(t *testing.T) {
+	m := selectSlug(t, scopeModel(t, ""), "c-a")
+	m.all = slices.Clone(m.all)
+	for i := range m.all {
+		if m.all[i].Slug == "c-a" {
+			m.all[i].Parent = "o-a"
+		}
+	}
+	m.specs = m.visible()
+	m = selectSlug(t, m, "c-a")
+	if m, _ = pressE(t, m); m.epic != nil || m.notice != "not an epic" {
+		t.Errorf("epic %v notice %q", m.epic, m.notice)
+	}
+}
+
 func TestEpicNotAnEpic(t *testing.T) {
 	for _, slug := range []string{"o-a", "orphan"} {
 		m := selectSlug(t, scopeModel(t, ""), slug)
