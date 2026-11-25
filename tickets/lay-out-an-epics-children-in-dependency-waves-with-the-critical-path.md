@@ -6,7 +6,7 @@ priority: 2
 depends-on: []
 parent: improve-epics
 approved: "Scott Schlesier, 2026-11-25: Full-screen w view: children in dependency-wave columns, critical path with ◆, Next: by longest remaining chain (also in detail pane); board-style keys. Cold read: pass"
-status: in-review
+status: done
 ---
 
 `w` on an epic opens a full-screen waves view: its children in columns, one per dependency wave, left to right, with the critical path and the next action, so I can see the order a cross-project epic has to land in, what is unblocked now and what the long pole is, and start the next child from there.
@@ -74,3 +74,5 @@ Don't touch: `ui/state.go`, `ui/deps.go` readiness rules, the CLI.
 - 2026-11-25: Review round 1: a dependency jump from the waves detail now selects the card when the target is in the epic, else shows a notice, instead of clearing query, filter or scope
 - 2026-11-25: Review round 1, pass 1 re-run: added tests for the surviving mutants (longer branch listed second, successor order through a done child, path of one, truncated header, scroll heights, v and e on the selected child, close restoring attention) and the 120-column golden; dismissed the cycle-arrow-order mutant as a Log assumption, and the O(n^3) closure as measured at 41 ms for 150 chained children
 - 2026-11-25: Review round 1: corrected the previous entry; the cycle-arrow-order mutant is killed by a three-member cycle test rather than dismissed
+- 2026-11-25: Review round 1 answers: closing after the epic is gone keeps returning to the spec selected at open, else the first row; unlisted keys stay inert and ctrl+d/u still scroll an open detail; the per-keypress plan rebuild stays as is
+- 2026-11-25: Status: done: Reviewed round 1: 16/16 criteria verified, two cold-verify passes, decisions answered
