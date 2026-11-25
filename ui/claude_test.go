@@ -198,3 +198,34 @@ func TestFooterHintsListAdvance(t *testing.T) {
 		t.Errorf("narrow footer %q lost the project and quit hints to the advance hint", f)
 	}
 }
+
+func TestCapitalCWritesThePromptForTheEditor(t *testing.T) {
+	e := newClaudeEnv(t)
+	m := e.model(t, oneSpec("draft", ""))
+	next, cmd := m.Update(keys["C"])
+	if cmd == nil || isNotice(cmd) || next.(Model).notice != "" {
+		t.Fatalf("C returned %v, notice %q, want an exec command", cmd, next.(Model).notice)
+	}
+}
+
+func TestPromptEditedStartsClaudeWithTheEditedText(t *testing.T) {
+	e := newClaudeEnv(t)
+	m := e.model(t, oneSpec("draft", ""))
+	for text, wantExec := range map[string]bool{"  edited prompt \n": true, " \n": false} {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "prompt.md")
+		if err := os.WriteFile(path, []byte(text), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		next, cmd := m.Update(promptEditedMsg{dir: dir, path: path, sessionDir: e.repo, name: "proj/s"})
+		if _, err := os.Stat(dir); !os.IsNotExist(err) {
+			t.Errorf("%q: prompt directory kept", text)
+		}
+		if wantExec && (cmd == nil || next.(Model).notice != "") {
+			t.Errorf("%q: no exec command, notice %q", text, next.(Model).notice)
+		}
+		if !wantExec && next.(Model).notice != "empty prompt; Claude not started" {
+			t.Errorf("%q: notice %q", text, next.(Model).notice)
+		}
+	}
+}

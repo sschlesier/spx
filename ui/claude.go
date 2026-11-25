@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -137,6 +138,55 @@ func (m Model) advance() (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 	return m, tea.ExecProcess(c, claudeFinished)
+}
+
+// promptEditedMsg is the end of the editor on the prompt file that `C` wrote: dir holds it,
+// and the session starts in sessionDir, named name, with the file's text.
+type promptEditedMsg struct {
+	dir, path, sessionDir, name string
+	err                         error
+}
+
+// advanceEdit suspends spx, opens the selected spec's next-stage prompt in the editor, and
+// starts Claude with the edited text.
+func (m Model) advanceEdit() (tea.Model, tea.Cmd) {
+	if m.noSelection() {
+		return m, nil
+	}
+	c, notice := m.advancePlan(m.specs[m.cursor])
+	if c == nil {
+		cmd := m.setNotice(notice)
+		return m, cmd
+	}
+	dir, err := os.MkdirTemp("", scratchPrefix+"prompt-")
+	if err != nil {
+		cmd := m.setNotice("can't make a temporary directory: " + err.Error())
+		return m, cmd
+	}
+	path := filepath.Join(dir, "prompt.md")
+	if err := os.WriteFile(path, []byte(c.Args[3]+"\n"), 0o600); err != nil {
+		_ = os.RemoveAll(dir)
+		cmd := m.setNotice("can't write " + path + ": " + err.Error())
+		return m, cmd
+	}
+	msg := promptEditedMsg{dir: dir, path: path, sessionDir: c.Dir, name: c.Args[2]}
+	return m, tea.ExecProcess(editorExec(path), func(err error) tea.Msg { msg.err = err; return msg })
+}
+
+// promptEdited starts Claude with the edited prompt. An empty prompt cancels.
+func (m Model) promptEdited(msg promptEditedMsg) (tea.Model, tea.Cmd) {
+	data, err := os.ReadFile(msg.path)
+	_ = os.RemoveAll(msg.dir)
+	prompt := strings.TrimSpace(string(data))
+	switch {
+	case msg.err != nil:
+		return m.resumed("editor failed: " + msg.err.Error())
+	case err != nil:
+		return m.resumed("editor failed: " + err.Error())
+	case prompt == "":
+		return m.resumed("empty prompt; Claude not started")
+	}
+	return m, tea.ExecProcess(claudeExec(msg.sessionDir, msg.name, prompt), claudeFinished)
 }
 
 // claudeDone reloads the store after the session exits. A session that ran and exited non-zero

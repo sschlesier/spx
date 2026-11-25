@@ -37,6 +37,8 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.openEditor()
 	case "c":
 		return m.advance()
+	case "C":
+		return m.advanceEdit()
 	case "y", "Y":
 		return m.copySelected(k == "Y")
 	case "]", "[":

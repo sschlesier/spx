@@ -179,6 +179,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.scratchClaudeDone(msg)
 	case spxDoneMsg:
 		return m.spxDone(msg)
+	case promptEditedMsg:
+		return m.promptEdited(msg)
 	case claudeDoneMsg:
 		return m.claudeDone(msg)
 	case noticeMsg:
