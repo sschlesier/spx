@@ -56,7 +56,7 @@ func TestReadyKeyListsReadySpecsAndToggles(t *testing.T) {
 	if got, want := listed(m), []string{"no-deps", "all-done", "two-ready"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("r listed %v, want %v", got, want)
 	}
-	if f := footer(m); !strings.Contains(f, "ready · 3 shown") || !strings.Contains(footerHelp, "d/a/s/x/r") {
+	if f := top(m); !strings.Contains(f, "ready") || !strings.HasSuffix(f, "3 shown") || !strings.Contains(footerHelp, "d/a/s/x/r") {
 		t.Errorf("footer %q", f)
 	}
 	all := listed(readyModel(t))

@@ -37,8 +37,8 @@ func TestScopeListsOnlyThatProject(t *testing.T) {
 	if got := listed(m); !reflect.DeepEqual(got, []string{"a-one", "a-two"}) {
 		t.Fatalf("listed %v", got)
 	}
-	if f := footer(m); !strings.HasPrefix(f, "alpha · d/a/s/x/r status") {
-		t.Errorf("footer %q", f)
+	if f := top(m); !strings.HasPrefix(f, "alpha") || !strings.HasSuffix(f, "2 shown") {
+		t.Errorf("top line %q", f)
 	}
 	if got := listed(scoped(t, "", 140)); len(got) != 4 {
 		t.Errorf("no scope listed %v, want every live spec", got)
@@ -51,8 +51,8 @@ func TestStatusAndQueryApplyWithinTheScope(t *testing.T) {
 		t.Fatalf("draft in beta listed %v", got)
 	}
 	m = press(t, typed(t, press(t, m, "/"), "two"), "enter")
-	if f := footer(m); !strings.HasPrefix(f, "beta · draft · /two · 1 shown · ") {
-		t.Errorf("footer %q", f)
+	if f := top(m); !strings.HasPrefix(f, "beta › draft › /two") || !strings.HasSuffix(f, "1 shown") {
+		t.Errorf("top line %q", f)
 	}
 	m = typed(t, press(t, m, "/"), "a-")
 	if got := listed(m); len(got) != 0 {

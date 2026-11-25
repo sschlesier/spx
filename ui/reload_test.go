@@ -165,9 +165,8 @@ func TestUnreadableRootNoticeAndRecovery(t *testing.T) {
 	m := start(t, fixture(3), 120, 20)
 	next, cmd := m.Update(loadedMsg{seq: 1, err: errors.New("spec store not found: /store")})
 	m = next.(Model)
-	lines := strings.Split(screen(m), "\n")
-	if footer := lines[len(lines)-1]; !strings.HasPrefix(footer, "store unreadable: /store") {
-		t.Fatalf("footer %q", footer)
+	if first := top(m); !strings.HasPrefix(first, "store unreadable: /store") {
+		t.Fatalf("top line %q", first)
 	}
 	if !strings.Contains(screen(m), "Spec number 02") {
 		t.Fatal("the last list should stay on screen")

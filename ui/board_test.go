@@ -179,16 +179,16 @@ func TestBoardWindowsNarrowTerminals(t *testing.T) {
 				}
 			}
 		}
-		hasCol := strings.Contains(footer(m), "col ")
+		hasCol := strings.Contains(top(m), "col ")
 		if hasCol != (c.cols < 3) {
-			t.Errorf("width %d footer %q", c.w, footer(m))
+			t.Errorf("width %d top line %q", c.w, top(m))
 		}
 	}
 	m := board(t, boardSpecs(), 60, 30)
 	m = send(t, m, keyL)
 	m = send(t, m, keyL)
-	if out := screen(m); !strings.Contains(out, "started (3)") || strings.Contains(out, "draft (") || !strings.Contains(footer(m), "col 3/3") {
-		t.Errorf("selected column not in window:\n%s\n%s", out, footer(m))
+	if out := screen(m); !strings.Contains(out, "started (3)") || strings.Contains(out, "draft (") || !strings.Contains(top(m), "col 3/3") {
+		t.Errorf("selected column not in window:\n%s\n%s", out, top(m))
 	}
 }
 

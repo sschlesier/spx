@@ -55,8 +55,11 @@ func TestWavesHeaderTruncatesTheTitleBeforeTheIndicator(t *testing.T) {
 	all[0].Title = strings.Repeat("A long epic title ", 8)
 	m := send(t, New("/store", all, styles.AsciiStyle).WithDone(done), tea.WindowSizeMsg{Width: 60, Height: 12})
 	m = press(t, m, "w")
-	l := strings.Split(screen(m), "\n")[0]
-	if !strings.HasSuffix(l, " wave 1/5") || len([]rune(l)) != 60 || !strings.Contains(l, "…") {
+	lines := strings.Split(screen(m), "\n")
+	if l := lines[0]; !strings.HasSuffix(l, " wave 1/5 · 8 shown") || len([]rune(l)) != 60 {
+		t.Errorf("top line %q", l)
+	}
+	if l := lines[2]; len([]rune(l)) > 60 || !strings.Contains(l, "…") {
 		t.Errorf("header %q", l)
 	}
 }
@@ -131,8 +134,11 @@ func TestWavesRendered120Columns(t *testing.T) {
 		return strings.Join(cells, "│")
 	}
 	head := "Title e · p/e · 0/6 done · critical path 4 to go"
+	const topRight = "Next: start p/a · wave 1/6 · 7 shown"
 	want := []string{
-		head + strings.Repeat(" ", 120-len([]rune(head))-len("wave 1/6")) + "wave 1/6",
+		"all projects › waves" + strings.Repeat(" ", 120-len([]rune("all projects › waves"))-len([]rune(topRight))) + topRight,
+		strings.Repeat("─", 120),
+		head,
 		"Critical path: p/a → p/b → p/c → p/d",
 		"cycle: p/y1 → p/y2 → p/y1",
 		pad("WAVE 1 · 0/1", "WAVE 2 · 0/1", "WAVE 3 · 0/1", "WAVE 4 · 0/1"),
@@ -145,7 +151,7 @@ func TestWavesRendered120Columns(t *testing.T) {
 			t.Errorf("line %d:\n got %q\nwant %q", i, got[i], w)
 		}
 	}
-	const next = "Next: start p/a · h/l wave · j/k card · enter open · v view · e edit · y/Y copy · c advance · w back · ? help"
+	const next = "h/l wave · j/k card · enter open · v view · e edit · y/Y copy · c advance · w back · ? help"
 	if f := strings.TrimRight(footer(m), " "); f != next {
 		t.Errorf("footer %q", f)
 	}

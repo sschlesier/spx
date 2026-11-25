@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 
@@ -184,7 +183,7 @@ func (m *Model) moveWaveCard(by int) {
 }
 
 // waveHead is the number of heading lines above the columns.
-func (m Model) waveHead(p wavePlan) int { return len(p.headLines(m.width, "")) }
+func (m Model) waveHead(p wavePlan) int { return len(p.headLines(m.width)) }
 
 func (m Model) waveCardRows(p wavePlan) int {
 	return max(1, (m.bodyHeight()-m.waveHead(p)-1)/2)
@@ -217,26 +216,14 @@ func (m *Model) scrollWaves() {
 	m.offset = max(0, m.offset)
 }
 
-// wavesLead is the footer's lead: the next action.
-func (m Model) wavesLead() []string {
-	if p := m.wavePlan(); p.next != "" {
-		return []string{p.next}
-	}
-	return nil
-}
-
 // wavesView draws the heading and the columns that fit.
 func (m Model) wavesView() string {
 	p := m.wavePlan()
 	if len(p.cards) == 0 {
-		return strings.Join(append(p.headLines(m.width, ""), "No children"), "\n")
+		return strings.Join(append(p.headLines(m.width), "No children"), "\n")
 	}
 	n, first := m.visibleWaves(p), m.firstWave(p)
-	indicator := ""
-	if n < len(p.cols) {
-		indicator = fmt.Sprintf("wave %d/%d", p.colOf(m.cursor)+1, len(p.cols))
-	}
-	head := p.headLines(m.width, indicator)
+	head := p.headLines(m.width)
 	cw := (m.width - (n - 1)) / n
 	h := max(1, m.bodyHeight()-len(head))
 	sep := dimStyle.Render(strings.TrimSuffix(strings.Repeat("│\n", h), "\n"))

@@ -406,7 +406,7 @@ func (m Model) listWidth() int {
 	return m.width * 2 / 5
 }
 
-func (m Model) bodyHeight() int { return max(1, m.height-1) }
+func (m Model) bodyHeight() int { return max(1, m.height-3) }
 
 func (m *Model) layout() {
 	if m.split() {

@@ -52,8 +52,8 @@ func TestPopupIsCenteredOverTheView(t *testing.T) {
 	if col < 20 || col > 70 {
 		t.Fatalf("popup title in column %d of 100", col)
 	}
-	if !strings.Contains(lines[0], "Title") {
-		t.Errorf("the list should still show around the popup: %q", lines[0])
+	if !strings.Contains(lines[2], "Title") {
+		t.Errorf("the list should still show around the popup: %q", lines[2])
 	}
 }
 
@@ -109,8 +109,8 @@ func TestPopupEnterAppliesTheScope(t *testing.T) {
 	if got := listed(m); !reflect.DeepEqual(got, []string{"b-one", "b-two"}) {
 		t.Fatalf("listed %v", got)
 	}
-	if f := footer(m); !strings.HasPrefix(f, "beta · ") {
-		t.Errorf("footer %q", f)
+	if f := top(m); !strings.HasPrefix(f, "beta") {
+		t.Errorf("top line %q", f)
 	}
 }
 

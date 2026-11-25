@@ -7,7 +7,7 @@ import (
 
 func TestFooterShowsHowToCloseWhileHelpIsOpen(t *testing.T) {
 	m := press(t, start(t, fixture(5), 120, 30), "?")
-	if got, want := footer(m), "all projects · "+helpOpenHelp; got != want {
+	if got, want := footer(m), helpOpenHelp; got != want {
 		t.Errorf("footer %q, want %q", got, want)
 	}
 	m = press(t, m, "esc")

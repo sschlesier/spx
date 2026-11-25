@@ -144,14 +144,13 @@ func TestHelpPopupFitsAndIsCentered(t *testing.T) {
 }
 
 func TestFooterStrings(t *testing.T) {
-	const lead = "all projects · "
-	if got, want := footer(start(t, fixture(5), 200, 30)), lead+"d/a/s/x/r status · n attention · ]/[ deps · v view · e edit · y/Y copy · c advance · p project · ? help"; got != want {
+	if got, want := footer(start(t, fixture(5), 200, 30)), "d/a/s/x/r status · n attention · ]/[ deps · v view · e edit · y/Y copy · c advance · p project · ? help"; got != want {
 		t.Errorf("list footer %q, want %q", got, want)
 	}
-	if got, want := footer(press(t, start(t, fixture(5), 80, 24), "enter")), lead+"esc back · ]/[ deps · v view · e edit · c advance · ? help"; got != want {
+	if got, want := footer(press(t, start(t, fixture(5), 80, 24), "enter")), "esc back · ]/[ deps · v view · e edit · y/Y copy · c advance · ? help"; got != want {
 		t.Errorf("detail footer %q, want %q", got, want)
 	}
-	if got, want := footer(board(t, boardSpecs(), 200, 30)), lead+"board · h/l column · v view · e edit · y/Y copy · c advance · p project · ? help"; got != want {
+	if got, want := footer(board(t, boardSpecs(), 200, 30)), "h/l column · v view · e edit · y/Y copy · c advance · p project · ? help"; got != want {
 		t.Errorf("board footer %q, want %q", got, want)
 	}
 	for _, f := range []string{footerHelp, detailHelp, boardHelp, attentionHelp} {

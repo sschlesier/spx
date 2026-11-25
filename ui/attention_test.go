@@ -345,20 +345,20 @@ func TestAttentionKeepsListOrderWithinGroups(t *testing.T) {
 
 func TestAttentionSummaryLine(t *testing.T) {
 	m := attModel(t, attSpecs(), 120, 30)
-	if first := screenLines(m)[0]; strings.TrimSpace(first) != "4 need you · 1 agent working · 1 blocked · 1 ready" {
+	if first := screenLines(m)[2]; strings.TrimSpace(first) != "4 need you · 1 agent working · 1 blocked · 1 ready" {
 		t.Errorf("summary %q", first)
 	}
 	one := attModel(t, attSpecs()[:2], 120, 30)
-	if first := screenLines(one)[0]; strings.TrimSpace(first) != "1 need you · 0 agent working · 0 blocked · 1 ready" {
+	if first := screenLines(one)[2]; strings.TrimSpace(first) != "1 need you · 0 agent working · 0 blocked · 1 ready" {
 		t.Errorf("summary with a count of 1 %q", first)
 	}
 	m = typed(t, press(t, m, "/"), "ready")
-	if first := screenLines(m)[0]; strings.TrimSpace(first) != "0 need you · 0 agent working · 0 blocked · 1 ready" {
+	if first := screenLines(m)[2]; strings.TrimSpace(first) != "0 need you · 0 agent working · 0 blocked · 1 ready" {
 		t.Errorf("summary after the query %q", first)
 	}
 	// The summary is pinned and not selectable.
 	m = press(t, attModel(t, manySpecs(40), 120, 12), "G")
-	if first := screenLines(m)[0]; !strings.HasPrefix(strings.TrimSpace(first), "40 need you") {
+	if first := screenLines(m)[2]; !strings.HasPrefix(strings.TrimSpace(first), "40 need you") {
 		t.Errorf("summary scrolled away: %q", first)
 	}
 }
@@ -463,10 +463,10 @@ func TestAttentionPeekStrip(t *testing.T) {
 	if strings.Contains(screen(short), "2026-11-15  Drafted") {
 		t.Errorf("peek shown under 20 rows:\n%s", screen(short))
 	}
-	if got := short.areaHeight(); got != 19-1-1 {
+	if got := short.areaHeight(); got != 19-3-1 {
 		t.Errorf("area height %d under 20 rows, want the peek's lines freed", got)
 	}
-	if got := attModel(t, attSpecs(), 120, 20).areaHeight(); got != 20-1-1-3 {
+	if got := attModel(t, attSpecs(), 120, 20).areaHeight(); got != 20-3-1-3 {
 		t.Errorf("area height %d at 20 rows", got)
 	}
 }
@@ -513,8 +513,8 @@ func TestAttentionQueryAndScopeApply(t *testing.T) {
 	if out := screen(m); !strings.Contains(out, "● NEEDS ME (1)") || strings.Contains(out, "AGENT WORKING") {
 		t.Errorf("query not applied:\n%s", out)
 	}
-	if !strings.Contains(footer(m), "/approve · 1 shown") {
-		t.Errorf("footer %q", footer(m))
+	if !strings.Contains(top(m), "/approve") || !strings.HasSuffix(top(m), "1 shown") {
+		t.Errorf("top line %q", top(m))
 	}
 	m = press(t, m, "esc")
 	if m.attention || m.query != "approve" {
@@ -601,14 +601,14 @@ func TestAttentionReloadRegroupsWhenADependencyFinishes(t *testing.T) {
 	specs := attSpecs()
 	specs[2].DependsOn = []string{"ready"}
 	m := attModel(t, specs, 120, 30)
-	if first := screenLines(m)[0]; !strings.Contains(first, "1 blocked · 1 ready") {
+	if first := screenLines(m)[2]; !strings.Contains(first, "1 blocked · 1 ready") {
 		t.Fatalf("summary %q", first)
 	}
 	done := []store.Spec{{Project: "proj", Status: store.Done, Slug: "ready"}}
 	next := attSpecs()
 	next[2].DependsOn = []string{"ready"}
 	m.apply(next[1:], done) // "ready" moves to done/, so "blocked" is ready
-	if first := screenLines(m)[0]; !strings.Contains(first, "0 blocked · 1 ready") {
+	if first := screenLines(m)[2]; !strings.Contains(first, "0 blocked · 1 ready") {
 		t.Errorf("summary after the dependency finished: %q", first)
 	}
 }
@@ -632,12 +632,15 @@ func TestAttentionDependencyJump(t *testing.T) {
 
 func TestAttentionFooterAndHelp(t *testing.T) {
 	m := attModel(t, attSpecs(), 200, 30)
-	want := "all projects · attention · n back · enter fold/open · v view · e edit · y/Y copy · c advance · p project · ? help"
+	want := "n back · enter fold/open · v view · e edit · y/Y copy · c advance · p project · ? help"
 	if got := footer(m); got != want {
 		t.Errorf("footer %q, want %q", got, want)
 	}
-	if got := footer(press(t, m, "n")); strings.Contains(got, "attention ·") && !strings.Contains(got, "n attention") {
-		t.Errorf("list footer still leads with attention: %q", got)
+	if got := top(m); !strings.HasPrefix(got, "all projects › attention") {
+		t.Errorf("top line %q", got)
+	}
+	if got := top(press(t, m, "n")); strings.Contains(got, "attention") {
+		t.Errorf("list top line still names attention: %q", got)
 	}
 	got := helpText(m)
 	for _, w := range []string{"n/esc", "back to the list", "fold or unfold", "first / last line", "y/Y", "quit"} {
@@ -711,7 +714,7 @@ func TestAttentionTitleMinimumIsTwelveCells(t *testing.T) {
 }
 
 func TestAttentionScrollMovesByExactlyOne(t *testing.T) {
-	m := attModel(t, manySpecs(40), 120, 12) // 10 lines under the summary
+	m := attModel(t, manySpecs(40), 120, 14) // 10 lines under the summary
 	m = press(t, m, "g")
 	for range 9 {
 		m = press(t, m, "j")

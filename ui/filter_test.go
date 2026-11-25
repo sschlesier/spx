@@ -44,6 +44,11 @@ func footer(m Model) string {
 	return lines[len(lines)-1]
 }
 
+// top is the screen's first row, the line naming what is shown.
+func top(m Model) string {
+	return strings.TrimRight(strings.Split(screen(m), "\n")[0], " ")
+}
+
 func TestEachKeyListsOnlyItsStatus(t *testing.T) {
 	for k, want := range map[string][]string{
 		"s": {"spec-00", "spec-01"},
@@ -82,23 +87,32 @@ func TestNarrowFilteredFooterFits80Columns(t *testing.T) {
 		specs[i].Status = "approved"
 	}
 	m := press(t, start(t, specs, 80, 30), "a")
-	if f := footer(m); !strings.HasPrefix(f, "all projects · approved · 20 shown · ") || !strings.HasSuffix(strings.TrimRight(f, " "), "? help") {
-		t.Fatalf("footer %q should keep the filter and end with ? help", f)
+	if f := top(m); !strings.HasPrefix(f, "all projects › approved") || !strings.HasSuffix(f, "20 shown") {
+		t.Fatalf("top line %q should name the filter and the count", f)
+	}
+	if f := footer(m); !strings.HasSuffix(strings.TrimRight(f, " "), "? help") || strings.Contains(f, "shown") {
+		t.Fatalf("footer %q should be hints ending with ? help", f)
 	}
 }
 
 func TestFooterWithAndWithoutFilter(t *testing.T) {
 	m := start(t, mixed(), 190, 20)
-	if f, want := footer(m), "all projects · "+footerHelp; f != want || !strings.Contains(f, "d/a/s/x/r status") {
-		t.Errorf("unfiltered footer %q, want %q", f, want)
+	if f := footer(m); f != footerHelp {
+		t.Errorf("unfiltered footer %q, want %q", f, footerHelp)
+	}
+	if f := top(m); !strings.HasPrefix(f, "all projects") || !strings.HasSuffix(f, "6 shown") {
+		t.Errorf("unfiltered top line %q", f)
 	}
 	m = press(t, m, "d")
-	if f, want := footer(m), "all projects · draft · 2 shown · "+footerHelp; f != want {
-		t.Errorf("filtered footer %q, want %q", f, want)
+	if f := footer(m); f != footerHelp {
+		t.Errorf("filtered footer %q, want %q", f, footerHelp)
+	}
+	if f := top(m); !strings.HasPrefix(f, "all projects › draft") || !strings.HasSuffix(f, "2 shown") {
+		t.Errorf("filtered top line %q", f)
 	}
 	n := press(t, start(t, mixed(), 80, 20), "x")
-	if f := footer(n); !strings.HasPrefix(f, "all projects · dropped · 2 shown · d/a/s/x/r status") {
-		t.Errorf("narrow filtered footer %q", f)
+	if f := top(n); !strings.HasPrefix(f, "all projects › dropped") || !strings.HasSuffix(f, "2 shown") {
+		t.Errorf("narrow filtered top line %q", f)
 	}
 }
 
@@ -144,8 +158,8 @@ func TestFilterWithNoMatches(t *testing.T) {
 	if !strings.Contains(s, "No approved specs") || strings.Contains(s, "Outcome of spec") {
 		t.Fatalf("want the empty message and an empty detail:\n%s", s)
 	}
-	if f := footer(m); !strings.HasPrefix(f, "all projects · approved · 0 shown · ") {
-		t.Errorf("footer %q", f)
+	if f := top(m); !strings.HasPrefix(f, "all projects › approved") || !strings.HasSuffix(f, "0 shown") {
+		t.Errorf("top line %q", f)
 	}
 	m = press(t, m, "j", "G", "ctrl+d", "a")
 	if got := len(m.specs); got != 3 || selected(m) != "spec-00" {
@@ -173,8 +187,8 @@ func TestStatusKeysIgnoredInTheFullWidthDetail(t *testing.T) {
 func TestUnreadableNoticeComesBeforeTheFilter(t *testing.T) {
 	m := press(t, start(t, mixed(), 140, 20), "d")
 	next, _ := m.Update(loadedMsg{seq: m.applied + 1, err: errors.New("spec store not found: /store")})
-	if f, want := footer(next.(Model)), "store unreadable: /store · all projects · draft · 2 shown · "; !strings.HasPrefix(f, want) {
-		t.Fatalf("footer %q, want prefix %q", f, want)
+	if f, want := top(next.(Model)), "store unreadable: /store › all projects › draft"; !strings.HasPrefix(f, want) {
+		t.Fatalf("top line %q, want prefix %q", f, want)
 	}
 }
 
