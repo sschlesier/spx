@@ -38,6 +38,16 @@ func advancePrompt(s store.Spec, path string) (string, bool) {
 	return fmt.Sprintf(task, s.Slug, s.Project, path) + namedSentence(s), true
 }
 
+// planPrompt is the prompt that starts a planning session on the live epic s, with path as its
+// store copy.
+func planPrompt(s store.Spec, path string) string {
+	return fmt.Sprintf("Plan the epic %q in project %s. Its store copy is %s. "+
+		"Run `spx epic %s` first and report where the epic stands. "+
+		"Then propose the next move and any missing children, missing or wrong depends-on links, and children too big for one PR. "+
+		"Make store changes (`spx new`, `adopt`, `detach`, `edit`) only after I agree, and follow the spec-review skill for any new child.",
+		s.Slug, s.Project, path, ref(s)) + namedSentence(s)
+}
+
 // namedSentence ends a session's prompt: the agent can't see its own name.
 func namedSentence(s store.Spec) string {
 	return " This session is already named " + ref(s) + "."
@@ -55,6 +65,14 @@ func claudeFinished(err error) tea.Msg { return claudeDoneMsg{err} }
 
 // advancePlan is the Claude session to start for s, or a notice saying why there is none.
 func (m Model) advancePlan(s store.Spec) (*exec.Cmd, string) {
+	if s.Type == "epic" && (s.Status == "draft" || s.Status == "approved" || s.Status == "started") {
+		home, _ := os.UserHomeDir()
+		dir, err := ops.Repo(m.root, s.Project, home)
+		if err != nil {
+			dir = home
+		}
+		return claudeExec(dir, ref(s), planPrompt(s, absPath(s))), ""
+	}
 	prompt, ok := advancePrompt(s, absPath(s))
 	if !ok {
 		return nil, "nothing to advance (" + s.Status + ")"
