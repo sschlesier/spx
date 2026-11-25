@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.0
+
+- Add `spx epic <slug>`: print an epic's progress, waves, critical path and next action as text
+- Make `c` on a draft, approved or started epic start a planning session that runs `spx epic` first and changes the store only after you agree
+
 ## 2.0.0
 
 - Add the attention view (`n`): specs that need you, grouped by state with folds and a peek strip
