@@ -72,6 +72,10 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	}
+	if m.waves != nil {
+		m.wavesKey(k)
+		return m, nil
+	}
 	if m.board && m.boardKey(k) {
 		return m, nil
 	}
@@ -81,6 +85,8 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch k {
 	case "b":
 		m.toggleBoard()
+	case "w":
+		return m.openWaves()
 	case "n":
 		if !m.board {
 			m.toggleAttention()

@@ -131,42 +131,10 @@ func childSummary(specs, all, done []store.Spec) string {
 	return line
 }
 
-// nextAction is the line saying what to do next: a child that needs me, then a ready child,
-// then a blocked one and what it waits on; or, with every child done or dropped, how to close.
+// nextAction is the line saying what to do next; see nextChoice.
 func nextAction(epic store.Spec, specs, all, done []store.Spec) string {
-	kids := counted(specs)
-	var needs, ready, blocked []store.Spec
-	for _, c := range kids {
-		if k, _ := State(c, all, done); k == StateNeedsMe {
-			needs = append(needs, c)
-		}
-		switch bucketOf(c, all, done) {
-		case bucketReady:
-			ready = append(ready, c)
-		case bucketBlocked:
-			blocked = append(blocked, c)
-		}
-	}
-	more := func(n int) string {
-		if n > 1 {
-			return fmt.Sprintf(" (+%d more)", n-1)
-		}
-		return ""
-	}
-	ref := func(c store.Spec) string { return printable(c.Project) + "/" + printable(c.Slug) }
-	switch {
-	case len(needs) > 0:
-		_, reason := State(needs[0], all, done)
-		return "Next: " + strings.ToLower(reason) + " " + ref(needs[0]) + more(len(needs))
-	case len(ready) > 0:
-		return "Next: start " + ref(ready[0]) + more(len(ready))
-	case len(blocked) > 0:
-		return "Next: " + ref(blocked[0]) + " is blocked, waiting on " + waitingOn(blocked[0], all, done) + more(len(blocked))
-	}
-	if len(kids) > 0 && !slices.ContainsFunc(kids, func(c store.Spec) bool { return c.Status != store.Done }) {
-		return "Ready to close: `spx close " + printable(epic.Slug) + "`"
-	}
-	return ""
+	line, _ := nextChoice(epic, specs, all, done)
+	return line
 }
 
 // waitingOn names the first depends-on of c that is not done.
