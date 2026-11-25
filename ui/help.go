@@ -68,7 +68,8 @@ var helpRows = []helpRow{
 
 	{viewList, "Filter", "d/a/s/x/r", "by status (letters as S above); r is ready to start"},
 	{listBoard, "Filter", "/", "search"},
-	{viewList, "Filter", "esc", "clear the search, then the status"},
+	{viewList, "Filter", "esc", "clear the search, then the status, then the epic"},
+	{listBoard, "Filter", "E", "scope to the selected epic and its children; again to clear"},
 	{listBoard, "Filter", "p", "project"},
 
 	{allViews, "Act", "v", "view read-only in $EDITOR"},

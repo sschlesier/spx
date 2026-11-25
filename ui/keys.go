@@ -112,6 +112,8 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.pickOff = m.pickScroll(len(m.pickerEntries()))
 		cmd := m.pickIn.Focus()
 		return m, cmd
+	case "E":
+		return m, m.toggleEpic()
 	case "t":
 		m.tree = !m.tree
 		m.show(m.visible(), m.cursor)
@@ -125,6 +127,8 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.setQuery("")
 		} else if m.filter != "" {
 			m.setFilter("")
+		} else if m.epic != nil {
+			m.toggleEpic()
 		}
 	case "d", "a", "s", "x", "r":
 		if status := filterKeys[k]; status != m.filter {

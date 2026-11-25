@@ -25,18 +25,20 @@ const readyFilter = "ready"
 
 // Model is the spx UI state.
 type Model struct {
-	root   string
-	all    []store.Spec // everything loaded, dropped included
-	specs  []store.Spec // the listed rows
-	done   []store.Spec // done receipts, for dependency lookup only; never listed
-	hl     string       // key of the highlighted dependency entry; empty for none
-	cursor int
-	offset int    // first list row shown
-	scope  string // the only project listed; empty lists every project
-	filter string // the only status listed; empty lists the live statuses
-	query  string // fuzzy text filter, applied after the status filter
-	typing bool   // the query input has the keys
-	input  textinput.Model
+	root     string
+	all      []store.Spec // everything loaded, dropped included
+	specs    []store.Spec // the listed rows
+	done     []store.Spec // done receipts, for dependency lookup only; never listed
+	hl       string       // key of the highlighted dependency entry; empty for none
+	cursor   int
+	offset   int      // first list row shown
+	scope    string   // the only project listed; empty lists every project
+	epic     *epicRef // the epic whose children are listed, in every project; replaces scope while set
+	epicPrev string   // the scope to restore when the epic scope clears
+	filter   string   // the only status listed; empty lists the live statuses
+	query    string   // fuzzy text filter, applied after the status filter
+	typing   bool     // the query input has the keys
+	input    textinput.Model
 
 	projects []string        // project folders in the store, alphabetical
 	helping  bool            // the help popup has the keys
@@ -228,6 +230,9 @@ func (m Model) flat() []store.Spec {
 		if m.scope != "" && s.Project != m.scope {
 			continue
 		}
+		if m.epic != nil && !m.epic.has(s) {
+			continue
+		}
 		var listed bool
 		switch filter {
 		case readyFilter:
@@ -242,7 +247,7 @@ func (m Model) flat() []store.Spec {
 		}
 	}
 	if m.query == "" {
-		return out
+		return m.epicRows(out)
 	}
 	type scored struct {
 		spec  store.Spec
@@ -259,7 +264,7 @@ func (m Model) flat() []store.Spec {
 	for _, h := range hits {
 		out = append(out, h.spec)
 	}
-	return out
+	return m.epicRows(out)
 }
 
 // field names a spec field the filter query is matched against.
