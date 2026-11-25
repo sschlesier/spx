@@ -233,6 +233,20 @@ func TestEpicTreeBoardAttentionApplyWithin(t *testing.T) {
 	}
 }
 
+func TestEpicSitsByStatusInBoardNotFirst(t *testing.T) {
+	all := scopeFixture()
+	for i := range all {
+		if all[i].Slug == "c-a" {
+			all[i].Status = "started"
+		}
+	}
+	m, _ := pressE(t, selectSlug(t, scopeModelOf(t, all, ""), "ep"))
+	// c-a comes before the epic in the store, and both are in the started column
+	if got := listed(press(t, m, "b")); !reflect.DeepEqual(got, []string{"c-b", "c-a", "ep"}) {
+		t.Errorf("board order %v", got)
+	}
+}
+
 func TestEpicFromBoardAndAttention(t *testing.T) {
 	b := selectSlug(t, press(t, scopeModel(t, ""), "b"), "c-b")
 	if b, _ = pressE(t, b); b.epic == nil || !b.board || selected(b) != "c-b" {
