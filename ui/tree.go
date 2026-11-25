@@ -120,3 +120,75 @@ func treePrefix(n treeNode) string {
 	}
 	return b.String()
 }
+
+// specKey names a spec by project and slug.
+type specKey struct{ project, slug string }
+
+// matchingKeys is the specs the scope, filter and query leave: the rows that aren't context.
+func (m Model) matchingKeys() map[specKey]bool {
+	rows := m.flat()
+	keys := make(map[specKey]bool, len(rows))
+	for _, s := range rows {
+		keys[specKey{s.Project, s.Slug}] = true
+	}
+	return keys
+}
+
+// matchCount is how many listed rows match the scope, filter and query.
+func (m Model) matchCount() int {
+	n := 0
+	keys := m.matchingKeys()
+	for _, s := range m.specs {
+		if keys[specKey{s.Project, s.Slug}] {
+			n++
+		}
+	}
+	return n
+}
+
+// withParents adds, before the first listed row that names it, each parent the rows leave out
+// as a context row, and its parent in turn. A parent that is done, missing, dropped outside the
+// x filter or on a parent cycle is not added, and the scoped epic's own parent never is.
+func (m Model) withParents(rows []store.Spec) []store.Spec {
+	have := make(map[specKey]bool, len(rows))
+	for _, s := range rows {
+		have[specKey{s.Project, s.Slug}] = true
+	}
+	out := make([]store.Spec, 0, len(rows))
+	for _, s := range rows {
+		var chain []store.Spec
+		seen := map[specKey]bool{{s.Project, s.Slug}: true}
+		cyc := false
+		for cur := s; ; {
+			if m.epic != nil && cur.Project == m.epic.project && cur.Slug == m.epic.slug {
+				break
+			}
+			project, slug, ok := parentKey(cur)
+			if !ok {
+				break
+			}
+			k := specKey{project, slug}
+			if seen[k] {
+				cyc = true
+				break
+			}
+			seen[k] = true
+			i := slices.IndexFunc(m.all, func(t store.Spec) bool { return t.Project == project && t.Slug == slug })
+			if i < 0 || (m.all[i].Status == store.Dropped && m.filter != store.Dropped) {
+				break
+			}
+			cur = m.all[i]
+			if !have[k] {
+				chain = append(chain, cur)
+			}
+		}
+		if !cyc {
+			for j := len(chain) - 1; j >= 0; j-- {
+				have[specKey{chain[j].Project, chain[j].Slug}] = true
+				out = append(out, chain[j])
+			}
+		}
+		out = append(out, s)
+	}
+	return out
+}

@@ -161,18 +161,18 @@ func TestAttentionDoesNothingElsewhere(t *testing.T) {
 }
 
 func TestAttentionIgnoresListKeys(t *testing.T) {
-	m := press(t, start(t, attSpecs(), 120, 30), "t", "n")
+	m := press(t, start(t, attSpecs(), 120, 30), "n")
 	before := m
-	m = press(t, m, "t", "b", "d", "a", "s", "x", "r")
-	if !m.attention || m.board || m.tree != before.tree || m.filter != "" || m.sel != before.sel {
-		t.Errorf("list keys changed the view: board %v tree %v filter %q", m.board, m.tree, m.filter)
+	m = press(t, m, "b", "d", "a", "s", "x", "r")
+	if !m.attention || m.board || m.filter != "" || m.sel != before.sel {
+		t.Errorf("list keys changed the view: board %v filter %q", m.board, m.filter)
 	}
 	if got := len(m.attLines()); got != 9 {
 		t.Errorf("%d lines, want 9", got)
 	}
 	m = press(t, m, "n")
-	if !m.tree || m.filter != "" {
-		t.Errorf("after return: tree %v filter %q, want the tree kept", m.tree, m.filter)
+	if m.attention || m.filter != "" {
+		t.Errorf("after return: attention %v filter %q", m.attention, m.filter)
 	}
 }
 

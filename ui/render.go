@@ -150,8 +150,6 @@ func (m Model) render() string {
 		}
 	} else if m.attention {
 		lead = append(lead, "attention")
-	} else if m.tree {
-		lead = append(lead, "tree")
 	}
 	if m.filter != "" && !m.board && !m.attention {
 		active = append(active, m.filter)
@@ -160,7 +158,7 @@ func (m Model) render() string {
 		active = append(active, "/"+m.query)
 	}
 	if len(active) > 0 {
-		lead = append(lead, fmt.Sprintf("%s · %d shown", strings.Join(active, " · "), len(m.specs)))
+		lead = append(lead, fmt.Sprintf("%s · %d shown", strings.Join(active, " · "), m.matchCount()))
 	}
 	if m.waves != nil {
 		lead = m.wavesLead()
@@ -237,14 +235,12 @@ func (m Model) listView() string {
 	if len(m.specs) == 0 {
 		return m.emptyMessage()
 	}
-	var prefixes []string
-	if m.tree {
-		_, nodes := treeLayout(m.specs)
-		prefixes = make([]string, len(nodes))
-		for i, n := range nodes {
-			prefixes[i] = treePrefix(n)
-		}
+	_, nodes := treeLayout(m.specs)
+	prefixes := make([]string, len(nodes))
+	for i, n := range nodes {
+		prefixes[i] = treePrefix(n)
 	}
+	matching := m.matchingKeys()
 	kinds := make([]StateKind, len(m.specs))
 	glyphCells := make([]string, len(m.specs))
 	for i, sp := range m.specs {
@@ -265,6 +261,9 @@ func (m Model) listView() string {
 		}
 		row := ansi.Truncate(layout[i].text, cut, "…")
 		base := lipgloss.NewStyle()
+		if !matching[specKey{m.specs[i].Project, m.specs[i].Slug}] {
+			base = dimStyle
+		}
 		if i == m.cursor {
 			base = selectedStyle
 		}

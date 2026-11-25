@@ -114,9 +114,6 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	case "E":
 		return m, m.toggleEpic()
-	case "t":
-		m.tree = !m.tree
-		m.show(m.visible(), m.cursor)
 	case "/":
 		m.typing = true
 		m.input.SetValue(m.query)

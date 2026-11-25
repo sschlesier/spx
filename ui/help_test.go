@@ -65,7 +65,7 @@ func TestHelpSwallowsOtherKeys(t *testing.T) {
 	m = press(t, m, "j", "d")
 	before := m
 	open := press(t, m, "?")
-	for _, k := range []string{"j", "k", "g", "G", "down", "enter", "d", "a", "s", "x", "r", "t", "p", "e", "c", "y", "Y", "/"} {
+	for _, k := range []string{"j", "k", "g", "G", "down", "enter", "d", "a", "s", "x", "r", "p", "e", "c", "y", "Y", "/"} {
 		open = press(t, open, k)
 		if !open.helping {
 			t.Fatalf("%s closed the popup", k)
@@ -76,7 +76,7 @@ func TestHelpSwallowsOtherKeys(t *testing.T) {
 	}
 	closed := press(t, open, "?")
 	if closed.cursor != before.cursor || closed.filter != before.filter || closed.query != before.query ||
-		closed.tree != before.tree || closed.board != before.board || closed.detailOpen != before.detailOpen {
+		closed.board != before.board || closed.detailOpen != before.detailOpen {
 		t.Errorf("state changed while help was open: cursor %d filter %q query %q",
 			closed.cursor, closed.filter, closed.query)
 	}
@@ -98,7 +98,7 @@ func helpText(m Model) string { return ansi.Strip(m.helpPopup()) }
 
 func TestHelpPopupListAndBoardText(t *testing.T) {
 	list := helpText(start(t, fixture(5), 120, 30))
-	for _, want := range []string{"Help", "Move", "Filter", "Act", "View", "j/k", "down / up", "d/a/s/x/r", "t", "tree", "q/ctrl+c", "quit"} {
+	for _, want := range []string{"Help", "Move", "Filter", "Act", "View", "j/k", "down / up", "d/a/s/x/r", "q/ctrl+c", "quit"} {
 		if !strings.Contains(list, want) {
 			t.Errorf("list help lacks %q:\n%s", want, list)
 		}
@@ -281,7 +281,7 @@ func TestHelpCoversEveryKey(t *testing.T) {
 
 	// Aliases and no-ops that need no row of their own.
 	skip := map[string]bool{"down": true, "up": true}
-	boardNoop := map[string]bool{"t": true, "b": true, "d": true, "a": true, "s": true, "x": true, "r": true}
+	boardNoop := map[string]bool{"b": true, "d": true, "a": true, "s": true, "x": true, "r": true}
 	// Global keys that do nothing on the board, which has no detail pane.
 	boardNone := map[string]bool{"]": true, "[": true, "enter": true, "ctrl+d": true, "ctrl+u": true}
 

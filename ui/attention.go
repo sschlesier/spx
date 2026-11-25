@@ -373,7 +373,7 @@ func (m *Model) attentionKey(k string) bool {
 			m.detailOpen = true
 			m.layout()
 		}
-	case "t", "b", "d", "a", "s", "x", "r":
+	case "b", "d", "a", "s", "x", "r":
 	default:
 		return false
 	}

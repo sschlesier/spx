@@ -94,20 +94,19 @@ func TestFilterHighlightsAfterMultibyteProjectAndTreePrefix(t *testing.T) {
 		{Project: "projé", Status: "draft", Slug: "epic", Title: "Filter epic", Type: "feature", Priority: 1},
 		{Project: "projé", Status: "draft", Slug: "kid", Title: "Filter kid", Type: "feature", Priority: 2, Parent: "epic"},
 	}
-	for _, tree := range []bool{false, true} {
+	{
 		m := filtered(t, specs, "filter", 80)
-		m.tree = tree
 		found := false
 		for _, line := range listLines(m) {
 			if got, _ := spans(line); len(got) > 0 {
 				found = true
 				if !reflect.DeepEqual(got, []string{"Filter"}) {
-					t.Errorf("tree=%v yellow %q, want [Filter] in %q", tree, got, line)
+					t.Errorf("yellow %q, want [Filter] in %q", got, line)
 				}
 			}
 		}
 		if !found {
-			t.Errorf("tree=%v: no highlight", tree)
+			t.Error("no highlight")
 		}
 	}
 }

@@ -80,7 +80,7 @@ func TestListCountInTreeModeAndSelectedRow(t *testing.T) {
 	parent := withCriteria("epic", "Epic", "draft", 1, 2)
 	kid := withCriteria("kid", "Kid", "draft", 0, 3)
 	kid.Parent = "epic"
-	m := press(t, start(t, []store.Spec{parent, kid}, 120, 20), "t")
+	m := start(t, []store.Spec{parent, kid}, 120, 20)
 	rows := plainRows(m)
 	if !strings.HasSuffix(rows[0], " 1/2") || !strings.HasSuffix(rows[1], " 0/3") || !strings.Contains(rows[1], "└─") {
 		t.Errorf("tree rows %q", rows)

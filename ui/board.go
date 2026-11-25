@@ -158,7 +158,7 @@ func (m *Model) boardKey(k string) bool {
 			m.detailOpen = true
 			m.layout()
 		}
-	case "t", "d", "a", "s", "x":
+	case "d", "a", "s", "x":
 	default:
 		return false
 	}

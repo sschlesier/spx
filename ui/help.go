@@ -77,7 +77,6 @@ var helpRows = []helpRow{
 	{allViews, "Act", "c", "advance with Claude"},
 	{allViews, "Act", "y/Y", "copy slug / path"},
 
-	{viewList, "View", "t", "tree"},
 	{viewList, "View", "b", "board"},
 	{viewList, "View", "n", "attention"},
 	{listBoard, "View", "w", "waves of an epic, or of the epic a child belongs to"},
