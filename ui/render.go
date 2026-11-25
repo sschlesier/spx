@@ -194,6 +194,9 @@ func footerLine(lead, hints []string, width int) string {
 
 // scopeLabel is the project listed, or "all projects".
 func (m Model) scopeLabel() string {
+	if m.epic != nil {
+		return "epic: " + m.epic.String()
+	}
 	if m.scope == "" {
 		return "all projects"
 	}
@@ -207,7 +210,9 @@ func (m Model) emptyMessage() string {
 		filter = ""
 	}
 	in := ""
-	if m.scope != "" {
+	if m.epic != nil {
+		in = " in " + m.scopeLabel()
+	} else if m.scope != "" {
 		in = " in " + m.scope
 	}
 	switch {
@@ -217,7 +222,7 @@ func (m Model) emptyMessage() string {
 		return fmt.Sprintf("No specs match %q%s", m.query, in)
 	case filter != "":
 		return "No " + filter + " specs" + in
-	case m.scope != "":
+	case m.scope != "" || m.epic != nil:
 		return "No specs" + in
 	}
 	return "No specs in " + m.root

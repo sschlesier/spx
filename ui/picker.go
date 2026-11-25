@@ -107,9 +107,10 @@ func (m Model) entryIndex(project string) int {
 // setScope lists only project's specs, or every project's when it is empty, and selects the
 // first row, showing its detail from the top. The same scope changes nothing.
 func (m *Model) setScope(project string) {
-	if project == m.scope {
+	if project == m.scope && m.epic == nil {
 		return
 	}
+	m.epic, m.epicPrev = nil, ""
 	m.scope = project
 	m.specs = m.visible()
 	m.cursor, m.hl = 0, ""

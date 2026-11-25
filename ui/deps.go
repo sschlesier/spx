@@ -185,7 +185,7 @@ func (m *Model) jump(t store.Spec) {
 	if m.board && !m.attention && t.Status == store.Dropped {
 		return
 	}
-	if m.scope != "" && t.Project != m.scope {
+	if m.scope != "" && t.Project != m.scope || m.epic != nil && !m.epic.has(t) {
 		m.setScope("")
 	}
 	if m.attention {
