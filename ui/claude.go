@@ -23,13 +23,13 @@ func advancePrompt(s store.Spec, path string) (string, bool) {
 	case "draft":
 		task = "Refine the draft spec %q in project %s. Its store copy is %s. Follow the spec-review skill."
 	case "approved":
-		task = "Pick up the approved spec %q in project %s. Its store copy is %s. Follow the spec-review skill's Start step, then implement it."
+		task = "Pick up the approved spec %q in project %s. Its store copy is %s. Follow the implement-spec skill."
 	case "started":
 		switch s.Progress {
 		case "in-review", "done":
 			task = "Review the started spec %q in project %s. Its store copy is %s. Follow the pr-review skill."
 		default:
-			task = "Continue the started spec %q in project %s. Its store copy is %s. Resume its worktree and branch from the Log, then implement the unticked acceptance criteria."
+			task = "Continue the started spec %q in project %s. Its store copy is %s. Follow the implement-spec skill to resume it."
 		}
 	default:
 		return "", false

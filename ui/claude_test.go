@@ -50,10 +50,10 @@ func TestAdvancePromptPerStage(t *testing.T) {
 		status, progress, want string
 	}{
 		{"draft", "", `Refine the draft spec "s" in project p. Its store copy is /x/s.md. Follow the spec-review skill. This session is already named p/s.`},
-		{"approved", "", `Pick up the approved spec "s" in project p. Its store copy is /x/s.md. Follow the spec-review skill's Start step, then implement it. This session is already named p/s.`},
-		{"started", "in-progress", `Continue the started spec "s" in project p. Its store copy is /x/s.md. Resume its worktree and branch from the Log, then implement the unticked acceptance criteria. This session is already named p/s.`},
-		{"started", "", `Continue the started spec "s" in project p. Its store copy is /x/s.md. Resume its worktree and branch from the Log, then implement the unticked acceptance criteria. This session is already named p/s.`},
-		{"started", "odd", `Continue the started spec "s" in project p. Its store copy is /x/s.md. Resume its worktree and branch from the Log, then implement the unticked acceptance criteria. This session is already named p/s.`},
+		{"approved", "", `Pick up the approved spec "s" in project p. Its store copy is /x/s.md. Follow the implement-spec skill. This session is already named p/s.`},
+		{"started", "in-progress", `Continue the started spec "s" in project p. Its store copy is /x/s.md. Follow the implement-spec skill to resume it. This session is already named p/s.`},
+		{"started", "", `Continue the started spec "s" in project p. Its store copy is /x/s.md. Follow the implement-spec skill to resume it. This session is already named p/s.`},
+		{"started", "odd", `Continue the started spec "s" in project p. Its store copy is /x/s.md. Follow the implement-spec skill to resume it. This session is already named p/s.`},
 		{"started", "in-review", `Review the started spec "s" in project p. Its store copy is /x/s.md. Follow the pr-review skill. This session is already named p/s.`},
 		{"started", "done", `Review the started spec "s" in project p. Its store copy is /x/s.md. Follow the pr-review skill. This session is already named p/s.`},
 	}
