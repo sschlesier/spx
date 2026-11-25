@@ -103,6 +103,10 @@ func TestContextDroppedDoneAndCycles(t *testing.T) {
 	if got := slugsOf(m); !reflect.DeepEqual(got, []string{"alpha/gone", "alpha/of-gone"}) {
 		t.Errorf("x filter with dropped child: %v", got)
 	}
+	m = typed(t, press(t, start(t, all, 140, 30), "x", "/"), "of-gone")
+	if got := slugsOf(m); !reflect.DeepEqual(got, []string{"alpha/gone", "alpha/of-gone"}) || !isContext(m, "gone") {
+		t.Errorf("x filter and a query matching only the dropped child: %v", got)
+	}
 	m = press(t, start(t, all, 140, 30), "d")
 	if slices.Contains(slugsOf(m), "alpha/gone") {
 		t.Errorf("dropped parent listed under d: %v", slugsOf(m))
