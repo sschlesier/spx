@@ -74,8 +74,7 @@ var helpRows = []helpRow{
 
 	{allViews, "Act", "v", "view read-only in $EDITOR"},
 	{allViews, "Act", "e", "edit on a scratch copy"},
-	{allViews, "Act", "c", "advance with Claude"},
-	{allViews, "Act", "C", "edit the prompt in $EDITOR, then advance with Claude"},
+	{allViews, "Act", "c/C", "advance with Claude; C edits the prompt first"},
 	{allViews, "Act", "y/Y", "copy slug / path"},
 
 	{viewList, "View", "t", "tree"},
