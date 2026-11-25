@@ -327,6 +327,13 @@ func TestWavesCloseReturnsToTheOriginatingViewWithTheEpicSelected(t *testing.T) 
 			if got := selRef(m); got != "a/e" {
 				t.Errorf("%s/%s: selected %s, want a/e", c.name, closeKey, got)
 			}
+			if m.attention {
+				kind, _ := State(m.specs[m.cursor], m.all, m.done)
+				// A folded group shows its header in place of the spec, as when attention opens.
+				if l, ok := m.selectedLine(); !ok || (l.spec != m.cursor && !(l.spec == attHeader && l.kind == kind && m.folded(kind))) {
+					t.Errorf("%s/%s: the attention line %v isn't on the selected spec", c.name, closeKey, l)
+				}
+			}
 		}
 	}
 }
