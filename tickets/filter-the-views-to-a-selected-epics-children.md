@@ -58,3 +58,4 @@ Don't touch: the CLI and its status flags; `ui/state.go`.
 - 2026-11-25: Approved: Scott Schlesier, 2026-11-25: E on an epic or child scopes list/tree/board/attention to the epic and its live children across projects; esc/E/picker clear it; header epic: <ref>. Cold read: pass
 - 2026-11-25: Started on branch filter-the-views-to-a-selected-epics-children
 - 2026-11-25: Status: in-review
+- 2026-11-25: Decision: following a dependency or child link to a spec outside the epic scope clears the epic scope (as a jump out of a project scope does); the earlier project scope is not restored. Chosen by Scott, round 1
