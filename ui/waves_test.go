@@ -247,7 +247,7 @@ func TestWavesIgnoresOtherViewKeys(t *testing.T) {
 	before := screen(m)
 	for _, k := range []string{"d", "a", "s", "x", "r", "t", "b", "n", "p", "/"} {
 		m = press(t, m, k)
-		if m.waves == nil || m.board || m.attention || m.typing || m.picking || m.tree || m.filter != "" || screen(m) != before {
+		if m.waves == nil || m.board || m.attention || m.typing || m.picking || m.filter != "" || screen(m) != before {
 			t.Fatalf("%q changed the view:\n%s", k, screen(m))
 		}
 	}
@@ -300,7 +300,6 @@ func TestWavesCloseReturnsToTheOriginatingViewWithTheEpicSelected(t *testing.T) 
 		check func(Model) bool
 	}{
 		{"list", func(m Model) Model { return m }, func(m Model) bool { return !m.board && !m.attention }},
-		{"tree", func(m Model) Model { return press(t, m, "t") }, func(m Model) bool { return m.tree }},
 		{"board", func(m Model) Model { return press(t, m, "b") }, func(m Model) bool { return m.board }},
 		{"attention", func(m Model) Model { return press(t, m, "n") }, func(m Model) bool { return m.attention }},
 	} {
@@ -321,7 +320,7 @@ func TestWavesCloseReturnsToTheOriginatingViewWithTheEpicSelected(t *testing.T) 
 			}
 			m = press(t, m, closeKey)
 			if m.waves != nil || !c.check(m) {
-				t.Errorf("%s/%s: waves %v, view flags board %v attention %v tree %v", c.name, closeKey, m.waves, m.board, m.attention, m.tree)
+				t.Errorf("%s/%s: waves %v, view flags board %v attention %v", c.name, closeKey, m.waves, m.board, m.attention)
 				continue
 			}
 			if got := selRef(m); got != "a/e" {

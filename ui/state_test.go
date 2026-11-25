@@ -91,7 +91,7 @@ func TestEveryListRowStartsWithItsStateGlyph(t *testing.T) {
 
 func TestGlyphsComeBeforeTheTreePrefixOnEveryRow(t *testing.T) {
 	specs := family()
-	m := press(t, start(t, specs, 120, 20), "t")
+	m := start(t, specs, 120, 20)
 	for _, slug := range []string{"epic", "kid1", "grand"} {
 		row := rowOf(m, slug)
 		if !strings.HasPrefix(row, "● p ") {

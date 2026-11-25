@@ -151,7 +151,7 @@ func TestEpicToggleKeepsSelectionAndRestoresProject(t *testing.T) {
 	}
 	m = selectSlug(t, m, "c-a")
 	m, _ = pressE(t, m)
-	if m.epic != nil || m.scope != "alpha" || !reflect.DeepEqual(listed(m), []string{"c-a", "o-a", "orphan"}) {
+	if m.epic != nil || m.scope != "alpha" || !reflect.DeepEqual(listed(m), []string{"ep", "c-a", "o-a", "orphan"}) {
 		t.Fatalf("scope %q listed %v", m.scope, listed(m))
 	}
 	if selected(m) != "c-a" {
@@ -184,21 +184,21 @@ func TestEpicRowFirstUnderQueryUnlessLeftOut(t *testing.T) {
 		t.Errorf("listed %v", got)
 	}
 	m = press(t, m, "d")
-	if got := listed(m); slices.Contains(got, "ep") {
-		t.Errorf("draft filter should leave out the started epic: %v", got)
+	if got := listed(m); !reflect.DeepEqual(got, []string{"ep", "c-a"}) || m.matchCount() != 1 {
+		t.Errorf("draft filter: want the started epic first as context: %v", got)
 	}
 }
 
 func TestEpicDroppedChildUnderDroppedFilter(t *testing.T) {
 	m, _ := pressE(t, selectSlug(t, scopeModel(t, ""), "ep"))
-	if got := listed(press(t, m, "x")); !reflect.DeepEqual(got, []string{"c-x"}) {
+	if got := listed(press(t, m, "x")); !reflect.DeepEqual(got, []string{"ep", "c-x"}) {
 		t.Errorf("listed %v", got)
 	}
 }
 
 func TestEpicTreeBoardAttentionApplyWithin(t *testing.T) {
 	m, _ := pressE(t, selectSlug(t, scopeModel(t, ""), "ep"))
-	if got := listed(press(t, m, "t")); !reflect.DeepEqual(got, []string{"ep", "c-a", "c-b"}) {
+	if got := listed(m); !reflect.DeepEqual(got, []string{"ep", "c-a", "c-b"}) {
 		t.Errorf("tree %v", got)
 	}
 	board := press(t, m, "b")
@@ -342,7 +342,7 @@ func TestEpicFromBoardAndAttention(t *testing.T) {
 	}
 	a := press(t, scopeModel(t, ""), "n")
 	for j, l := range a.attLines() {
-		if l.spec >= 0 && a.specs[l.spec].Slug == "c-b" {
+		if l.spec >= 0 && a.specs[l.spec].Slug == "c-a" {
 			a.setSel(j)
 		}
 	}

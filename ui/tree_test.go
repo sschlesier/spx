@@ -41,28 +41,8 @@ func family() []store.Spec {
 	}
 }
 
-func TestTreeStartsOffAndToggles(t *testing.T) {
-	m := start(t, family(), 120, 20)
-	flat := slugsOf(m)
-	if m.tree || strings.Contains(screen(m), "├─") {
-		t.Fatal("tree mode starts on")
-	}
-	m = press(t, m, "t")
-	if !m.tree {
-		t.Fatal("t did not turn tree mode on")
-	}
-	want := []string{"p/epic", "p/kid1", "p/grand", "p/kid2", "p/solo"}
-	if got := slugsOf(m); !reflect.DeepEqual(got, want) {
-		t.Errorf("tree order %v, want %v", got, want)
-	}
-	m = press(t, m, "t")
-	if got := slugsOf(m); !reflect.DeepEqual(got, flat) || strings.Contains(screen(m), "├─") {
-		t.Errorf("flat after toggling back: %v, want %v", got, flat)
-	}
-}
-
 func TestTreeIndentsAndDrawsGlyphs(t *testing.T) {
-	m := press(t, start(t, family(), 120, 20), "t")
+	m := start(t, family(), 120, 20)
 	for slug, want := range map[string]string{
 		"epic":  "T epic",
 		"kid1":  "├─ T kid1",
@@ -87,7 +67,7 @@ func TestTreeGuidesRunOnlyWhileAnAncestorHasMoreChildren(t *testing.T) {
 		node("p", "draft", "f", "a"),
 		node("p", "draft", "g", "f"),
 	}
-	m := press(t, start(t, specs, 120, 20), "t")
+	m := start(t, specs, 120, 20)
 	for slug, want := range map[string]string{
 		"b": "├─ T b",
 		"c": "│ ├─ T c",
@@ -103,7 +83,7 @@ func TestTreeGuidesRunOnlyWhileAnAncestorHasMoreChildren(t *testing.T) {
 }
 
 func TestTreeKeepsAColumnsAligned(t *testing.T) {
-	m := press(t, start(t, family(), 120, 20), "t")
+	m := start(t, family(), 120, 20)
 	col := -1
 	for _, slug := range []string{"epic", "kid1", "solo"} {
 		l := rowOf(m, "T "+slug)
@@ -125,14 +105,14 @@ func TestTreeParentsNotShownLeaveTheChildAtTopLevel(t *testing.T) {
 		node("p", "draft", "of-dropped", "gone"),
 		node("q", "draft", "other-project", "epic"),
 	}
-	m := press(t, start(t, specs, 120, 20), "t", "d")
+	m := press(t, start(t, specs, 120, 20), "d")
 	for _, slug := range []string{"in-done", "missing", "of-dropped", "other-project"} {
 		if got := titleCol(m, slug); got != "T "+slug {
 			t.Errorf("%s: %q, want top level", slug, got)
 		}
 	}
 	m = press(t, m, "d", "a")
-	if got := titleCol(m, "other-status"); got != "T other-status" {
+	if got := titleCol(m, "other-status"); got != "└─ T other-status" {
 		t.Errorf("approved child of a hidden draft parent: %q", got)
 	}
 }
@@ -144,7 +124,7 @@ func TestTreeQualifiedParentCrossesProjects(t *testing.T) {
 		node("p", "draft", "epic", ""),
 		node("q", "draft", "epic", ""),
 	}
-	m := press(t, start(t, specs, 120, 20), "t")
+	m := start(t, specs, 120, 20)
 	want := []string{"p/epic", "q/kid", "q/epic", "q/same-slug"}
 	if got := slugsOf(m); !reflect.DeepEqual(got, want) {
 		t.Errorf("order %v, want %v", got, want)
@@ -163,7 +143,7 @@ func TestTreeShowsEachSpecOnceWithCycles(t *testing.T) {
 		node("p", "draft", "self", "self"),
 		node("p", "draft", "under-a", "a"),
 	}
-	m := press(t, start(t, specs, 120, 20), "t")
+	m := start(t, specs, 120, 20)
 	if len(m.specs) != 4 {
 		t.Fatalf("listed %v, want 4 rows", slugsOf(m))
 	}
@@ -180,68 +160,47 @@ func TestTreeShowsEachSpecOnceWithCycles(t *testing.T) {
 func TestTreeAppliesScopeFilterAndQuery(t *testing.T) {
 	specs := family()
 	specs = append(specs, node("q", "draft", "elsewhere", ""))
-	m := press(t, start(t, specs, 120, 20), "t")
+	m := start(t, specs, 120, 20)
 	m = m.WithScope("p", []string{"p", "q"})
 	if strings.Contains(screen(m), "elsewhere") {
 		t.Error("scope not applied")
 	}
 	m = typed(t, press(t, m, "/"), "kid2")
-	if got := slugsOf(m); !reflect.DeepEqual(got, []string{"p/kid2"}) {
+	if got := slugsOf(m); !reflect.DeepEqual(got, []string{"p/epic", "p/kid2"}) {
 		t.Fatalf("query: %v", got)
 	}
-	if got := titleCol(m, "kid2"); got != "T kid2" {
+	if got := titleCol(m, "kid2"); got != "└─ T kid2" {
 		t.Errorf("child whose parent doesn't match: %q", got)
 	}
 }
 
-func TestTreeKeepsTheSelectionAcrossToggleAndReload(t *testing.T) {
-	m := start(t, family(), 120, 20)
-	m = press(t, m, "j", "j", "j")
+func TestTreeKeepsTheSelectionAcrossReload(t *testing.T) {
+	m := press(t, start(t, family(), 120, 20), "j", "j", "j")
 	if selected(m) != "kid2" {
-		t.Fatalf("selected %s in the flat list", selected(m))
-	}
-	m = press(t, m, "t")
-	if selected(m) != "kid2" {
-		t.Errorf("after t: selected %s, want kid2", selected(m))
+		t.Fatalf("selected %s", selected(m))
 	}
 	m = reload(t, m, append(family(), node("p", "draft", "new", "")))
 	if selected(m) != "kid2" {
 		t.Errorf("after reload: selected %s, want kid2", selected(m))
 	}
-	m = press(t, m, "t")
-	if selected(m) != "kid2" {
-		t.Errorf("after t again: selected %s, want kid2", selected(m))
-	}
 }
 
-func TestTreeIgnoredWhileTypingOrPicking(t *testing.T) {
+func TestTHasNoEffect(t *testing.T) {
 	m := start(t, family(), 120, 20)
-	typing := press(t, m, "/", "t")
-	if typing.tree || typing.input.Value() != "t" {
-		t.Errorf("typing: tree %v, input %q", typing.tree, typing.input.Value())
-	}
-	m = m.WithScope("", []string{"p", "q"})
-	picking := press(t, m, "p", "t")
-	if picking.tree {
-		t.Error("t reached the list through the project popup")
-	}
-}
-
-func TestTreeShownInFooter(t *testing.T) {
-	m := start(t, family(), 200, 20)
-	if f := footer(m); strings.Contains(f, "all projects · tree") {
-		t.Errorf("footer off: %q", f)
-	}
+	before := slugsOf(m)
 	m = press(t, m, "t")
-	if f := footer(m); !strings.Contains(f, "all projects · tree") {
-		t.Errorf("footer on: %q", f)
+	if got := slugsOf(m); !reflect.DeepEqual(got, before) || m.notice != "" {
+		t.Errorf("t changed the list: %v, want %v", got, before)
+	}
+	if f := footer(m); strings.Contains(f, "tree") {
+		t.Errorf("footer names tree: %q", f)
 	}
 }
 
 func TestTreeRowsAreCutToThePane(t *testing.T) {
 	long := node("p", "draft", "kid", "epic")
 	long.Title = strings.Repeat("long ", 30)
-	m := press(t, start(t, []store.Spec{node("p", "draft", "epic", ""), long}, 60, 10), "t")
+	m := start(t, []store.Spec{node("p", "draft", "epic", ""), long}, 60, 10)
 	if !strings.Contains(screen(m), "…") {
 		t.Error("long row not cut with …")
 	}
@@ -250,7 +209,7 @@ func TestTreeRowsAreCutToThePane(t *testing.T) {
 func TestTreeDetailFollowsTheSelectedChild(t *testing.T) {
 	specs := family()
 	specs[2].Body = "Kid one body.\n"
-	m := press(t, start(t, specs, 120, 20), "t", "j")
+	m := press(t, start(t, specs, 120, 20), "j")
 	if selected(m) != "kid1" || !strings.Contains(screen(m), "Kid one body.") {
 		t.Errorf("selected %s\n%s", selected(m), screen(m))
 	}
@@ -259,7 +218,7 @@ func TestTreeDetailFollowsTheSelectedChild(t *testing.T) {
 func TestTreeEnterOpensTheSelectedChild(t *testing.T) {
 	specs := family()
 	specs[2].Body = "Kid one body.\n"
-	m := press(t, start(t, specs, 80, 20), "t", "j", "enter")
+	m := press(t, start(t, specs, 80, 20), "j", "enter")
 	if !m.detailOpen || !strings.Contains(screen(m), "Kid one body.") {
 		t.Errorf("enter on an indented row:\n%s", screen(m))
 	}

@@ -2,7 +2,7 @@
 
 A terminal browser for the spec store (`$AGENT_SPECS_DIR`, or `~/src/specs`): a list of
 specs beside the selected spec's rendered markdown. The UI is read-only; the only writes are by
-the Claude session you start with `c` or from `e`'s review, by `e`'s scratch copy committed through `spx edit`, `amend` or `reopen`
+the Claude session you start with `c` or `C` or from `e`'s review, by `e`'s scratch copy committed through `spx edit`, `amend` or `reopen`
 (`v` opens a read-only copy), by the store-writing CLI commands (`spx log`, `new`, `edit`,
 `approve`, `start`, `send-back`, `drop`, `reopen`, `status`, `check`, `amend`, `adopt`, `detach`, `repo --set`, `accept`, `close`,
 `sweep`) and by `spx place`, which writes one file into a project repo.
@@ -38,7 +38,7 @@ Deploy:    The user's own machine, run in a terminal. Network only through `gh`,
            store commit.
 Load:      One user; a store of tens to low hundreds of specs.
 Data:      Reads markdown files under the store root. Writes under the store root only through
-           the CLI commands (each commits to the store's git repo) or a Claude session opened with `c` or
+           the CLI commands (each commits to the store's git repo) or a Claude session opened with `c`, `C` or
            from `e`; `v` and `e` write scratch files in a temporary directory outside the store (removed
            when the editor or session exits, kept after a failed `spx edit` or `amend`). Outside the
            store it writes only those and `spx place`'s one ticket file in a project repo. Nothing sensitive.
@@ -53,7 +53,7 @@ Invariants:
   for each merged pull request), then pushes `main` (never forced) to the store's `origin`, else its only remote, warning on stderr if the push fails or times out (15 s) and keeping the commit (later commits in that process are not pushed; git and ssh never prompt); never stashes, and restores the tree on failure. The TUI itself never writes
   under the store root: `e` edits a copy in a temporary directory and commits it only by starting this
   binary's `spx edit` or `spx amend` (and `spx reopen` for a dropped spec), and only a Claude session the
-  user starts with `c` or `a` may write otherwise. `<project>/.repo` (one line: the project's main checkout
+  user starts with `c`, `C` or `a` may write otherwise. `<project>/.repo` (one line: the project's main checkout
   path, written by `repo --set` and by `new` and `start`, which commit it with the draft or the start) is the one
   non-spec file spx writes under the store root; it is never listed. The one write outside the
   store root is `spx place <slug> [--dir <repo>]`: it overwrites `<repo>/<ticket folder>/<slug>.md`
@@ -81,8 +81,8 @@ Invariants:
   the UI. Usage paths and `--version` never read the store. The only processes spx starts are
   `git rev-parse` at startup, to scope to the current repo's project; `git` in the store root
   for the commands other than `rev`, including `git push <remote> main` after each commit; `gh pr view <url> --json state` (read-only) for `spx sweep`, which `spx start` also
-  runs first (a gh failure only warns there); the editor on `v` (a read-only copy) and `e` (a scratch copy);
-  this binary's `spx edit`, `spx amend` and `spx reopen` after `e`; `claude --name <project>/<slug>` on `c`, in the project's repo (for a started spec, the worktree of that repo with its logged branch checked out, found by a read-only `git worktree list --porcelain` run in the repo), with the prompt for the spec's stage, and on `a` after `e`, with a prompt to review the edit; and one clipboard tool (pbcopy, wl-copy or xclip) on `y`/`Y`. In a project repo a command
+  runs first (a gh failure only warns there); the editor on `v` (a read-only copy), `e` (a scratch copy) and `C` (the prompt);
+  this binary's `spx edit`, `spx amend` and `spx reopen` after `e`; `claude --name <project>/<slug>` on `c`, in the project's repo (for a started spec, the worktree of that repo with its logged branch checked out, found by a read-only `git worktree list --porcelain` run in the repo), with the prompt for the spec's stage (on `C`, the prompt as the user edited it in the editor, from a scratch file in a temporary directory that is removed afterwards), and on `a` after `e`, with a prompt to review the edit; and one clipboard tool (pbcopy, wl-copy or xclip) on `y`/`Y`. In a project repo a command
   runs only read-only `git rev-parse` (`place` and `accept` to find the checkout's top-level) and, on `c`, `git worktree list`,
   never a git command that writes; `place --dir` runs no git in the repo. `accept` also reads the
   repo's copy of the spec (and AGENTS.md or CLAUDE.md for the ticket folder) without writing.

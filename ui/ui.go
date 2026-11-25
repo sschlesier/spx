@@ -51,7 +51,6 @@ type Model struct {
 
 	width, height int
 	detailOpen    bool                 // narrow layout only: detail shown full-width
-	tree          bool                 // list each spec under its parent
 	board         bool                 // draw one column per live status instead of the list
 	attention     bool                 // list only what waits on me, grouped by state, instead of the list
 	waves         *wavesState          // an epic's children in dependency waves instead of the list; nil when closed
@@ -179,6 +178,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.scratchClaudeDone(msg)
 	case spxDoneMsg:
 		return m.spxDone(msg)
+	case promptEditedMsg:
+		return m.promptEdited(msg)
 	case claudeDoneMsg:
 		return m.claudeDone(msg)
 	case noticeMsg:
@@ -200,7 +201,8 @@ func (m Model) WithDone(done []store.Spec) Model {
 	return m
 }
 
-// visible is the listed rows: flat, or with each spec under its parent in tree mode.
+// visible is the listed rows: in the list, each spec under its parent, with parents the filters
+// left out added as context rows.
 func (m Model) visible() []store.Spec {
 	if m.waves != nil {
 		return m.wavePlan().cards
@@ -212,9 +214,8 @@ func (m Model) visible() []store.Spec {
 	if m.attention {
 		return m.attentionRows(rows)
 	}
-	if m.tree {
-		rows, _ = treeLayout(rows)
-	}
+	rows = m.epicRows(m.withParents(rows))
+	rows, _ = treeLayout(rows)
 	return rows
 }
 
@@ -300,7 +301,7 @@ func matchScore(query string, s store.Spec) (int, bool) {
 func (m *Model) setQuery(query string) {
 	m.query = query
 	m.specs = m.visible()
-	m.cursor, m.hl = 0, ""
+	m.cursor, m.hl = m.firstMatch(m.specs), ""
 	if m.attention {
 		m.resetAttention()
 	}
@@ -310,10 +311,25 @@ func (m *Model) setQuery(query string) {
 }
 
 // setFilter lists only status, or the live statuses when status is empty. A spec that's
-// no longer listed gives way to the first row.
+// no longer listed gives way to the first matching row.
 func (m *Model) setFilter(status string) {
 	m.filter = status
-	m.show(m.visible(), 0)
+	rows := m.visible()
+	m.show(rows, m.firstMatch(rows))
+}
+
+// firstMatch is the index of the first row that isn't a context row, or 0.
+func (m Model) firstMatch(rows []store.Spec) int {
+	if m.board || m.attention {
+		return 0
+	}
+	keys := m.matchingKeys()
+	for i, s := range rows {
+		if keys[specKey{s.Project, s.Slug}] {
+			return i
+		}
+	}
+	return 0
 }
 
 // show lists rows, keeping the selected spec (by project and slug) and its detail scroll.
