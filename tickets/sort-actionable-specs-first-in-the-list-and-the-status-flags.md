@@ -53,3 +53,5 @@ Out of scope:
 - 2026-11-27: Approved: Scott Schlesier, 2026-11-27: Actionable-first sort (needs me + ready) for the list, epic children and CLI status flags; epics rank by children; query keeps score order. Cold read: pass
 - 2026-11-27: Started on branch sort-actionable-specs-first
 - 2026-11-27: Status: in-review
+- 2026-11-27: Review round 1: dismissed surviving mutant dropping epicRows in visible(); under E scope rows are the epic and its descendants only, and flat() already puts the epic first, so it is equivalent
+- 2026-11-27: Review round 1: context parent that is not an epic ranks by its own state too (Design: a non-epic row with listed descendants also counts its own state)
