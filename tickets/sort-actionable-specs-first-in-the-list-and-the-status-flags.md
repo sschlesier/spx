@@ -6,7 +6,7 @@ priority: 2
 depends-on: []
 parent:
 approved: "Scott Schlesier, 2026-11-27: Actionable-first sort (needs me + ready) for the list, epic children and CLI status flags; epics rank by children; query keeps score order. Cold read: pass"
-status: done
+status: in-review
 ---
 
 The top of the list, and of what `spx -d/-a/-s/-r` print, is what I or an agent can act on now: specs waiting on me and approved specs that are ready come before working and blocked ones, among top-level specs and among an epic's children alike.
@@ -56,3 +56,4 @@ Out of scope:
 - 2026-11-27: Review round 1: dismissed surviving mutant dropping epicRows in visible(); under E scope rows are the epic and its descendants only, and flat() already puts the epic first, so it is equivalent
 - 2026-11-27: Review round 1: context parent that is not an epic ranks by its own state too (Design: a non-epic row with listed descendants also counts its own state)
 - 2026-11-27: Status: done: Reviewed round 1: criteria verified; one decision for the person
+- 2026-11-27: Status: in-review
