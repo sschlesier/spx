@@ -16,6 +16,8 @@ func mixed() []store.Spec {
 	for i, st := range []string{"started", "approved", "draft", store.Dropped} {
 		specs[2*i].Status, specs[2*i+1].Status = st, st
 	}
+	// Started specs in review need a person, so they keep their place ahead of the others.
+	specs[0].Progress, specs[1].Progress = "in-review", "in-review"
 	return specs
 }
 

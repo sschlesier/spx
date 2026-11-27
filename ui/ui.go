@@ -198,6 +198,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // dependencies. They are never listed.
 func (m Model) WithDone(done []store.Spec) Model {
 	m.done = done
+	m.specs = m.visible()
 	return m
 }
 
@@ -214,8 +215,11 @@ func (m Model) visible() []store.Spec {
 	if m.attention {
 		return m.attentionRows(rows)
 	}
-	rows = m.epicRows(m.withParents(rows))
-	rows, _ = treeLayout(rows)
+	rows = m.withParents(rows)
+	if m.query == "" {
+		rows = actionableTree(rows, m.all, m.done)
+	}
+	rows, _ = treeLayout(m.epicRows(rows))
 	return rows
 }
 

@@ -71,7 +71,7 @@ func TestStaleLoadIsIgnored(t *testing.T) {
 func TestSelectionFollowsAMovedSpec(t *testing.T) {
 	m := press(t, start(t, fixture(5), 120, 20), "j", "j")
 	specs := fixture(5)
-	specs[2].Status, specs[2].Title = "started", "Renamed"
+	specs[2].Status, specs[2].Title, specs[2].Progress = "started", "Renamed", "in-review"
 	store.Sort(specs)
 	m = reload(t, m, specs)
 	if selected(m) != "spec-02" || m.cursor != 0 {

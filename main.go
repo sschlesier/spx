@@ -126,11 +126,9 @@ func run(args []string, stdout, stderr io.Writer, dir string, start func(tea.Mod
 		scope = p
 	}
 	var done []store.Spec
-	if ready || len(statuses) == 0 {
-		if done, err = store.LoadDone(root); err != nil {
-			fmt.Fprintf(stderr, "spx: %v\n", err)
-			return 1
-		}
+	if done, err = store.LoadDone(root); err != nil {
+		fmt.Fprintf(stderr, "spx: %v\n", err)
+		return 1
 	}
 	if len(statuses) > 0 || ready {
 		var shown []store.Spec
@@ -139,7 +137,7 @@ func run(args []string, stdout, stderr io.Writer, dir string, start func(tea.Mod
 				shown = append(shown, spec)
 			}
 		}
-		for _, row := range ui.StatusRows(shown) {
+		for _, row := range ui.StatusRows(ui.ActionableFirst(shown, specs, done)) {
 			fmt.Fprintln(stdout, row)
 		}
 		return 0
