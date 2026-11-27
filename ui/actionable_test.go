@@ -84,12 +84,16 @@ func TestEpicScopeKeepsTheEpicFirst(t *testing.T) {
 		dspec("p", "approved", "r"),
 		epicSpec("p", "e"),
 		kid("p", "approved", "kb", "e", "nope"),
-		kid("p", "approved", "kr", "e"),
+		kid("p", "started", "kw", "e"),
 	}
-	m := selectSlug(t, actModel(t, all, nil), "e")
+	m := actModel(t, all, nil)
+	if got, want := listed(m), []string{"r", "e", "kb", "kw"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("unscoped listed %v, want %v", got, want)
+	}
+	m = selectSlug(t, m, "e")
 	m, _ = pressE(t, m)
 	got := listed(m)
-	want := []string{"e", "kr", "kb"}
+	want := []string{"e", "kb", "kw"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("listed %v, want %v", got, want)
 	}
