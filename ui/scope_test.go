@@ -34,7 +34,7 @@ func scoped(t *testing.T, project string, w int) Model {
 
 func TestScopeListsOnlyThatProject(t *testing.T) {
 	m := scoped(t, "alpha", 140)
-	if got := listed(m); !reflect.DeepEqual(got, []string{"a-one", "a-two"}) {
+	if got := listed(m); !reflect.DeepEqual(got, []string{"a-two", "a-one"}) {
 		t.Fatalf("listed %v", got)
 	}
 	if f := top(m); !strings.HasPrefix(f, "alpha") || !strings.HasSuffix(f, "2 shown") {

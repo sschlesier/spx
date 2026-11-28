@@ -29,10 +29,9 @@ func parentKey(s store.Spec) (project, slug string, ok bool) {
 	return s.Project, p, true
 }
 
-// treeLayout orders rows so each spec follows its parent, children in the order of rows, and
-// returns each row's place. A spec whose parent isn't in rows, or that sits in a parent cycle,
-// is top level.
-func treeLayout(rows []store.Spec) ([]store.Spec, []treeNode) {
+// parentIndexes is, for each row, the index of its parent row, or -1 for a top-level row: one
+// whose parent isn't in rows, or that sits on a parent cycle.
+func parentIndexes(rows []store.Spec) []int {
 	type key struct{ project, slug string }
 	index := make(map[key]int, len(rows))
 	for i, s := range rows {
@@ -62,6 +61,14 @@ func treeLayout(rows []store.Spec) ([]store.Spec, []treeNode) {
 	for _, i := range cyc {
 		par[i] = -1
 	}
+	return par
+}
+
+// treeLayout orders rows so each spec follows its parent, children in the order of rows, and
+// returns each row's place. A spec whose parent isn't in rows, or that sits in a parent cycle,
+// is top level.
+func treeLayout(rows []store.Spec) ([]store.Spec, []treeNode) {
+	par := parentIndexes(rows)
 	children := make([][]int, len(rows))
 	var roots []int
 	for i := range rows {
@@ -189,6 +196,59 @@ func (m Model) withParents(rows []store.Spec) []store.Spec {
 			}
 		}
 		out = append(out, s)
+	}
+	return out
+}
+
+// isActionable is whether a spec's own state is one a person or agent can act on now.
+func isActionable(s store.Spec, all, done []store.Spec) bool {
+	k, _ := State(s, all, done)
+	return k == StateNeedsMe || k == StateReady
+}
+
+// ActionableFirst moves the specs that are actionable (state "needs me" or "ready") before the
+// rest, each group keeping its order.
+func ActionableFirst(rows, all, done []store.Spec) []store.Spec {
+	own := make([]bool, len(rows))
+	for i, s := range rows {
+		own[i] = isActionable(s, all, done)
+	}
+	return partitionActionable(rows, own)
+}
+
+// actionableTree is ActionableFirst for rows laid out as a tree: a row is placed by whether it
+// or any listed descendant is actionable. An epic with listed children counts only them.
+func actionableTree(rows, all, done []store.Spec) []store.Spec {
+	par := parentIndexes(rows)
+	hasChild := make([]bool, len(rows))
+	for _, p := range par {
+		if p >= 0 {
+			hasChild[p] = true
+		}
+	}
+	rank := make([]bool, len(rows))
+	for i, s := range rows {
+		if s.Type == "epic" && hasChild[i] || !isActionable(s, all, done) {
+			continue
+		}
+		for j, steps := i, 0; j >= 0 && steps <= len(rows); j, steps = par[j], steps+1 {
+			rank[j] = true
+		}
+	}
+	return partitionActionable(rows, rank)
+}
+
+func partitionActionable(rows []store.Spec, first []bool) []store.Spec {
+	out := make([]store.Spec, 0, len(rows))
+	for i, s := range rows {
+		if first[i] {
+			out = append(out, s)
+		}
+	}
+	for i, s := range rows {
+		if !first[i] {
+			out = append(out, s)
+		}
 	}
 	return out
 }

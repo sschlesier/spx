@@ -465,3 +465,35 @@ func TestStatusFlagShowsStatusValueAndCriteriaCount(t *testing.T) {
 		t.Errorf("-sd: %q", r.stdout)
 	}
 }
+
+func TestStatusFlagsPrintActionableSpecsFirst(t *testing.T) {
+	printStore(t)
+	root := os.Getenv("AGENT_SPECS_DIR")
+	write := func(path, front string) {
+		full := filepath.Join(root, path)
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte("---\n"+front+"\n---\n\nBody.\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("alpha/done/fin.md", "title: Finished")
+	write("alpha/approved/a2.md", "title: Blocked first\npriority: 1\ndepends-on: [d1]")
+	write("alpha/approved/a3.md", "title: Ready by receipt\npriority: 2\ndepends-on: [fin]")
+	write("alpha/started/s2.md", "title: In review\npriority: 3\nstatus: in-review")
+	cases := []struct {
+		args []string
+		want []string
+	}{
+		{[]string{"-a"}, []string{"Approved one", "Ready by receipt", "Blocked first"}},
+		{[]string{"-s"}, []string{"In review", "Started one"}},
+		{[]string{"-d", "-a", "-s"}, []string{"In review", "Approved one", "Ready by receipt", "Draft one", "Beta draft", "Draft two", "Started one", "Blocked first"}},
+	}
+	for _, c := range cases {
+		r := runCLI(t, t.TempDir(), c.args...)
+		if got := titles(r.stdout); !reflect.DeepEqual(got, c.want) {
+			t.Errorf("%q: got %q, want %q", c.args, got, c.want)
+		}
+	}
+}

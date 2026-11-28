@@ -25,8 +25,10 @@ func dspec(project, status, slug string, deps ...string) store.Spec {
 // depsFixture is "main" depending on a started, a done, a dropped, an unknown (done only in
 // another project) and a duplicated slug, with "after" depending on main.
 func depsFixture() (all, done []store.Spec) {
+	main := dspec("p", "started", "main", "s1-spec", "finished", "gone", "zz", "dup")
+	main.Progress = "in-review" // needs me, so it leads the list as before
 	all = []store.Spec{
-		dspec("p", "started", "main", "s1-spec", "finished", "gone", "zz", "dup"),
+		main,
 		dspec("p", "started", "s1-spec"),
 		dspec("p", "approved", "after", "main"),
 		dspec("p", "draft", "dup"),

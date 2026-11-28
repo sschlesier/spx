@@ -219,7 +219,7 @@ func TestDetailHeader(t *testing.T) {
 	}, {
 		Project: "dgrid", Status: "draft", Slug: "bare", Title: "bare", Priority: store.NoPriority,
 	}}
-	m := start(t, specs, 120, 30)
+	m := press(t, start(t, specs, 120, 30), "j") // the draft needs a person, so it is listed first
 	s := screen(m)
 	for _, want := range []string{"Do X", "dgrid/approved/do-x", "type: bug", "priority: P1",
 		"Depends on", "a (not in store)", "approved: Scott, 2026-09-30: ok", "Body text."} {
@@ -227,7 +227,7 @@ func TestDetailHeader(t *testing.T) {
 			t.Errorf("header missing %q:\n%s", want, s)
 		}
 	}
-	s = screen(press(t, m, "j"))
+	s = screen(press(t, m, "k"))
 	if !strings.Contains(s, "type: -   priority: -") || strings.Contains(s, "Depends on") ||
 		strings.Contains(s, "approved:") {
 		t.Errorf("bare header wrong:\n%s", s)

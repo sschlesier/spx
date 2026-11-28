@@ -389,7 +389,7 @@ func TestAttentionMovement(t *testing.T) {
 
 func TestAttentionStartsOnTheListsSelectionOrHeader(t *testing.T) {
 	// A spec in an unfolded group.
-	m := press(t, start(t, attSpecs(), 120, 30), "j", "j", "j") // answer
+	m := press(t, start(t, attSpecs(), 120, 30), "j", "j") // answer
 	if m = press(t, m, "n"); selSlug(m) != "answer" {
 		t.Errorf("selected %q, want answer", selSlug(m))
 	}
