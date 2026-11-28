@@ -127,8 +127,11 @@ func run(args []string, stdout, stderr io.Writer, dir string, start func(tea.Mod
 	}
 	var done []store.Spec
 	if done, err = store.LoadDone(root); err != nil {
-		fmt.Fprintf(stderr, "spx: %v\n", err)
-		return 1
+		if ready || len(statuses) == 0 {
+			fmt.Fprintf(stderr, "spx: %v\n", err)
+			return 1
+		}
+		fmt.Fprintf(stderr, "spx: warning: %v; ranking without done receipts\n", err)
 	}
 	if len(statuses) > 0 || ready {
 		var shown []store.Spec
